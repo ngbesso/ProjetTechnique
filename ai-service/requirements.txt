@@ -1,0 +1,11 @@
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+pydantic-settings==2.*
+redis==5.*
+# À ajouter selon l'approche IA retenue :
+# openai / anthropic            (appels LLM)
+# sentence-transformers         (embeddings)
+# qdrant-client / pgvector      (base vectorielle)
+pytest==8.*
+httpx==0.28.*
+ruff==0.*

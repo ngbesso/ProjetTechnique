@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Docker
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Données locales (volumes montés)
+data/
