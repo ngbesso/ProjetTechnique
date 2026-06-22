@@ -90,7 +90,7 @@ function Header() {
               <a
                 href={item.href}
                 className={
-                  item.active
+                  'active' in item && item.active
                     ? `${styles.navLink} ${styles.navLinkActive}`
                     : styles.navLink
                 }
