@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
+from collections.abc import Callable
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -35,3 +36,14 @@ def get_current_user(
     if user is None or not user.is_active:
         raise credentials_exc
     return user
+
+def require_permissions(*required: str) -> Callable[..., User]:
+    def checker(user: Annotated[User, Depends(get_current_user)]) -> User:
+        perms = user.permission_codes
+        if "*" in perms or all(code in perms for code in required):
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission insuffisante",
+        )
+    return checker
