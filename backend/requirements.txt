@@ -7,6 +7,9 @@ redis==5.*
 python-jose[cryptography]==3.*
 passlib[bcrypt]==1.7.*
 boto3==1.*
+alembic==1.*
+email-validator==2.*
+python-multipart
 # Dev / tests
 pytest==8.*
 httpx==0.28.*
