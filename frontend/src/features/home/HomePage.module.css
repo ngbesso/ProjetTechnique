@@ -1,24 +1,11 @@
-/* ── Design tokens ────────────────────────────────────── */
-:root {
-  --deep-violet: #2a2660;
-  --vivid-violet: #534ab7;
-  --vivid-violet-hover: #3f389a;
-  --neutral-bg: #f5f5f7;
-  --card-bg: #ffffff;
-  --text-main: #1a1a2e;
-  --text-muted: #666;
-  --border: #e0e0e0;
-  --radius: 8px;
-}
-
-/* ── Reset / base ─────────────────────────────────────── */
+/* ── Reset / base ─────────────────────────────────────────── */
 .page {
   font-family: 'Segoe UI', system-ui, sans-serif;
   color: var(--text-main);
   background: #fff;
 }
 
-/* ── Header ───────────────────────────────────────────── */
+/* ── Header ───────────────────────────────────────────────── */
 .header {
   position: sticky;
   top: 0;
@@ -78,7 +65,7 @@
   gap: 0.75rem;
 }
 
-/* ── Nav ──────────────────────────────────────────────── */
+/* ── Nav ──────────────────────────────────────────────────── */
 .nav {
   background: #fff;
   border-bottom: 1px solid var(--border);
@@ -113,7 +100,7 @@
   border-bottom-color: var(--vivid-violet);
 }
 
-/* ── Buttons ──────────────────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────────────── */
 .btnPrimary {
   background: var(--vivid-violet);
   color: #fff;
@@ -166,7 +153,7 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* ── Hero ─────────────────────────────────────────────── */
+/* ── Hero ─────────────────────────────────────────────────── */
 .hero {
   background: var(--deep-violet);
   color: #fff;
@@ -217,7 +204,7 @@
   opacity: 0.9;
 }
 
-/* ── Section commons ──────────────────────────────────── */
+/* ── Section commons ──────────────────────────────────────── */
 .section {
   padding: 3rem 2rem;
 }
@@ -240,12 +227,6 @@
   margin: 0;
 }
 
-.sectionSubtitle {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: 0.25rem 0 0;
-}
-
 .seeAllLink {
   font-size: 0.875rem;
   color: var(--vivid-violet);
@@ -257,7 +238,7 @@
   text-decoration: underline;
 }
 
-/* ── Qui sommes-nous ──────────────────────────────────── */
+/* ── Qui sommes-nous ──────────────────────────────────────── */
 .aboutSection {
   padding: 3rem 2rem;
   text-align: center;
@@ -311,7 +292,7 @@
   color: var(--text-main);
 }
 
-/* ── Sermons ──────────────────────────────────────────── */
+/* ── Sermons ──────────────────────────────────────────────── */
 .sermonsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -368,7 +349,7 @@
   color: var(--text-muted);
 }
 
-/* ── Événements ───────────────────────────────────────── */
+/* ── Événements ───────────────────────────────────────────── */
 .eventsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -403,7 +384,7 @@
   color: var(--text-muted);
 }
 
-/* ── Formation ────────────────────────────────────────── */
+/* ── Formation ────────────────────────────────────────────── */
 .formationBand {
   display: flex;
   align-items: center;
@@ -443,7 +424,7 @@
   margin: 0;
 }
 
-/* ── Blog ─────────────────────────────────────────────── */
+/* ── Blog ─────────────────────────────────────────────────── */
 .blogGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -483,7 +464,7 @@
   color: var(--text-muted);
 }
 
-/* ── Don ──────────────────────────────────────────────── */
+/* ── Don ──────────────────────────────────────────────────── */
 .donationBand {
   background: var(--deep-violet);
   color: #fff;
@@ -527,7 +508,7 @@
   color: #fff;
 }
 
-/* ── Footer ───────────────────────────────────────────── */
+/* ── Footer ───────────────────────────────────────────────── */
 .footer {
   background: var(--neutral-bg);
   border-top: 1px solid var(--border);
@@ -581,7 +562,7 @@
   color: var(--vivid-violet);
 }
 
-/* ── Assistant FAB ────────────────────────────────────── */
+/* ── Assistant FAB ────────────────────────────────────────── */
 .assistantFab {
   position: fixed;
   bottom: 1.5rem;
@@ -607,7 +588,7 @@
   transform: translateY(-2px);
 }
 
-/* ── Responsive ───────────────────────────────────────── */
+/* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 640px) {
   .headerTop { padding: 0.75rem 1rem; }
   .nav { padding: 0 1rem; }
