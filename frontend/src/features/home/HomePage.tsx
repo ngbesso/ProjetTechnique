@@ -1,4 +1,6 @@
 import styles from "./HomePage.module.css";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "../../context/RouterContext";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -65,6 +67,9 @@ const ARTICLES = [
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function Header() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <header className={styles.header}>
       <div className={styles.headerTop}>
@@ -76,10 +81,34 @@ function Header() {
           </div>
         </a>
         <div className={styles.headerActions}>
-          <button className={styles.btnSecondary}>
-            <span>&#128100;</span> Se connecter
-          </button>
-          <button className={styles.btnPrimary}>Devenir membre</button>
+          {user ? (
+            <>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => navigate("admin")}
+              >
+                <span>&#128100;</span> {user.email}
+              </button>
+              <button className={styles.btnPrimary} onClick={logout}>
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => navigate("login")}
+              >
+                <span>&#128100;</span> Se connecter
+              </button>
+              <button
+                className={styles.btnPrimary}
+                onClick={() => navigate("register")}
+              >
+                Devenir membre
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -90,7 +119,7 @@ function Header() {
               <a
                 href={item.href}
                 className={
-                  'active' in item && item.active
+                  "active" in item && item.active
                     ? `${styles.navLink} ${styles.navLinkActive}`
                     : styles.navLink
                 }
@@ -107,6 +136,7 @@ function Header() {
 }
 
 function Hero() {
+  const navigate = useNavigate();
   return (
     <section className={styles.hero}>
       <p className={styles.heroEyebrow}>
@@ -121,7 +151,12 @@ function Hero() {
         Des Églises affiliées partout, une mission commune.
       </p>
       <div className={styles.heroActions}>
-        <button className={styles.btnHeroPrimary}>Devenir membre</button>
+        <button
+          className={styles.btnHeroPrimary}
+          onClick={() => navigate("register")}
+        >
+          Devenir membre
+        </button>
         <button className={styles.btnOutlineWhite}>
           <span>♥</span> Faire un don
         </button>
@@ -164,7 +199,10 @@ function SermonsSection() {
         {SERMONS.map((sermon) => (
           <article key={sermon.id} className={styles.sermonCard}>
             <div className={styles.sermonThumb}>
-              <button className={styles.playBtn} aria-label={`Écouter : ${sermon.title}`}>
+              <button
+                className={styles.playBtn}
+                aria-label={`Écouter : ${sermon.title}`}
+              >
                 ▶
               </button>
             </div>
@@ -286,26 +324,42 @@ function Footer() {
         <div>
           <p className={styles.footerColTitle}>Découvrir</p>
           <ul className={styles.footerLinks}>
-            <li><a href="#qui-sommes-nous">Qui sommes-nous</a></li>
-            <li><a href="#sermons">Sermons</a></li>
-            <li><a href="#evenements">Événements</a></li>
+            <li>
+              <a href="#qui-sommes-nous">Qui sommes-nous</a>
+            </li>
+            <li>
+              <a href="#sermons">Sermons</a>
+            </li>
+            <li>
+              <a href="#evenements">Événements</a>
+            </li>
           </ul>
         </div>
 
         <div>
           <p className={styles.footerColTitle}>Participer</p>
           <ul className={styles.footerLinks}>
-            <li><a href="#formation">Formation</a></li>
-            <li><a href="#blog">Blog &amp; Articles</a></li>
-            <li><a href="#don">Faire un don</a></li>
+            <li>
+              <a href="#formation">Formation</a>
+            </li>
+            <li>
+              <a href="#blog">Blog &amp; Articles</a>
+            </li>
+            <li>
+              <a href="#don">Faire un don</a>
+            </li>
           </ul>
         </div>
 
         <div>
           <p className={styles.footerColTitle}>Compte</p>
           <ul className={styles.footerLinks}>
-            <li><a href="#inscription">Devenir membre</a></li>
-            <li><a href="#connexion">Se connecter</a></li>
+            <li>
+              <a href="#inscription">Devenir membre</a>
+            </li>
+            <li>
+              <a href="#connexion">Se connecter</a>
+            </li>
           </ul>
         </div>
       </div>
@@ -315,7 +369,7 @@ function Footer() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function HomePage() {
+export function HomePage() {
   return (
     <div className={styles.page}>
       <Header />
@@ -330,7 +384,10 @@ export default function HomePage() {
       </main>
       <Footer />
 
-      <button className={styles.assistantFab} aria-label="Ouvrir l'assistant IA">
+      <button
+        className={styles.assistantFab}
+        aria-label="Ouvrir l'assistant IA"
+      >
         ○ Assistant
       </button>
     </div>
