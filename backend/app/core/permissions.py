@@ -22,6 +22,11 @@ DEFAULT_ROLES: dict[str, dict] = {
     "admin": {"description": "Administrateur", "permissions": ["*"]},
     "membre": {
         "description": "Membre",
-        "permissions": ["member:read", "donation:create", "event:read", "sermon:read"],
+        "permissions": ["donation:create", "event:read", "sermon:read"],
     },
+}
+
+# Permissions qui n'ont de sens qu'au niveau de l'organisation (église mère).
+GLOBAL_PERMISSIONS: set[str] = {
+    "*", "rbac:manage", "user:manage", "church:manage", "content:manage",
 }
