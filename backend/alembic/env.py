@@ -4,14 +4,15 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from app.core.config import settings
+from app.db.base import Base
+from app.models import user  # noqa: F401  (importe le modèle pour qu'Alembic le voie)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-from app.core.config import settings
-from app.db.base import Base
-from app.models import user  # noqa: F401  (importe le modèle pour qu'Alembic le voie)
+
 
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
