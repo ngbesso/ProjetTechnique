@@ -1,0 +1,377 @@
+/* ── Design tokens ─────────────────────────────────────── */
+:root {
+  --deep-violet: #2a2660;
+  --vivid-violet: #534ab7;
+  --vivid-violet-hover: #3f389a;
+  --neutral-bg: #f5f5f7;
+  --card-bg: #ffffff;
+  --text-main: #1a1a2e;
+  --text-muted: #666;
+  --border: #e0e0e0;
+  --radius: 8px;
+}
+
+/* ── Page ─────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  background: var(--neutral-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header minimal ───────────────────────────────────── */
+.header {
+  background: var(--deep-violet);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoIcon {
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vivid-violet);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.headerTitle {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ── Layout principal ─────────────────────────────────── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  max-width: 900px;
+  width: 100%;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  align-items: start;
+}
+
+/* ── Carte formulaire (gauche) ────────────────────────── */
+.formCard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(42,38,96,0.08);
+}
+
+.formTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0 0 0.25rem;
+}
+
+.formSubtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 1.5rem;
+}
+
+/* ── Tabs fréquence ───────────────────────────────────── */
+.freqTabs {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.freqTab {
+  flex: 1;
+  padding: 0.55rem;
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.freqTabActive {
+  background: var(--vivid-violet);
+  color: #fff;
+}
+
+/* ── Sélection de montant ─────────────────────────────── */
+.groupLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.6rem;
+}
+
+.amountGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.amountBtn {
+  padding: 0.55rem 0.25rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.amountBtn:hover {
+  border-color: var(--vivid-violet);
+  color: var(--vivid-violet);
+}
+
+.amountBtnActive {
+  background: var(--vivid-violet);
+  border-color: var(--vivid-violet);
+  color: #fff;
+}
+
+/* ── Champs ───────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.input,
+.select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+}
+
+.input::placeholder {
+  color: #bbb;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--vivid-violet);
+  box-shadow: 0 0 0 3px rgba(83,74,183,0.12);
+}
+
+.inputError {
+  border-color: #ef4444;
+}
+
+.errorMsg {
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+}
+
+/* ── Paiement chips ───────────────────────────────────── */
+.paymentChips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.paymentChip {
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.paymentChip:hover {
+  border-color: var(--vivid-violet);
+  color: var(--vivid-violet);
+}
+
+.paymentChipActive {
+  border-color: var(--vivid-violet);
+  background: var(--vivid-violet);
+  color: #fff;
+}
+
+/* ── Carte récapitulatif (droite) ─────────────────────── */
+.summaryCard {
+  background: var(--deep-violet);
+  color: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(42,38,96,0.15);
+  position: sticky;
+  top: 1.5rem;
+}
+
+.summaryTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin: 0 0 1rem;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.summaryRow:last-of-type {
+  border-bottom: none;
+}
+
+.summaryKey {
+  opacity: 0.8;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.75rem 0 1rem;
+  border-top: 1px solid rgba(255,255,255,0.25);
+  margin-top: 0.5rem;
+}
+
+.receiptNote {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  background: rgba(255,255,255,0.1);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.btnDonate {
+  width: 100%;
+  background: #fff;
+  color: var(--vivid-violet);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btnDonate:hover {
+  opacity: 0.9;
+}
+
+.btnDonate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Success ──────────────────────────────────────────── */
+.successWrap {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  max-width: 480px;
+  margin: 2rem auto;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(42,38,96,0.08);
+}
+
+.successIcon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.successTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0 0 0.5rem;
+}
+
+.successText {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 0.5rem;
+}
+
+.receiptNumber {
+  font-family: monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--vivid-violet);
+}
+
+.btnBack {
+  margin-top: 1.25rem;
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnBack:hover {
+  background: var(--vivid-violet-hover);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 680px) {
+  .main {
+    grid-template-columns: 1fr;
+    margin: 1rem auto;
+  }
+  .summaryCard { position: static; }
+  .amountGrid { grid-template-columns: repeat(2, 1fr); }
+  .row { grid-template-columns: 1fr; }
+}
