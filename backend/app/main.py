@@ -20,3 +20,5 @@ app.include_router(health.router, tags=["health"])
 @app.get("/")
 def root():
     return {"service": "backend", "status": "ok"}
+from app.api.routes import donations
+app.include_router(donations.router)
