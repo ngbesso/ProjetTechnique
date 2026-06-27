@@ -45,7 +45,9 @@ def create_role(data: RoleIn, db: Annotated[Session, Depends(get_db)]):
     if db.scalar(select(Role).where(Role.name == data.name)):
         raise HTTPException(409, "Ce rôle existe déjà")
     role = Role(name=data.name, description=data.description)
-    db.add(role); db.commit(); db.refresh(role)
+    db.add(role)
+    db.commit()
+    db.refresh(role)
     return role_out(role)
 
 
