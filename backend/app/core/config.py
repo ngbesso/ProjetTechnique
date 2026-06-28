@@ -16,7 +16,16 @@ class Settings(BaseSettings):
 
     ai_service_url: str = "http://ai-service:8001"
 
-    cors_origins: list[str] = ["http://localhost:5173"]
+    admin_email: str = "admin@obnl.org"
+    admin_password: str = "Admin1234!"
+
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
+        "http://localhost:5177",
+    ]
 
 
 settings = Settings()
