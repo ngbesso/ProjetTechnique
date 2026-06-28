@@ -6,7 +6,7 @@ from app.models.rbac import Role
 def test_member_forbidden_on_admin(client, make_user, auth_header):
     make_user("m@b.com", roles=["membre"])
     r = client.get("/admin/roles", headers=auth_header("m@b.com"))
-    assert r.status_code == 403                    # un membre n'entre pas
+    assert r.status_code == 403  # un membre n'entre pas
 
 
 def test_admin_allowed_on_admin(client, make_user, auth_header):

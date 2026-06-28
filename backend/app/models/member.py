@@ -19,9 +19,11 @@ class Member(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     church_id: Mapped[int] = mapped_column(
-        ForeignKey("churches.id", ondelete="RESTRICT"), index=True)
+        ForeignKey("churches.id", ondelete="RESTRICT"), index=True
+    )
     user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), unique=True, default=None)
+        ForeignKey("users.id", ondelete="SET NULL"), unique=True, default=None
+    )
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), index=True)
@@ -31,6 +33,8 @@ class Member(Base):
     conversion_date: Mapped[date | None] = mapped_column(Date, default=None)
     is_baptized: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[MemberStatus] = mapped_column(
-        Enum(MemberStatus, native_enum=False, length=20), default=MemberStatus.pending)
+        Enum(MemberStatus, native_enum=False, length=20), default=MemberStatus.pending
+    )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now())
+        DateTime(timezone=True), server_default=func.now()
+    )

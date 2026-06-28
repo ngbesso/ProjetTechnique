@@ -18,21 +18,30 @@ class RoleIn(BaseModel):
     name: str
     description: str = ""
 
+
 class SetPermissions(BaseModel):
     codes: list[str]
+
 
 class SetUserRoles(BaseModel):
     roles: list[str]
 
+
 def role_out(r: Role) -> dict:
-    return {"id": r.id, "name": r.name, "description": r.description,
-            "permissions": [p.code for p in r.permissions]}
+    return {
+        "id": r.id,
+        "name": r.name,
+        "description": r.description,
+        "permissions": [p.code for p in r.permissions],
+    }
 
 
 @router.get("/permissions", dependencies=[admin_only])
 def list_permissions(db: Annotated[Session, Depends(get_db)]):
-    return [{"code": p.code, "description": p.description}
-            for p in db.scalars(select(Permission)).all()]
+    return [
+        {"code": p.code, "description": p.description}
+        for p in db.scalars(select(Permission)).all()
+    ]
 
 
 @router.get("/roles", dependencies=[admin_only])
@@ -52,8 +61,9 @@ def create_role(data: RoleIn, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.put("/roles/{role_id}/permissions", dependencies=[admin_only])
-def set_role_permissions(role_id: int, data: SetPermissions,
-                         db: Annotated[Session, Depends(get_db)]):
+def set_role_permissions(
+    role_id: int, data: SetPermissions, db: Annotated[Session, Depends(get_db)]
+):
     role = db.get(Role, role_id)
     if not role:
         raise HTTPException(404, "Rôle introuvable")
@@ -64,8 +74,9 @@ def set_role_permissions(role_id: int, data: SetPermissions,
 
 
 @router.put("/users/{user_id}/roles", dependencies=[admin_only])
-def set_user_roles(user_id: int, data: SetUserRoles,
-                   db: Annotated[Session, Depends(get_db)]):
+def set_user_roles(
+    user_id: int, data: SetUserRoles, db: Annotated[Session, Depends(get_db)]
+):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "Utilisateur introuvable")

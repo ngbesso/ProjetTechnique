@@ -92,11 +92,13 @@ def promote(email: str) -> None:
         if not user or not admin:
             print("Utilisateur ou rôle admin introuvable.")
             return
-        exists = db.scalar(select(UserRole).where(
-            UserRole.user_id == user.id,
-            UserRole.role_id == admin.id,
-            UserRole.church_id == mother.id,
-        ))
+        exists = db.scalar(
+            select(UserRole).where(
+                UserRole.user_id == user.id,
+                UserRole.role_id == admin.id,
+                UserRole.church_id == mother.id,
+            )
+        )
         if not exists:
             db.add(UserRole(user_id=user.id, role_id=admin.id, church_id=mother.id))
         db.commit()

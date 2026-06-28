@@ -17,7 +17,7 @@ from app.models.user import User
 from app.seed import ensure_mother_church, seed_roles_permissions
 
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or (
-        settings.database_url.rsplit("/", 1)[0] + "/obnl_test"
+    settings.database_url.rsplit("/", 1)[0] + "/obnl_test"
 )
 engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
 
@@ -65,9 +65,12 @@ def make_user(db_session):
         for name in roles:
             role = db_session.scalar(select(Role).where(Role.name == name))
             if role:
-                db_session.add(UserRole(user_id=user.id, role_id=role.id, church_id=mother.id))
+                db_session.add(
+                    UserRole(user_id=user.id, role_id=role.id, church_id=mother.id)
+                )
         db_session.flush()
         return user
+
     return _make
 
 
@@ -76,4 +79,5 @@ def auth_header(client):
     def _header(email, password="secret123"):
         r = client.post("/auth/login", data={"username": email, "password": password})
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
     return _header

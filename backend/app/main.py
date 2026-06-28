@@ -30,6 +30,7 @@ app.include_router(admin_rbac.router)
 app.include_router(churches.router)
 app.include_router(members.router)
 
+
 @app.get("/")
 def root():
     return {"service": "backend", "status": "ok"}

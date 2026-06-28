@@ -5,9 +5,14 @@ from app.db.base import Base
 from app.models.church import Church
 
 role_permissions = Table(
-    "role_permissions", Base.metadata,
+    "role_permissions",
+    Base.metadata,
     Column("role_id", ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
-    Column("permission_id", ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "permission_id",
+        ForeignKey("permissions.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -30,13 +35,17 @@ class Role(Base):
 
 class UserRole(Base):
     """Objet d'association : attribue un rôle à un utilisateur, dans le périmètre d'une église."""
+
     __tablename__ = "user_roles"
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+        ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )
     church_id: Mapped[int] = mapped_column(
-        ForeignKey("churches.id", ondelete="CASCADE"), primary_key=True)
+        ForeignKey("churches.id", ondelete="CASCADE"), primary_key=True
+    )
 
     role: Mapped[Role] = relationship(lazy="selectin")
     church: Mapped[Church] = relationship(lazy="selectin")

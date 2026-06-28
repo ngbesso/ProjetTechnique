@@ -1,21 +1,27 @@
 def test_register_success(client):
-    r = client.post("/auth/register", json={"email": "a@b.com", "password": "secret123"})
+    r = client.post(
+        "/auth/register", json={"email": "a@b.com", "password": "secret123"}
+    )
     assert r.status_code == 201
     body = r.json()
     assert body["email"] == "a@b.com"
     assert "membre" in body["roles"]
-    assert "hashed_password" not in body          # jamais exposé
+    assert "hashed_password" not in body  # jamais exposé
 
 
 def test_register_duplicate(client, make_user):
     make_user("dup@b.com")
-    r = client.post("/auth/register", json={"email": "dup@b.com", "password": "secret123"})
+    r = client.post(
+        "/auth/register", json={"email": "dup@b.com", "password": "secret123"}
+    )
     assert r.status_code == 409
 
 
 def test_login_success(client, make_user):
     make_user("u@b.com")
-    r = client.post("/auth/login", data={"username": "u@b.com", "password": "secret123"})
+    r = client.post(
+        "/auth/login", data={"username": "u@b.com", "password": "secret123"}
+    )
     assert r.status_code == 200 and "access_token" in r.json()
 
 

@@ -22,7 +22,9 @@ def get_mother(db: Session) -> Church:
 
 
 @router.get("", response_model=list[ChurchRead])
-def list_churches(db: Annotated[Session, Depends(get_db)], district: District | None = None):
+def list_churches(
+    db: Annotated[Session, Depends(get_db)], district: District | None = None
+):
     query = select(Church)
     if district:
         query = query.where(Church.district == district)
@@ -41,18 +43,23 @@ def get_church(church_id: int, db: Annotated[Session, Depends(get_db)]):
 def create_church(data: ChurchCreate, db: Annotated[Session, Depends(get_db)]):
     mother = get_mother(db)
     church = Church(**data.model_dump(), parent_id=mother.id)
-    db.add(church); db.commit(); db.refresh(church)
+    db.add(church)
+    db.commit()
+    db.refresh(church)
     return church
 
 
 @router.patch("/{church_id}", response_model=ChurchRead, dependencies=[can_manage])
-def update_church(church_id: int, data: ChurchUpdate, db: Annotated[Session, Depends(get_db)]):
+def update_church(
+    church_id: int, data: ChurchUpdate, db: Annotated[Session, Depends(get_db)]
+):
     church = db.get(Church, church_id)
     if not church:
         raise HTTPException(404, "Église introuvable")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(church, k, v)
-    db.commit(); db.refresh(church)
+    db.commit()
+    db.refresh(church)
     return church
 
 
@@ -63,6 +70,11 @@ def delete_church(church_id: int, db: Annotated[Session, Depends(get_db)]):
         raise HTTPException(404, "Église introuvable")
     if church.parent_id is None:
         raise HTTPException(409, "L'église mère ne peut pas être supprimée")
-    if db.scalar(select(func.count()).select_from(Member).where(Member.church_id == church_id)):
-        raise HTTPException(409, "Cette église a des membres et ne peut pas être supprimée")
-    db.delete(church); db.commit()
+    if db.scalar(
+        select(func.count()).select_from(Member).where(Member.church_id == church_id)
+    ):
+        raise HTTPException(
+            409, "Cette église a des membres et ne peut pas être supprimée"
+        )
+    db.delete(church)
+    db.commit()
