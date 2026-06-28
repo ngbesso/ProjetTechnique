@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -13,8 +14,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_current_user(
-        token: Annotated[str, Depends(oauth2_scheme)],
-        db: Annotated[Session, Depends(get_db)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> User:
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,3 +36,44 @@ def get_current_user(
     if user is None or not user.is_active:
         raise credentials_exc
     return user
+
+
+def require_permissions(*required: str) -> Callable[..., User]:
+    """Vérification globale (union de toutes les permissions). Utilisée par l'administration RBAC."""
+
+    def checker(user: Annotated[User, Depends(get_current_user)]) -> User:
+        perms = user.permission_codes
+        if "*" in perms or all(code in perms for code in required):
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission insuffisante",
+        )
+
+    return checker
+
+
+def require_global_permission(code: str) -> Callable[..., User]:
+    """Permission d'organisation : détenue via un rôle porté sur l'église mère."""
+
+    def checker(user: Annotated[User, Depends(get_current_user)]) -> User:
+        if user.has_global_permission(code):
+            return user
+        raise HTTPException(status_code=403, detail="Permission globale insuffisante")
+
+    return checker
+
+
+def require_church_permission(code: str) -> Callable[..., User]:
+    """Permission scopée : lit church_id dans l'URL et applique la cascade mère -> affiliées."""
+
+    def checker(
+        church_id: int, user: Annotated[User, Depends(get_current_user)]
+    ) -> User:
+        if user.has_permission(code, church_id):
+            return user
+        raise HTTPException(
+            status_code=403, detail="Permission insuffisante sur cette église"
+        )
+
+    return checker
