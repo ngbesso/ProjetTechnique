@@ -4,6 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import type { Role, Permission } from "../../types";
+import { EglisesPanel } from "./EglisesPanel";
+import { MembresPanel } from "./MembresPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
@@ -321,27 +323,31 @@ export function AdminPage() {
         {/* Content */}
         <main className={styles.content}>
           {section === "utilisateurs" ? (
-            <RbacPanel
-              roles={roles}
-              permissions={permissions}
-              loading={loading}
-              error={displayError}
-              newRoleName={newRoleName}
-              newRoleDesc={newRoleDesc}
-              creating={creating}
-              editingRoleId={editingRoleId}
-              editingPerms={editingPerms}
-              saving={saving}
-              onNewRoleName={setNewRoleName}
-              onNewRoleDesc={setNewRoleDesc}
-              onCreateRole={handleCreateRole}
-              onStartEdit={startEditPerms}
-              onTogglePerm={togglePerm}
-              onSavePerms={savePerms}
-              onCancelEdit={() => setEditingRoleId(null)}
-            />
+              <RbacPanel
+                  roles={roles}
+                  permissions={permissions}
+                  loading={loading}
+                  error={displayError}
+                  newRoleName={newRoleName}
+                  newRoleDesc={newRoleDesc}
+                  creating={creating}
+                  editingRoleId={editingRoleId}
+                  editingPerms={editingPerms}
+                  saving={saving}
+                  onNewRoleName={setNewRoleName}
+                  onNewRoleDesc={setNewRoleDesc}
+                  onCreateRole={handleCreateRole}
+                  onStartEdit={startEditPerms}
+                  onTogglePerm={togglePerm}
+                  onSavePerms={savePerms}
+                  onCancelEdit={() => setEditingRoleId(null)}
+              />
+          ) : section === "eglises" ? (
+              <EglisesPanel />
+          ) : section === "membres" ? (
+              <MembresPanel />
           ) : (
-            <PlaceholderPanel label={activeLabel} />
+              <PlaceholderPanel label={activeLabel} />
           )}
         </main>
       </div>
