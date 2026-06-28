@@ -28,5 +28,9 @@ DEFAULT_ROLES: dict[str, dict] = {
 
 # Permissions qui n'ont de sens qu'au niveau de l'organisation (église mère).
 GLOBAL_PERMISSIONS: set[str] = {
-    "*", "rbac:manage", "user:manage", "church:manage", "content:manage",
+    "*",
+    "rbac:manage",
+    "user:manage",
+    "church:manage",
+    "content:manage",
 }

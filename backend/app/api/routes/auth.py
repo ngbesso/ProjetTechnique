@@ -45,8 +45,8 @@ def register(data: UserCreate, db: Annotated[Session, Depends(get_db)]):
 
 @router.post("/login", response_model=Token)
 def login(
-        form: Annotated[OAuth2PasswordRequestForm, Depends()],
-        db: Annotated[Session, Depends(get_db)],
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     user = db.scalar(select(User).where(User.email == form.username))
     if not user or not verify_password(form.password, user.hashed_password):
