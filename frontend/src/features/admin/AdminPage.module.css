@@ -470,3 +470,107 @@
   .topBar { padding: 0.75rem 1rem; }
   .content { padding: 1rem; }
 }
+
+
+/* ── Tables (membres / églises) ─────────────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+/* ── Formulaire en grille (création église) ─────────────────── */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  background: #fff;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--vivid-violet);
+  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+/* ── Barre d'outils (recherche + filtre) ────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.toolbar .input { flex: 1; min-width: 200px; }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(83, 74, 183, 0.1);
+  color: var(--vivid-violet);
+}
+
+.badgeMother { background: var(--deep-violet); color: #fff; }
+.badgePending { background: #fef3c7; color: #92400e; }
+.badgeActive { background: #dcfce7; color: #166534; }
+.badgeInactive { background: #f1f1f4; color: #555; }
+.badgeRejected { background: #fee2e2; color: #b91c1c; }
+
+/* ── Actions de ligne ───────────────────────────────────────── */
+.actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.btnPrimarySm {
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btnPrimarySm:hover { background: var(--vivid-violet-hover); }
+
+.btnDanger {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: #b91c1c;
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btnDanger:hover { border-color: #b91c1c; background: #fef2f2; }
