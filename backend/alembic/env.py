@@ -6,7 +6,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.db.base import Base
-from app.models import user, rbac, church  # noqa: F401 (enregistre les tables)
+from app.models import user, rbac, church, member  # noqa: F401 (enregistre les tables)
 
 config = context.config
 
