@@ -1,0 +1,332 @@
+/* ── Page wrapper ─────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  background: var(--neutral-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text-main);
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(42,38,96,0.10);
+  padding: 2rem 2.5rem;
+  width: 100%;
+  max-width: 580px;
+}
+
+/* ── Card header ──────────────────────────────────────────── */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.logoIcon {
+  width: 30px;
+  height: 30px;
+  background: var(--vivid-violet);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0;
+}
+
+/* ── Stepper ──────────────────────────────────────────────── */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 2rem;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.stepItem.active {
+  color: var(--vivid-violet);
+  font-weight: 600;
+}
+
+.stepBadge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.stepItem.active .stepBadge {
+  background: var(--vivid-violet);
+  color: #fff;
+}
+
+.stepItem.done .stepBadge {
+  background: #22c55e;
+  color: #fff;
+}
+
+.stepItem.done {
+  color: #22c55e;
+}
+
+.stepConnector {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 0.75rem;
+}
+
+/* ── Group label ──────────────────────────────────────────── */
+.groupLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vivid-violet);
+  margin: 1.25rem 0 0.75rem;
+}
+
+/* ── Form grid ────────────────────────────────────────────── */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+  margin-bottom: 0.875rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.875rem;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Label & input ────────────────────────────────────────── */
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.input,
+.select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+}
+
+.input::placeholder {
+  color: #bbb;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--vivid-violet);
+  box-shadow: 0 0 0 3px rgba(83,74,183,0.12);
+}
+
+.inputError {
+  border-color: #ef4444;
+}
+
+.inputError:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+}
+
+.errorMsg {
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+/* ── Radio group ──────────────────────────────────────────── */
+.radioGroup {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.radioLabel input[type="radio"] {
+  accent-color: var(--vivid-violet);
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Footer links ─────────────────────────────────────────── */
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.linkMuted {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-decoration: none;
+}
+
+.linkMuted:hover {
+  color: var(--vivid-violet);
+  text-decoration: underline;
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btnPrimary {
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnPrimary:hover {
+  background: var(--vivid-violet-hover);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.6rem 0;
+  text-decoration: underline;
+}
+
+.btnGhost:hover {
+  color: var(--deep-violet);
+}
+
+/* ── Confirmation step ────────────────────────────────────── */
+.confirmBox {
+  background: var(--neutral-bg);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.confirmRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.confirmRow:last-child {
+  border-bottom: none;
+}
+
+.confirmKey {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.confirmValue {
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+
+.confirmNotice {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* ── Success state ────────────────────────────────────────── */
+.successBox {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.successIcon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.successTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0 0 0.5rem;
+}
+
+.successText {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .card { padding: 1.5rem 1.25rem; }
+  .row { grid-template-columns: 1fr; }
+}

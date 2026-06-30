@@ -1,20 +1,23 @@
-import { useEffect, useState } from "react";
-import { api } from "./api/client";
+import { usePage } from "./context/RouterContext";
+import { useAuth } from "./context/AuthContext";
+import { HomePage } from "./features/home/HomePage";
+import { LoginPage } from "./features/auth/LoginPage";
+import { RegisterPage } from "./features/auth/RegisterPage";
+import { AdminPage } from "./features/admin/AdminPage";
 
 export default function App() {
-  const [status, setStatus] = useState("…");
+  const page = usePage();
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    api
-      .get("/health")
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("API injoignable"));
-  }, []);
+  if (loading) return <div className="loading">Chargement…</div>;
 
-  return (
-    <main style={{ fontFamily: "sans-serif", padding: "2rem" }}>
-      <h1>Plateforme OBNL</h1>
-      <p>État de l'API : {status}</p>
-    </main>
-  );
+  if (page === "login") return <LoginPage />;
+  if (page === "register") return <RegisterPage />;
+
+  if (page === "admin") {
+    if (!user) return <LoginPage />;
+    return <AdminPage />;
+  }
+
+  return <HomePage />;
 }
