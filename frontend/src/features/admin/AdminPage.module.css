@@ -740,3 +740,6 @@
   border-top: 1px solid var(--border);
   background: var(--neutral-bg);
 }
+
+.helpText { font-size: .78rem; color: var(--text-muted); margin: .75rem 0 0; }
+.chipX { background: none; border: none; color: inherit; cursor: pointer; margin-left: .35rem; font-weight: 700; }

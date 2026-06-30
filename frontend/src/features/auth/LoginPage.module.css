@@ -2,80 +2,18 @@
 .page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   font-family: 'Segoe UI', system-ui, sans-serif;
   color: var(--text-main);
+  background: var(--neutral-bg);
 }
 
-/* ── Brand panel (left) ─────────────────────────────────── */
-.brandPanel {
-  width: 42%;
-  background: var(--deep-violet);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 3rem 3rem 2.5rem;
-  color: #fff;
-}
-
-.brandTop {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.brandLogo {
-  width: 52px;
-  height: 52px;
-  background: var(--vivid-violet);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 0.75rem;
-}
-
-.brandName {
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.brandTagline {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0;
-  font-style: italic;
-}
-
-.brandQuote {
-  font-size: 1.05rem;
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.65;
-  border-left: 3px solid var(--vivid-violet);
-  padding-left: 1rem;
-  margin: 0;
-}
-
-.brandSecurity {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-/* ── Form panel (right) ─────────────────────────────────── */
-.formPanel {
+.main {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--neutral-bg);
-  padding: 2rem 1.5rem;
+  padding: 3rem 1.5rem;
 }
 
 .formCard {
@@ -196,14 +134,7 @@
 .linkBtn:hover { color: var(--vivid-violet-hover); }
 
 /* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 680px) {
-  .page { flex-direction: column; }
-  .brandPanel {
-    width: 100%;
-    padding: 2rem 1.5rem;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  .brandQuote { display: none; }
+@media (max-width: 480px) {
+  .main { padding: 2rem 1rem; }
+  .formCard { padding: 2rem 1.25rem; }
 }

@@ -2,8 +2,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.api.routes import auth, admin_rbac, churches, donations, health, members, sermons
+from app.api.routes import (
+    auth,
+    admin_rbac,
+    churches,
+    donations,
+    health,
+    members,
+    admin_users,
+    sermons,
+)
 from app.core.config import settings
 from app.seed import run as seed_run
 from app.services import storage
@@ -36,6 +44,7 @@ app.include_router(churches.router)
 app.include_router(members.router)
 app.include_router(donations.router)
 app.include_router(sermons.router)
+app.include_router(admin_users.router)
 
 
 @app.get("/")
