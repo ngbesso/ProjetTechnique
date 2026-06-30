@@ -574,3 +574,4 @@
   white-space: nowrap;
 }
 .btnDanger:hover { border-color: #b91c1c; background: #fef2f2; }
+.rowEditing { background: rgba(83, 74, 183, 0.05); }
