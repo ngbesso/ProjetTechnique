@@ -28,3 +28,24 @@ def create_access_token(subject: str) -> str:
     return jwt.encode(
         payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
     )
+
+
+_SETUP_PURPOSE = "set_password"
+
+
+def create_setup_token(user_id: int, hours: int = 48) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(hours=hours)
+    return jwt.encode(
+        {"sub": str(user_id), "purpose": _SETUP_PURPOSE, "exp": expire},
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def decode_setup_token(token: str) -> int:
+    data = jwt.decode(
+        token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+    )
+    if data.get("purpose") != _SETUP_PURPOSE:
+        raise ValueError("Mauvais type de jeton")
+    return int(data["sub"])

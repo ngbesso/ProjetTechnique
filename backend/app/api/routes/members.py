@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -11,6 +12,12 @@ from app.core.email import (
     membership_approved,
     membership_received,
 )
+from app.core.email import membership_approved_invite
+from app.core.config import settings
+from app.core.security import create_setup_token, hash_password
+from app.models.rbac import Role, UserRole
+from app.schemas.member import MemberSelfUpdate
+
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
@@ -159,9 +166,66 @@ def approve_member(
     member = _load(db, member_id)
     _ensure(current_user, member, "member:approve")
     member.status = MemberStatus.active
+
+    # Option C : relier un compte existant, sinon en créer un et inviter.
+    user = db.scalar(select(User).where(User.email == member.email))
+    invite_link: str | None = None
+    if user is None:
+        user = User(
+            email=member.email, hashed_password=hash_password(secrets.token_urlsafe(16))
+        )
+        db.add(user)
+        db.flush()
+        token = create_setup_token(user.id)
+        invite_link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
+    member.user_id = user.id
+
+    # Rôle « membre » porté sur l'église du membre (si absent).
+    membre = db.scalar(select(Role).where(Role.name == "membre"))
+    if membre:
+        exists = db.scalar(
+            select(UserRole).where(
+                UserRole.user_id == user.id,
+                UserRole.role_id == membre.id,
+                UserRole.church_id == member.church_id,
+            )
+        )
+        if not exists:
+            db.add(
+                UserRole(user_id=user.id, role_id=membre.id, church_id=member.church_id)
+            )
+
     db.commit()
     db.refresh(member)
-    background.add_task(membership_approved, sender, member.email, member.first_name)
+
+    if invite_link:
+        background.add_task(
+            membership_approved_invite,
+            sender,
+            member.email,
+            member.first_name,
+            invite_link,
+        )
+    else:
+        background.add_task(
+            membership_approved, sender, member.email, member.first_name
+        )
+    return member
+
+
+@router.patch("/me", response_model=MemberRead)
+def update_my_profile(
+    data: MemberSelfUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    member = db.scalar(select(Member).where(Member.user_id == current_user.id))
+    if not member:
+        raise HTTPException(404, "Aucune fiche membre liée à ce compte")
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(member, k, v)
+    db.commit()
+    db.refresh(member)
     return member
 
 

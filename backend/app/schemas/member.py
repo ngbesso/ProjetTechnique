@@ -51,3 +51,11 @@ class MemberList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class MemberSelfUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    address: str | None = None
+    birth_date: date | None = None
+    family_status: str | None = None
