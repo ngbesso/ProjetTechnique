@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     s3_endpoint_url: str = "http://minio:9000"
     s3_bucket: str = "sermons"
+    minio_root_user: str = "minioadmin"
+    minio_root_password: str = "minioadmin"
 
     ai_service_url: str = "http://ai-service:8001"
 

@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import styles from "./HomePage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
+import { useSermons } from "../../hooks/useSermons";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -28,11 +30,9 @@ const PILLARS = [
   { label: "Principes", icon: "⚖️", desc: "Gouvernance partagée, transparence et service." },
 ] as const;
 
-const SERMONS = [
-  { id: 1, title: "La grâce qui transforme", preacher: "Pasteur Jean K.", date: "8 juin" },
-  { id: 2, title: "Marcher dans la foi", preacher: "Pasteur A. Mensah", date: "1 juin" },
-  { id: 3, title: "L'espérance vivante", preacher: "Pasteur D. Traoré", date: "25 mai" },
-] as const;
+function formatSermonDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
+}
 
 const EVENT_TYPES = [
   { label: "Conférences & Congrès", subtype: "Rassemblements", icon: "🎤" },
@@ -179,6 +179,13 @@ function AboutSection() {
 }
 
 function SermonsSection() {
+  const navigate = useNavigate();
+  const { sermons, loading, load } = useSermons();
+
+  useEffect(() => {
+    load({ limit: 3 });
+  }, [load]);
+
   return (
     <section id="sermons" className={`${styles.section} ${styles.sectionAlt}`}>
       <div className={styles.sectionHeader}>
@@ -186,23 +193,37 @@ function SermonsSection() {
           <p className={styles.sectionEyebrow}>Écouter</p>
           <h2 className={styles.sectionTitle}>Derniers sermons</h2>
         </div>
-        <a href="#sermons-all" className={styles.seeAllLink}>Voir tout →</a>
+        <button className={styles.seeAllLink} onClick={() => navigate("sermons")}>
+          Voir tout →
+        </button>
       </div>
-      <div className={styles.sermonsGrid}>
-        {SERMONS.map((sermon) => (
-          <article key={sermon.id} className={styles.sermonCard}>
-            <div className={styles.sermonThumb}>
-              <button className={styles.playBtn} aria-label={`Écouter : ${sermon.title}`}>
-                ▶
-              </button>
-            </div>
-            <div className={styles.sermonInfo}>
-              <p className={styles.sermonTitle}>{sermon.title}</p>
-              <p className={styles.sermonMeta}>{sermon.preacher} · {sermon.date}</p>
-            </div>
-          </article>
-        ))}
-      </div>
+      {loading ? (
+        <p>Chargement…</p>
+      ) : sermons.length === 0 ? (
+        <p>Aucun sermon publié pour le moment.</p>
+      ) : (
+        <div className={styles.sermonsGrid}>
+          {sermons.map((sermon) => (
+            <article key={sermon.id} className={styles.sermonCard}>
+              <div className={styles.sermonThumb}>
+                <button
+                  className={styles.playBtn}
+                  aria-label={`Écouter : ${sermon.title}`}
+                  onClick={() => navigate("sermons")}
+                >
+                  ▶
+                </button>
+              </div>
+              <div className={styles.sermonInfo}>
+                <p className={styles.sermonTitle}>{sermon.title}</p>
+                <p className={styles.sermonMeta}>
+                  {sermon.preacher} · {formatSermonDate(sermon.sermon_date)}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

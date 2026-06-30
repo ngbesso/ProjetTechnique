@@ -22,7 +22,7 @@ export function SiteFooter() {
             <p className={styles.colTitle}>Découvrir</p>
             <ul className={styles.links}>
               <li><button onClick={() => navigate("home")}>Qui sommes-nous</button></li>
-              <li><button onClick={() => navigate("home")}>Sermons</button></li>
+              <li><button onClick={() => navigate("sermons")}>Sermons</button></li>
               <li><button onClick={() => navigate("home")}>Événements</button></li>
             </ul>
           </div>

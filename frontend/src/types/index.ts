@@ -29,7 +29,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -126,4 +126,37 @@ export interface MembershipInput {
   birth_date?: string | null;
   family_status?: string | null;
   is_baptized: boolean;
+}
+
+export type SermonFormat = "audio" | "video";
+export type SermonStatus = "draft" | "published" | "archived";
+
+export interface Sermon {
+  id: number;
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description: string | null;
+  series: string | null;
+  format: SermonFormat;
+  status: SermonStatus;
+  duration_seconds: number | null;
+  views: number;
+  created_at: string;
+}
+
+export interface SermonListResult {
+  items: Sermon[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SermonInput {
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description?: string;
+  series?: string;
+  status?: SermonStatus;
 }

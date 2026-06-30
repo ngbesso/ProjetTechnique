@@ -6,6 +6,7 @@ import { RegisterPage } from "./features/auth/RegisterPage";
 import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
+import { SermonsPage } from "./features/sermons/SermonsPage";
 
 export default function App() {
   const page = usePage();
@@ -17,6 +18,7 @@ export default function App() {
   if (page === "register") return <RegisterPage />;
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;
+  if (page === "sermons") return <SermonsPage />;
 
   if (page === "admin") {
     if (!user) return <LoginPage />;
