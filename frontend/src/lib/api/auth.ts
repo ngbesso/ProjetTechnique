@@ -21,3 +21,6 @@ export async function register(data: UserCreate): Promise<UserInfo> {
 export function logout(): void {
   setToken(null);
 }
+export function setPassword(token: string, password: string): Promise<Token> {
+  return http.post<Token>("/auth/set-password", { token, password });
+}

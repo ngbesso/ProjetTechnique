@@ -1,19 +1,12 @@
 import { useEffect } from "react";
 import styles from "./HomePage.module.css";
-import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
+import { SiteHeader } from "../../components/layout/SiteHeader";
+import { SiteFooter } from "../../components/layout/SiteFooter";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
-  { label: "Accueil", href: "#", active: true },
-  { label: "Qui sommes-nous", href: "#qui-sommes-nous", dropdown: true },
-  { label: "Sermons", href: "#sermons", dropdown: true },
-  { label: "Événements", href: "#evenements", dropdown: true },
-  { label: "Formation", href: "#formation" },
-  { label: "Blog & Articles", href: "#blog" },
-] as const;
 
 const STATS = [
   { value: "120+", label: "Églises affiliées" },
@@ -47,65 +40,6 @@ const ARTICLES = [
 ] as const;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-export function Header() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  return (
-    <header className={styles.header}>
-      <div className={styles.headerTop}>
-        <a href="#" onClick={() => navigate("home")} className={styles.logo}>
-          <div className={styles.logoIcon}>+</div>
-          <div className={styles.logoText}>
-            <span className={styles.logoTitle}>Mission Évangélique</span>
-            <span className={styles.logoSubtitle}>unis dans la foi</span>
-          </div>
-        </a>
-        <div className={styles.headerActions}>
-          {user ? (
-            <>
-              <button className={styles.btnSecondary} onClick={() => navigate("admin")}>
-                <span>&#128100;</span> {user.email}
-              </button>
-              <button className={styles.btnPrimary} onClick={logout}>
-                Déconnexion
-              </button>
-            </>
-          ) : (
-            <>
-              <button className={styles.btnSecondary} onClick={() => navigate("login")}>
-                <span>&#128100;</span> Se connecter
-              </button>
-              <button className={styles.btnPrimary} onClick={() => navigate("adhesion")}>
-                Devenir membre
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <nav className={styles.nav} aria-label="Navigation principale">
-        <ul className={styles.navList}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.label} className={styles.navItem}>
-              <a
-                href={item.href}
-                className={
-                  "active" in item && item.active
-                    ? `${styles.navLink} ${styles.navLinkActive}`
-                    : styles.navLink
-                }
-              >
-                {item.label}
-                {"dropdown" in item && item.dropdown ? " ▾" : ""}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </header>
-  );
-}
 
 
 
@@ -327,50 +261,12 @@ function DonationBand() {
   );
 }
 
-export function Footer() {
-  return (
-    <footer className={styles.footer}>
-      <div className={styles.footerGrid}>
-        <div>
-          <p className={styles.footerBrand}>Mission Évangélique</p>
-          <p className={styles.footerTagline}>
-            Une communauté unie<br />au service de tous.
-          </p>
-        </div>
-        <div>
-          <p className={styles.footerColTitle}>Découvrir</p>
-          <ul className={styles.footerLinks}>
-            <li><a href="#qui-sommes-nous">Qui sommes-nous</a></li>
-            <li><a href="#sermons">Sermons</a></li>
-            <li><a href="#evenements">Événements</a></li>
-          </ul>
-        </div>
-        <div>
-          <p className={styles.footerColTitle}>Participer</p>
-          <ul className={styles.footerLinks}>
-            <li><a href="#formation">Formation</a></li>
-            <li><a href="#blog">Blog &amp; Articles</a></li>
-            <li><a href="#don">Faire un don</a></li>
-          </ul>
-        </div>
-        <div>
-          <p className={styles.footerColTitle}>Compte</p>
-          <ul className={styles.footerLinks}>
-            <li><a href="#inscription">Devenir membre</a></li>
-            <li><a href="#connexion">Se connecter</a></li>
-          </ul>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
   return (
     <div className={styles.page}>
-      <Header />
+      <SiteHeader activePage="home" />
       <main>
         <Hero />
         <AboutSection />
@@ -380,7 +276,7 @@ export function HomePage() {
         <BlogSection />
         <DonationBand />
       </main>
-      <Footer />
+      <SiteFooter />
       <button className={styles.assistantFab} aria-label="Ouvrir l'assistant IA">
         ○ Assistant
       </button>
