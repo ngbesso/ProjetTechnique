@@ -1,14 +1,29 @@
-from app.models.donation import Donation
+from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from app.models.donation import Donation, _receipt_number
+from app.schemas.donation import DonationCreate
 
 
-def create_donation(db, payload, member_id=None, donor_name=None, donor_email=None):
+def create_donation(
+    db: Session,
+    payload: DonationCreate,
+    *,
+    member_id: int,
+    donor_name: str,
+    donor_email: str | None = None,
+) -> Donation:
     donation = Donation(
+        receipt_number=_receipt_number(),
         amount=payload.amount,
         currency=payload.currency,
         category=payload.category,
-        donor_name=donor_name or payload.donor_name,
-        donor_email=donor_email or payload.donor_email,
+        church_id=payload.church_id,
         member_id=member_id,
+        donor_name=donor_name,
+        donor_email=donor_email,
+        created_at=datetime.now(timezone.utc),
     )
     db.add(donation)
     db.commit()
@@ -16,13 +31,24 @@ def create_donation(db, payload, member_id=None, donor_name=None, donor_email=No
     return donation
 
 
-def get_donation(db, donation_id):
-    return db.query(Donation).filter(Donation.id == donation_id).first()
+def get_donation(db: Session, donation_id: int) -> Donation | None:
+    return db.get(Donation, donation_id)
 
 
-def get_all_donations(db):
-    return db.query(Donation).all()
+def list_all(db: Session, skip: int = 0, limit: int = 100) -> list[Donation]:
+    return (
+        db.query(Donation)
+        .order_by(Donation.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
-def get_member_donations(db, member_id):
-    return db.query(Donation).filter(Donation.member_id == member_id).all()
+def list_by_member(db: Session, member_id: int) -> list[Donation]:
+    return (
+        db.query(Donation)
+        .filter(Donation.member_id == member_id)
+        .order_by(Donation.created_at.desc())
+        .all()
+    )
