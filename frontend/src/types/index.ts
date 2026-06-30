@@ -29,7 +29,34 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin";
+export type Page = "home" | "login" | "register" | "admin" | "donation";
+
+export type DonationCategory =
+  | "soutien_spirituel"
+  | "action_communautaire"
+  | "developpement";
+
+export type DonationCurrency = "CAD" | "USD";
+
+export interface DonationCreate {
+  amount: number;
+  currency: DonationCurrency;
+  category: DonationCategory;
+  church_id: number;
+}
+
+export interface Donation {
+  id: number;
+  receipt_number: string;
+  amount: number;
+  currency: DonationCurrency;
+  category: DonationCategory;
+  church_id: number;
+  member_id: number | null;
+  donor_name: string | null;
+  donor_email: string | null;
+  created_at: string;
+}
 
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
 
