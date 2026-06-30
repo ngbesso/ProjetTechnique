@@ -1,8 +1,7 @@
 """Tests unitaires pour app.core.email — aucune base de données requise."""
-import logging
-from unittest.mock import MagicMock, call, patch
 
-import pytest
+import logging
+from unittest.mock import MagicMock, patch
 
 from app.core.email import (
     ConsoleEmailSender,
@@ -15,6 +14,7 @@ from app.core.email import (
 
 
 # ── ConsoleEmailSender ────────────────────────────────────────────────────────
+
 
 def test_console_sender_logs_message(caplog):
     sender = ConsoleEmailSender()
@@ -31,6 +31,7 @@ def test_console_sender_does_not_raise():
 
 # ── SmtpEmailSender — envoi de base ──────────────────────────────────────────
 
+
 def test_smtp_sender_calls_send_message():
     with patch("app.core.email.smtplib.SMTP") as MockSMTP:
         server = MockSMTP.return_value.__enter__.return_value
@@ -42,9 +43,13 @@ def test_smtp_sender_calls_send_message():
 def test_smtp_sender_message_headers():
     with patch("app.core.email.smtplib.SMTP") as MockSMTP:
         captured = {}
+
         def capture_msg(msg):
             captured["msg"] = msg
-        MockSMTP.return_value.__enter__.return_value.send_message.side_effect = capture_msg
+
+        MockSMTP.return_value.__enter__.return_value.send_message.side_effect = (
+            capture_msg
+        )
         sender = SmtpEmailSender("localhost", 1025, "from@test.com")
         sender.send("to@test.com", "Mon sujet", "Mon corps")
         msg = captured["msg"]
@@ -54,6 +59,7 @@ def test_smtp_sender_message_headers():
 
 
 # ── SmtpEmailSender — TLS ─────────────────────────────────────────────────────
+
 
 def test_smtp_sender_no_tls_by_default():
     with patch("app.core.email.smtplib.SMTP") as MockSMTP:
@@ -73,12 +79,17 @@ def test_smtp_sender_with_tls():
 
 # ── SmtpEmailSender — authentification ───────────────────────────────────────
 
+
 def test_smtp_sender_login_called_when_credentials_provided():
     with patch("app.core.email.smtplib.SMTP") as MockSMTP:
         server = MockSMTP.return_value.__enter__.return_value
         sender = SmtpEmailSender(
-            "smtp.prod.com", 587, "from@test.com",
-            use_tls=True, username="user", password="pass"
+            "smtp.prod.com",
+            587,
+            "from@test.com",
+            use_tls=True,
+            username="user",
+            password="pass",
         )
         sender.send("to@test.com", "S", "B")
         server.login.assert_called_once_with("user", "pass")
@@ -94,6 +105,7 @@ def test_smtp_sender_no_login_without_credentials():
 
 # ── SmtpEmailSender — résilience réseau ───────────────────────────────────────
 
+
 def test_smtp_failure_logs_warning_and_does_not_raise(caplog):
     with patch("app.core.email.smtplib.SMTP") as MockSMTP:
         MockSMTP.return_value.__enter__.side_effect = OSError("connexion refusée")
@@ -104,6 +116,7 @@ def test_smtp_failure_logs_warning_and_does_not_raise(caplog):
 
 
 # ── get_email_sender ──────────────────────────────────────────────────────────
+
 
 def test_get_email_sender_default_returns_smtp():
     sender = get_email_sender()
@@ -131,6 +144,7 @@ def test_get_email_sender_smtp_backend():
 
 # ── helpers fonctionnels ──────────────────────────────────────────────────────
 
+
 def test_membership_received_sends_correct_subject():
     fake = MagicMock()
     membership_received(fake, "user@b.com", "Marie")
@@ -156,7 +170,9 @@ def test_membership_approved_sends_correct_subject():
 
 def test_membership_approved_invite_contains_link():
     fake = MagicMock()
-    membership_approved_invite(fake, "user@b.com", "Paul", "https://example.com/set-pwd?token=xyz")
+    membership_approved_invite(
+        fake, "user@b.com", "Paul", "https://example.com/set-pwd?token=xyz"
+    )
     _, _, body = fake.send.call_args.args
     assert "https://example.com/set-pwd?token=xyz" in body
     assert "Paul" in body
