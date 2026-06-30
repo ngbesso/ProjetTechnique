@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.models.donation import DonationCategory, DonationCurrency
+
 
 class DonationCreate(BaseModel):
     amount: float
@@ -10,6 +11,7 @@ class DonationCreate(BaseModel):
     donor_name: Optional[str] = None
     donor_email: Optional[str] = None
     member_id: Optional[int] = None
+
 
 class DonationRead(BaseModel):
     id: int
@@ -23,6 +25,7 @@ class DonationRead(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class ReceiptRead(BaseModel):
     receipt_number: str

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from app.api.routes import donations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,5 +35,6 @@ app.include_router(members.router)
 @app.get("/")
 def root():
     return {"service": "backend", "status": "ok"}
-from app.api.routes import donations
+
+
 app.include_router(donations.router)

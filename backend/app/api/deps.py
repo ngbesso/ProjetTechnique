@@ -1,7 +1,14 @@
+from collections.abc import Callable
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
+from app.db.session import get_db
+from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
@@ -34,17 +41,7 @@ async def get_current_admin(token: str = Depends(oauth2_scheme)):
             detail="Accès réservé aux administrateurs",
         )
     return member
-from collections.abc import Callable
-from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from sqlalchemy.orm import Session
-
-from app.core.config import settings
-from app.db.session import get_db
-from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
