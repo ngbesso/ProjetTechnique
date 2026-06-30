@@ -9,7 +9,7 @@ interface SiteHeaderProps {
 
 const NAV_ITEMS = [
   { label: "Accueil", page: "home" as Page },
-  { label: "Sermons", page: null },
+  { label: "Sermons", page: "sermons" as Page },
   { label: "Événements", page: null },
   { label: "Formation", page: null },
   { label: "Faire un don", page: "donation" as Page },

@@ -7,6 +7,7 @@ import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
+import { SermonsPanel } from "./SermonsPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
@@ -375,6 +376,8 @@ export function AdminPage() {
                 initialStatus={membresInitialStatus}
                 key={membresInitialStatus ?? "all"}
               />
+          ) : section === "sermons" ? (
+              <SermonsPanel />
           ) : (
               <PlaceholderPanel label={activeLabel} />
           )}
