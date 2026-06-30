@@ -6,6 +6,7 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
+import { SermonsPage } from "./features/sermons/SermonsPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {MyProfilePage} from "./features/member/MyProfilePage";
 
@@ -22,6 +23,8 @@ export default function App() {
   /*if (page === "register") return <RegisterPage />;*/
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;
+  if (page === "sermons") return <SermonsPage />;
+
   if (page === "mon-profil") return user ? <MyProfilePage /> : <LoginPage />;
   if (page === "admin") {
     if (!user) return <LoginPage />;
