@@ -29,8 +29,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin";
-
+export type Page = "home" | "login" | "register" | "admin" | "adhesion";
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
 
 export interface Church {
@@ -88,4 +87,15 @@ export interface MemberQuery {
   status?: MemberStatus;
   limit?: number;
   offset?: number;
+}
+
+export interface MembershipInput {
+  church_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  address?: string | null;
+  birth_date?: string | null;
+  family_status?: string | null;
+  is_baptized: boolean;
 }
