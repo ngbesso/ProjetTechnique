@@ -137,6 +137,30 @@ function Hero() {
             <span className={styles.statLabel}>{s.label}</span>
           </div>
         ))}
+      <p className={styles.heroEyebrow}>
+        Une famille de foi, au-delà des frontières
+      </p>
+      <h1 className={styles.heroTitle}>
+        Bienvenue dans notre
+        <br />
+        communauté de foi
+      </h1>
+      <p className={styles.heroSubtitle}>
+        Des Églises affiliées partout, une mission commune.
+      </p>
+      <div className={styles.heroActions}>
+        <button
+          className={styles.btnHeroPrimary}
+          onClick={() => navigate("register")}
+        >
+          Devenir membre
+        </button>
+        <button
+          className={styles.btnOutlineWhite}
+          onClick={() => navigate("donation")}
+        >
+          <span>♥</span> Faire un don
+        </button>
       </div>
     </section>
   );
@@ -277,6 +301,7 @@ function BlogSection() {
 }
 
 function DonationBand() {
+  const navigate = useNavigate();
   return (
     <section className={styles.donationBand}>
       <div className={styles.donationContent}>
@@ -291,7 +316,12 @@ function DonationBand() {
           ))}
         </div>
       </div>
-      <button className={styles.btnOutlineWhite}>♥ Faire un don</button>
+      <button
+        className={styles.btnOutlineWhite}
+        onClick={() => navigate("donation")}
+      >
+        ♥ Faire un don
+      </button>
     </section>
   );
 }

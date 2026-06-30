@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, auth, admin_rbac, churches, members
+from app.api.routes import auth, admin_rbac, churches, donations, health, members
 from app.core.config import settings
 from app.seed import run as seed_run
 
@@ -29,6 +29,7 @@ app.include_router(auth.router)
 app.include_router(admin_rbac.router)
 app.include_router(churches.router)
 app.include_router(members.router)
+app.include_router(donations.router)
 
 
 @app.get("/")
