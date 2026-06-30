@@ -4,7 +4,8 @@ import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
 import { requestMembership } from "../../lib/api/members";
 import type { MembershipInput } from "../../types";
-import { Header, Footer } from "../home/HomePage";
+import { SiteHeader } from "../../components/layout/SiteHeader";
+import { SiteFooter } from "../../components/layout/SiteFooter";
 
 const FAMILY = ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"];
 
@@ -84,7 +85,7 @@ export function MembershipPage() {
 
   return (
     <div className={styles.page}>
-      <Header />
+      <SiteHeader />
 
       <main>
         {/* ── Hero ── */}
@@ -257,7 +258,7 @@ export function MembershipPage() {
         </section>
       </main>
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

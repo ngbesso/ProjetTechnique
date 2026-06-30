@@ -26,6 +26,15 @@ class Settings(BaseSettings):
         "http://localhost:5176",
         "http://localhost:5177",
     ]
+    frontend_url: str = "http://localhost:5173"
+
+    email_backend: str = "smtp"  # "console" | "smtp"
+    smtp_host: str = "mailpit"
+    smtp_port: int = 1025
+    smtp_use_tls: bool = False  # True for production SMTP (port 587)
+    smtp_username: str = ""
+    smtp_password: str = ""
+    email_from: str = "no-reply@mission.org"
 
 
 settings = Settings()

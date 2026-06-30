@@ -29,7 +29,27 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation";
+export type Page =
+    | "home" | "login" | "register" | "admin" | "adhesion" | "mon-profil" | "donation";
+
+export interface MemberSelfInput {
+  first_name?: string;
+  last_name?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  family_status?: string | null;
+}
+
+export interface AssignmentRead {
+  role: string; role_id: number; church_id: number; church_name: string;
+}
+export interface UserAdmin {
+  id: number; email: string; is_active: boolean; created_at: string;
+  assignments: AssignmentRead[];
+}
+export interface RoleAssignmentInput {
+  user_id: number; role_id: number; church_id: number;
+}
 
 export type DonationCategory =
   | "soutien_spirituel"
