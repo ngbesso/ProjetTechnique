@@ -5,13 +5,17 @@ from app.models.rbac import Role
 
 # ── /admin/permissions ────────────────────────────────────────────────────────
 
+
 def test_list_permissions_requires_auth(client):
     assert client.get("/admin/permissions").status_code == 401
 
 
 def test_member_cannot_list_permissions(client, make_user, auth_header):
     make_user("m@b.com", roles=["membre"])
-    assert client.get("/admin/permissions", headers=auth_header("m@b.com")).status_code == 403
+    assert (
+        client.get("/admin/permissions", headers=auth_header("m@b.com")).status_code
+        == 403
+    )
 
 
 def test_admin_can_list_permissions(client, make_user, auth_header):
@@ -23,6 +27,7 @@ def test_admin_can_list_permissions(client, make_user, auth_header):
 
 
 # ── /admin/roles ──────────────────────────────────────────────────────────────
+
 
 def test_member_forbidden_on_admin(client, make_user, auth_header):
     make_user("m@b.com", roles=["membre"])
@@ -58,6 +63,7 @@ def test_create_role_duplicate(client, make_user, auth_header):
 
 # ── /admin/roles/{id}/permissions ─────────────────────────────────────────────
 
+
 def test_admin_can_recompose_role(client, make_user, auth_header, db_session):
     make_user("admin@b.com", roles=["admin"])
     membre = db_session.scalar(select(Role).where(Role.name == "membre"))
@@ -80,7 +86,9 @@ def test_set_permissions_unknown_role(client, make_user, auth_header):
     assert r.status_code == 404
 
 
-def test_set_permissions_ignores_unknown_codes(client, make_user, auth_header, db_session):
+def test_set_permissions_ignores_unknown_codes(
+    client, make_user, auth_header, db_session
+):
     """Les codes de permission inconnus sont silencieusement ignorés."""
     make_user("admin@b.com", roles=["admin"])
     membre = db_session.scalar(select(Role).where(Role.name == "membre"))

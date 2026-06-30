@@ -8,6 +8,7 @@ BASE = "/api/donations"
 
 # ── fixtures / helpers ────────────────────────────────────────────────────────
 
+
 def _payload(church_id: int) -> dict:
     return {
         "amount": 50.0,
@@ -19,6 +20,7 @@ def _payload(church_id: int) -> dict:
 
 # ── POST /api/donations/ ──────────────────────────────────────────────────────
 
+
 def test_create_donation_requires_auth(client, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     r = client.post(f"{BASE}/", json=_payload(church_id))
@@ -28,7 +30,9 @@ def test_create_donation_requires_auth(client, db_session):
 def test_create_donation_success(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("donor@b.com", church_id)
-    r = client.post(f"{BASE}/", json=_payload(church_id), headers=auth_header("donor@b.com"))
+    r = client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor@b.com")
+    )
     assert r.status_code == 201
     body = r.json()
     assert body["amount"] == 50.0
@@ -58,6 +62,7 @@ def test_create_donation_zero_amount(client, make_member, auth_header, db_sessio
 
 # ── GET /api/donations/me ─────────────────────────────────────────────────────
 
+
 def test_list_my_donations(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("me@b.com", church_id)
@@ -75,17 +80,22 @@ def test_list_my_donations_requires_auth(client):
 
 # ── GET /api/donations/{id} ───────────────────────────────────────────────────
 
+
 def test_get_donation(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("getdon@b.com", church_id)
     h = auth_header("getdon@b.com")
-    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()["id"]
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
+        "id"
+    ]
     r = client.get(f"{BASE}/{donation_id}", headers=h)
     assert r.status_code == 200
     assert r.json()["id"] == donation_id
 
 
-def test_get_donation_other_member_forbidden(client, make_member, auth_header, db_session):
+def test_get_donation_other_member_forbidden(
+    client, make_member, auth_header, db_session
+):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("owner@b.com", church_id)
     make_member("intruder@b.com", church_id)
@@ -105,11 +115,14 @@ def test_get_donation_not_found(client, make_member, auth_header, db_session):
 
 # ── GET /api/donations/{id}/recu ──────────────────────────────────────────────
 
+
 def test_get_receipt(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("recu@b.com", church_id)
     h = auth_header("recu@b.com")
-    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()["id"]
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
+        "id"
+    ]
     r = client.get(f"{BASE}/{donation_id}/recu", headers=h)
     assert r.status_code == 200
     body = r.json()
@@ -120,6 +133,7 @@ def test_get_receipt(client, make_member, auth_header, db_session):
 
 # ── GET /api/donations/ (admin) ───────────────────────────────────────────────
 
+
 def test_list_all_requires_admin(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("plain2@b.com", church_id)
@@ -127,11 +141,15 @@ def test_list_all_requires_admin(client, make_member, auth_header, db_session):
     assert r.status_code == 403
 
 
-def test_admin_can_list_all_donations(client, make_user, make_member, auth_header, db_session):
+def test_admin_can_list_all_donations(
+    client, make_user, make_member, auth_header, db_session
+):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_user("admin@b.com", roles=["admin"])
     make_member("donor4@b.com", church_id)
-    client.post(f"{BASE}/", json=_payload(church_id), headers=auth_header("donor4@b.com"))
+    client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor4@b.com")
+    )
     r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
     assert r.status_code == 200
     assert len(r.json()) >= 1

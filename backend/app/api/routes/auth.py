@@ -54,7 +54,11 @@ def login(
     db: Annotated[Session, Depends(get_db)],
 ):
     user = db.scalar(select(User).where(User.email == form.username))
-    if not user or not verify_password(form.password, user.hashed_password):
+    if (
+        not user
+        or not user.is_active
+        or not verify_password(form.password, user.hashed_password)
+    ):
         raise HTTPException(status_code=401, detail="E-mail ou mot de passe incorrect")
     return Token(access_token=create_access_token(subject=str(user.id)))
 

@@ -7,6 +7,7 @@ from app.models.rbac import Role, UserRole
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _mother_id(db) -> int:
     return db.scalar(select(Church.id).where(Church.parent_id.is_(None)))
 
@@ -18,6 +19,7 @@ def _create_affiliate(client, header, name, district="Centre") -> int:
 
 
 # ── list / get ────────────────────────────────────────────────────────────────
+
 
 def test_list_is_public(client):
     r = client.get("/churches")
@@ -44,6 +46,7 @@ def test_get_church_not_found(client):
 
 
 # ── create ────────────────────────────────────────────────────────────────────
+
 
 def test_create_requires_auth(client):
     r = client.post("/churches", json={"name": "Anon", "district": "Ouest"})
@@ -91,10 +94,11 @@ def test_affiliate_admin_cannot_create(client, make_user, auth_header, db_sessio
 
 # ── update ────────────────────────────────────────────────────────────────────
 
+
 def test_update_church(client, make_user, auth_header, db_session):
     make_user("admin@b.com", roles=["admin"])
     h = auth_header("admin@b.com")
-    church_id = _create_affiliate(client, h, "Avant mise à jour", "Nord")
+    church_id = _create_affiliate(client, h, "Avant mise à jour", "Centre")
     r = client.patch(
         f"/churches/{church_id}",
         json={"name": "Après mise à jour"},
@@ -113,15 +117,20 @@ def test_update_requires_auth(client, make_user, auth_header, db_session):
 
 def test_update_church_not_found(client, make_user, auth_header):
     make_user("admin@b.com", roles=["admin"])
-    r = client.patch("/churches/999999", json={"name": "Ghost"}, headers=auth_header("admin@b.com"))
+    r = client.patch(
+        "/churches/999999", json={"name": "Ghost"}, headers=auth_header("admin@b.com")
+    )
     assert r.status_code == 404
 
 
 # ── delete ────────────────────────────────────────────────────────────────────
 
+
 def test_cannot_delete_mother(client, make_user, auth_header, db_session):
     make_user("admin@b.com", roles=["admin"])
-    r = client.delete(f"/churches/{_mother_id(db_session)}", headers=auth_header("admin@b.com"))
+    r = client.delete(
+        f"/churches/{_mother_id(db_session)}", headers=auth_header("admin@b.com")
+    )
     assert r.status_code == 409
 
 

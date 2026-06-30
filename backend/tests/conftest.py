@@ -86,6 +86,7 @@ def auth_header(client):
 @pytest.fixture
 def make_member(db_session, make_user):
     """Crée un User + un Member actif lié (nécessaire pour get_current_member)."""
+
     def _make(email, church_id, password="secret123"):
         user = make_user(email, password=password)
         member = Member(

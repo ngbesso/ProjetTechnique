@@ -44,6 +44,7 @@ class SmtpEmailSender:
         except OSError as exc:
             logger.warning("Échec d'envoi du courriel à %s : %s", to, exc)
 
+
 class EmailSender(Protocol):
     def send(self, to: str, subject: str, body: str) -> None: ...
 
