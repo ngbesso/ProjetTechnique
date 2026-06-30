@@ -15,6 +15,20 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: obl_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@obnl.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+      - "5050:80"
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
+    depends_on:
+      - postgres
+
   redis:
     image: redis:7-alpine
     ports:
@@ -43,6 +57,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      minio:
         condition: service_started
 
   ai-service:

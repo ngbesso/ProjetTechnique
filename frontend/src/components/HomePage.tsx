@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
+import { type SermonOut, formatDuree, sermonsApi } from "../api/sermons";
 import styles from "./HomePage.module.css";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -79,7 +83,7 @@ function Header() {
           <button className={styles.btnSecondary}>
             <span>&#128100;</span> Se connecter
           </button>
-          <button className={styles.btnPrimary}>Devenir membre</button>
+          <Link to="/inscription" className={styles.btnPrimary}>Devenir membre</Link>
         </div>
       </div>
 
@@ -121,7 +125,7 @@ function Hero() {
         Des Églises affiliées partout, une mission commune.
       </p>
       <div className={styles.heroActions}>
-        <button className={styles.btnHeroPrimary}>Devenir membre</button>
+        <Link to="/inscription" className={styles.btnHeroPrimary}>Devenir membre</Link>
         <button className={styles.btnOutlineWhite}>
           <span>♥</span> Faire un don
         </button>
@@ -152,6 +156,16 @@ function AboutSection() {
 }
 
 function SermonsSection() {
+  const [sermons, setSermons] = useState<SermonOut[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    sermonsApi.list(0, 3)
+      .then((data) => setSermons(data.items))
+      .catch(() => setSermons([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <section id="sermons" className={`${styles.section} ${styles.sectionAlt}`}>
       <div className={styles.sectionHeader}>
@@ -161,17 +175,25 @@ function SermonsSection() {
         </a>
       </div>
       <div className={styles.sermonsGrid}>
-        {SERMONS.map((sermon) => (
+        {loading && <p>Chargement…</p>}
+        {!loading && sermons.length === 0 && <p>Aucun sermon disponible.</p>}
+        {sermons.map((sermon) => (
           <article key={sermon.id} className={styles.sermonCard}>
             <div className={styles.sermonThumb}>
-              <button className={styles.playBtn} aria-label={`Écouter : ${sermon.title}`}>
+              <Link
+                to={`/sermons/${sermon.id}`}
+                className={styles.playBtn}
+                aria-label={`Écouter : ${sermon.titre}`}
+              >
                 ▶
-              </button>
+              </Link>
             </div>
             <div className={styles.sermonInfo}>
-              <p className={styles.sermonTitle}>{sermon.title}</p>
+              <p className={styles.sermonTitle}>{sermon.titre}</p>
               <p className={styles.sermonMeta}>
-                {sermon.preacher} · {sermon.date}
+                {sermon.predicateur}
+                {sermon.date_sermon ? ` · ${sermon.date_sermon}` : ""}
+                {sermon.duree_secondes ? ` · ${formatDuree(sermon.duree_secondes)}` : ""}
               </p>
             </div>
           </article>

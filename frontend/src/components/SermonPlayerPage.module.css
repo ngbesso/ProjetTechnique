@@ -1,0 +1,159 @@
+.page {
+  min-height: 100vh;
+  background: #f5f4fb;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(42, 38, 96, 0.08);
+  padding: 2rem;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.backLink {
+  color: #534ab7;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Métadonnées ── */
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.serie {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #534ab7;
+}
+
+.titre {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #2a2660;
+  margin: 0;
+}
+
+.predicateur {
+  font-size: 1rem;
+  color: #555;
+  margin: 0;
+}
+
+.date {
+  font-size: 0.875rem;
+  color: #888;
+  margin: 0;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.tag {
+  background: #ede9fb;
+  color: #534ab7;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* ── Lecteur ── */
+.player {
+  background: #2a2660;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.playBtn {
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.playBtn:hover {
+  background: #6c62d4;
+}
+
+.progressBar {
+  flex: 1;
+  accent-color: #534ab7;
+  cursor: pointer;
+}
+
+.time {
+  font-size: 0.8rem;
+  color: #c8c3f0;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── Description ── */
+.descTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2a2660;
+  margin: 0 0 0.5rem;
+}
+
+.description {
+  border-top: 1px solid #ede9fb;
+  padding-top: 1rem;
+  color: #444;
+  line-height: 1.7;
+}
+
+.vues {
+  font-size: 0.8rem;
+  color: #aaa;
+  text-align: right;
+  margin: 0;
+}
+
+/* ── États loading/erreur ── */
+.centered {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #555;
+}
