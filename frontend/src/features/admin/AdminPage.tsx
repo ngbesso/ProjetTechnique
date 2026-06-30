@@ -7,6 +7,7 @@ import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
+import {UsersPanel} from "./UsersPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
@@ -349,6 +350,8 @@ export function AdminPage() {
         {/* Content */}
         <main className={styles.content}>
           {section === "utilisateurs" ? (
+              <>
+              <UsersPanel />
               <RbacPanel
                   roles={roles}
                   permissions={permissions}
@@ -368,6 +371,7 @@ export function AdminPage() {
                   onSavePerms={savePerms}
                   onCancelEdit={() => setEditingRoleId(null)}
               />
+              </>
           ) : section === "eglises" ? (
               <EglisesPanel />
           ) : section === "membres" ? (
