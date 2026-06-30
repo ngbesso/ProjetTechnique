@@ -2,35 +2,65 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
-import type { ChurchInput, District } from "../../types";
+import type { Church, ChurchInput, District } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
 
+function churchToForm(c: Church): ChurchInput {
+    return {
+        name: c.name,
+        district: c.district,
+        pastor_name: c.pastor_name ?? "",
+        address: c.address ?? "",
+        phone: c.phone ?? "",
+        email: c.email ?? "",
+    };
+}
+
 export function EglisesPanel() {
     const { user } = useAuth();
-    const { churches, loading, error, load, add, remove } = useChurches();
+    const { churches, loading, error, load, add, edit, remove } = useChurches();
     const [form, setForm] = useState<ChurchInput>(EMPTY);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
 
     const canManage =
         user?.permissions.includes("*") || user?.permissions.includes("church:manage");
+    const isEditing = editingId !== null;
 
     useEffect(() => {
         load();
     }, [load]);
 
-    async function handleCreate(e: React.FormEvent) {
+    function startEdit(c: Church) {
+        setEditingId(c.id);
+        setForm(churchToForm(c));
+        setFormError("");
+    }
+
+    function cancelEdit() {
+        setEditingId(null);
+        setForm(EMPTY);
+        setFormError("");
+    }
+
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!form.name.trim()) return;
         setSaving(true);
         setFormError("");
         try {
-            await add({ ...form, name: form.name.trim() });
-            setForm(EMPTY);
+            const payload = { ...form, name: form.name.trim() };
+            if (editingId !== null) {
+                await edit(editingId, payload);
+            } else {
+                await add(payload);
+            }
+            cancelEdit();
         } catch (err) {
             setFormError(err instanceof Error ? err.message : "Erreur");
         } finally {
@@ -55,8 +85,10 @@ export function EglisesPanel() {
 
             {canManage && (
                 <section className={styles.card}>
-                    <h3 className={styles.cardTitle}>Ajouter une église affiliée</h3>
-                    <form onSubmit={handleCreate} className={styles.formGrid}>
+                    <h3 className={styles.cardTitle}>
+                        {isEditing ? "Modifier l'église" : "Ajouter une église affiliée"}
+                    </h3>
+                    <form onSubmit={handleSubmit} className={styles.formGrid}>
                         <input className={styles.input} placeholder="Nom officiel *" required
                                value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                         <select className={styles.select} value={form.district ?? ""}
@@ -73,10 +105,19 @@ export function EglisesPanel() {
                         <input className={styles.input} type="email" placeholder="Courriel"
                                value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                         <button type="submit" className={styles.btnPrimary} disabled={saving}>
-                            {saving ? "Ajout…" : "+ Ajouter"}
+                            {saving ? "Enregistrement…" : isEditing ? "Enregistrer" : "+ Ajouter"}
                         </button>
+                        {isEditing && (
+                            <button type="button" className={styles.btnGhost} onClick={cancelEdit} disabled={saving}>
+                                Annuler
+                            </button>
+                        )}
                     </form>
-                    {formError && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{formError}</p>}
+                    {formError && (
+                        <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
+                            {formError}
+                        </p>
+                    )}
                 </section>
             )}
 
@@ -97,7 +138,7 @@ export function EglisesPanel() {
                         </thead>
                         <tbody>
                         {churches.map((c) => (
-                            <tr key={c.id}>
+                            <tr key={c.id} className={editingId === c.id ? styles.rowEditing : undefined}>
                                 <td className={styles.td}><strong>{c.name}</strong></td>
                                 <td className={styles.td}>{c.district ?? "—"}</td>
                                 <td className={styles.td}>
@@ -108,11 +149,16 @@ export function EglisesPanel() {
                                 <td className={styles.td}>{c.pastor_name ?? "—"}</td>
                                 {canManage && (
                                     <td className={styles.td}>
-                                        {!c.is_mother && (
-                                            <button className={styles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
-                                                Supprimer
+                                        <div className={styles.actions}>
+                                            <button className={styles.btnOutline} onClick={() => startEdit(c)}>
+                                                Modifier
                                             </button>
-                                        )}
+                                            {!c.is_mother && (
+                                                <button className={styles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
+                                                    Supprimer
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 )}
                             </tr>
