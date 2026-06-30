@@ -1,46 +1,37 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import (
-    get_current_admin,
-    get_current_member,
-    get_current_member_optional,
-)
+from app.api.deps import get_current_admin, get_current_member
 from app.db.session import get_db
+from app.models.church import Church
 from app.schemas.donation import DonationCreate, DonationRead, ReceiptRead
 from app.services import donation_service
 
 router = APIRouter(prefix="/api/donations", tags=["donations"])
 
 
+def _get_church_or_404(db: Session, church_id: int) -> Church:
+    church = db.get(Church, church_id)
+    if church is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Église introuvable")
+    return church
+
+
 @router.post("/", response_model=DonationRead, status_code=status.HTTP_201_CREATED)
 def create_donation(
     payload: DonationCreate,
     db: Session = Depends(get_db),
-    current_member=Depends(get_current_member_optional),
+    current_member=Depends(get_current_member),
 ):
-    """Crée un don. Accepte un membre connecté (JWT) ou un donateur anonyme."""
-    member_id = None
-    donor_name = payload.donor_name
-    donor_email = payload.donor_email
-
-    if current_member is not None:
-        member_id = current_member.id
-        donor_name = donor_name or getattr(current_member, "full_name", None)
-        donor_email = donor_email or getattr(current_member, "email", None)
-    else:
-        if not payload.donor_name or not payload.donor_email:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Nom et courriel requis pour un don anonyme",
-            )
+    """Crée un don. Le membre authentifié choisit l'église destinataire."""
+    _get_church_or_404(db, payload.church_id)
 
     return donation_service.create_donation(
         db,
         payload,
-        member_id=member_id,
-        donor_name=donor_name,
-        donor_email=donor_email,
+        member_id=current_member.id,
+        donor_name=current_member.full_name,
+        donor_email=current_member.email,
     )
 
 
@@ -73,15 +64,10 @@ def get_donation(
     """Retourne un don. Le membre ne peut accéder qu'à ses propres dons."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
 
-    is_admin = getattr(current_member, "is_admin", False)
-    if not is_admin and donation.member_id != current_member.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
-        )
+    if donation.member_id != current_member.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
     return donation
 
@@ -95,22 +81,18 @@ def get_receipt(
     """Retourne le reçu fiscal d'un don."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
 
-    is_admin = getattr(current_member, "is_admin", False)
-    if not is_admin and donation.member_id != current_member.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
-        )
+    if donation.member_id != current_member.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
     return ReceiptRead(
         receipt_number=donation.receipt_number,
         amount=float(donation.amount),
         currency=donation.currency,
         category=donation.category,
-        donor_name=donation.donor_name or "Donateur anonyme",
+        church_id=donation.church_id,
+        donor_name=donation.donor_name or current_member.full_name,
         donor_email=donation.donor_email,
         created_at=donation.created_at,
     )
