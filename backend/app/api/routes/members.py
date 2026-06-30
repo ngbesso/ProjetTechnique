@@ -73,6 +73,22 @@ def my_profile(
     return member
 
 
+@router.patch("/me", response_model=MemberRead)
+def update_my_profile(
+    data: MemberSelfUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    member = db.scalar(select(Member).where(Member.user_id == current_user.id))
+    if not member:
+        raise HTTPException(404, "Aucune fiche membre liée à ce compte")
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(member, k, v)
+    db.commit()
+    db.refresh(member)
+    return member
+
+
 @router.get("", response_model=MemberList)
 def list_members(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -210,22 +226,6 @@ def approve_member(
         background.add_task(
             membership_approved, sender, member.email, member.first_name
         )
-    return member
-
-
-@router.patch("/me", response_model=MemberRead)
-def update_my_profile(
-    data: MemberSelfUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
-):
-    member = db.scalar(select(Member).where(Member.user_id == current_user.id))
-    if not member:
-        raise HTTPException(404, "Aucune fiche membre liée à ce compte")
-    for k, v in data.model_dump(exclude_unset=True).items():
-        setattr(member, k, v)
-    db.commit()
-    db.refresh(member)
     return member
 
 

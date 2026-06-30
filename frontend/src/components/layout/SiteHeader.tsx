@@ -55,7 +55,14 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
             <>
               <button
                 className={styles.btnSecondary}
-                onClick={() => navigate("admin")}
+                onClick={() =>
+                  navigate(
+                    user.permissions.includes("*") ||
+                      user.permissions.includes("rbac:manage")
+                      ? "admin"
+                      : "mon-profil",
+                  )
+                }
               >
                 <span aria-hidden>&#128100;</span> {user.email}
               </button>
@@ -73,7 +80,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               </button>
               <button
                 className={styles.btnPrimary}
-                onClick={() => navigate("register")}
+                onClick={() => navigate("adhesion")}
               >
                 Devenir membre
               </button>
