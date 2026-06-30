@@ -3,7 +3,8 @@ import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
-import type { Role, Permission } from "../../types";
+import { usePendingCount } from "../../hooks/usePendingCount";
+import type { MemberStatus, Role, Permission } from "../../types";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
 
@@ -206,7 +207,10 @@ export function AdminPage() {
   const { roles, permissions, loading, error, load, addRole, saveRolePermissions } =
     useRbac();
 
+  const { count: pendingCount, refresh: refreshPending } = usePendingCount();
+
   const [section, setSection] = useState<Section>("utilisateurs");
+  const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -287,12 +291,16 @@ export function AdminPage() {
               className={`${styles.navItem} ${section === item.id ? styles.navItemActive : ""}`}
               onClick={() => {
                 setSection(item.id);
+                setMembresInitialStatus(undefined);
                 setEditingRoleId(null);
                 setCreateError("");
               }}
             >
               <span className={styles.navIcon}>{item.icon}</span>
               {item.label}
+              {item.id === "membres" && pendingCount > 0 && (
+                <span className={styles.navBadge}>{pendingCount}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -310,6 +318,24 @@ export function AdminPage() {
         <header className={styles.topBar}>
           <h1 className={styles.topTitle}>{activeLabel}</h1>
           <div className={styles.topUser}>
+            <button
+              className={styles.notifBtn}
+              title={
+                pendingCount > 0
+                  ? `${pendingCount} demande${pendingCount > 1 ? "s" : ""} en attente`
+                  : "Aucune nouvelle demande"
+              }
+              onClick={() => {
+                setSection("membres");
+                setMembresInitialStatus("pending");
+                refreshPending();
+              }}
+            >
+              🔔
+              {pendingCount > 0 && (
+                <span className={styles.notifBadge}>{pendingCount}</span>
+              )}
+            </button>
             <div className={styles.userInfo}>
               <span className={styles.userEmail}>{user?.email}</span>
               <span className={styles.userRoles}>{user?.roles.join(", ")}</span>
@@ -345,7 +371,10 @@ export function AdminPage() {
           ) : section === "eglises" ? (
               <EglisesPanel />
           ) : section === "membres" ? (
-              <MembresPanel />
+              <MembresPanel
+                initialStatus={membresInitialStatus}
+                key={membresInitialStatus ?? "all"}
+              />
           ) : (
               <PlaceholderPanel label={activeLabel} />
           )}
