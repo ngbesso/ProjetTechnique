@@ -135,34 +135,38 @@ function Header() {
   );
 }
 
+
+
 function Hero() {
   const navigate = useNavigate();
   return (
     <section className={styles.hero}>
-      <p className={styles.heroEyebrow}>
-        Une famille de foi, au-delà des frontières
-      </p>
-      <h1 className={styles.heroTitle}>
-        Bienvenue dans notre
-        <br />
-        communauté de foi
-      </h1>
-      <p className={styles.heroSubtitle}>
-        Des Églises affiliées partout, une mission commune.
-      </p>
-      <div className={styles.heroActions}>
-        <button
-          className={styles.btnHeroPrimary}
-          onClick={() => navigate("register")}
-        >
-          Devenir membre
-        </button>
-        <button
-          className={styles.btnOutlineWhite}
-          onClick={() => navigate("donation")}
-        >
-          <span>♥</span> Faire un don
-        </button>
+      <div className={styles.heroContent}>
+        <p className={styles.heroEyebrow}>Une famille de foi, au-delà des frontières</p>
+        <h1 className={styles.heroTitle}>
+          Bienvenue dans notre<br />communauté de foi
+        </h1>
+        <p className={styles.heroSubtitle}>
+          Des Églises affiliées partout, une mission commune —<br />
+          servir, former et rayonner ensemble.
+        </p>
+        <div className={styles.heroActions}>
+          <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
+            Devenir membre
+          </button>
+          <button className={styles.btnOutlineWhite}>
+            <span>♥</span> Faire un don
+          </button>
+        </div>
+      </div>
+      <div className={styles.heroVisual} aria-hidden="true" />
+      <div className={styles.statsBar}>
+        {STATS.map((s) => (
+          <div key={s.label} className={styles.statItem}>
+            <span className={styles.statValue}>{s.value}</span>
+            <span className={styles.statLabel}>{s.label}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
