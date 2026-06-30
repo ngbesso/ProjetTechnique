@@ -19,7 +19,9 @@ def _decode_user_id(token: str | None) -> int | None:
     if not token:
         return None
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
         sub = payload.get("sub")
         return int(sub) if sub is not None else None
     except (JWTError, ValueError):
@@ -53,6 +55,7 @@ def get_current_member_optional(
     if user_id is None:
         return None
     from app.models.member import Member  # noqa: PLC0415
+
     return db.scalar(select(Member).where(Member.user_id == user_id))
 
 

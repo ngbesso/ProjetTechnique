@@ -70,8 +70,12 @@ def upgrade() -> None:
 
     # Index (IF NOT EXISTS)
     op.execute("CREATE INDEX IF NOT EXISTS ix_donations_id        ON donations (id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_donations_church_id ON donations (church_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_donations_member_id ON donations (member_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_donations_church_id ON donations (church_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_donations_member_id ON donations (member_id)"
+    )
 
 
 def downgrade() -> None:
