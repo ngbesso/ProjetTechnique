@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin, get_current_member, get_current_member_optional
+from app.api.deps import (
+    get_current_admin,
+    get_current_member,
+    get_current_member_optional,
+)
 from app.db.session import get_db
 from app.schemas.donation import DonationCreate, DonationRead, ReceiptRead
 from app.services import donation_service
@@ -69,11 +73,15 @@ def get_donation(
     """Retourne un don. Le membre ne peut accéder qu'à ses propres dons."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
+        )
 
     is_admin = getattr(current_member, "is_admin", False)
     if not is_admin and donation.member_id != current_member.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
+        )
 
     return donation
 
@@ -87,11 +95,15 @@ def get_receipt(
     """Retourne le reçu fiscal d'un don."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
+        )
 
     is_admin = getattr(current_member, "is_admin", False)
     if not is_admin and donation.member_id != current_member.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
+        )
 
     return ReceiptRead(
         receipt_number=donation.receipt_number,
