@@ -29,27 +29,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page =
-    | "home" | "login" | "register" | "admin" | "adhesion" | "mon-profil" | "donation";
-
-export interface MemberSelfInput {
-  first_name?: string;
-  last_name?: string;
-  address?: string | null;
-  birth_date?: string | null;
-  family_status?: string | null;
-}
-
-export interface AssignmentRead {
-  role: string; role_id: number; church_id: number; church_name: string;
-}
-export interface UserAdmin {
-  id: number; email: string; is_active: boolean; created_at: string;
-  assignments: AssignmentRead[];
-}
-export interface RoleAssignmentInput {
-  user_id: number; role_id: number; church_id: number;
-}
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" ;
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -106,6 +86,35 @@ export interface ChurchInput {
   founded_on?: string | null;
 }
 
+export interface MemberSelfInput {
+  first_name?: string;
+  last_name?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  family_status?: string | null;
+}
+
+export interface AssignmentRead {
+  role: string;
+  role_id: number;
+  church_id: number;
+  church_name: string;
+}
+
+export interface UserAdmin {
+  id: number;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  assignments: AssignmentRead[];
+}
+
+export interface RoleAssignmentInput {
+  user_id: number;
+  role_id: number;
+  church_id: number;
+}
+
 export type MemberStatus = "pending" | "active" | "inactive" | "rejected";
 
 export interface Member {
@@ -146,4 +155,37 @@ export interface MembershipInput {
   birth_date?: string | null;
   family_status?: string | null;
   is_baptized: boolean;
+}
+
+export type SermonFormat = "audio" | "video";
+export type SermonStatus = "draft" | "published" | "archived";
+
+export interface Sermon {
+  id: number;
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description: string | null;
+  series: string | null;
+  format: SermonFormat;
+  status: SermonStatus;
+  duration_seconds: number | null;
+  views: number;
+  created_at: string;
+}
+
+export interface SermonListResult {
+  items: Sermon[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SermonInput {
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description?: string;
+  series?: string;
+  status?: SermonStatus;
 }
