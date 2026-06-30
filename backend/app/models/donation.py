@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
-from sqlalchemy import DateTime, Enum, Integer, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column
+
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
 
@@ -23,6 +25,7 @@ def _receipt_number() -> str:
 
 class Donation(Base):
     __tablename__ = "donations"
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     receipt_number: Mapped[str] = mapped_column(
         String(50), unique=True, nullable=False, default=_receipt_number
@@ -36,7 +39,14 @@ class Donation(Base):
     category: Mapped[str] = mapped_column(
         Enum(DonationCategory, name="donationcategory"), nullable=False
     )
-    member_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Église destinataire du don (obligatoire)
+    church_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("churches.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    # Membre donateur (obligatoire)
+    member_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("members.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -44,3 +54,6 @@ class Donation(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+
+    church = relationship("Church", lazy="select")
+    member = relationship("Member", back_populates="donations", lazy="select")

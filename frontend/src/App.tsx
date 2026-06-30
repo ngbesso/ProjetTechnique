@@ -4,6 +4,7 @@ import { HomePage } from "./features/home/HomePage";
 import { LoginPage } from "./features/auth/LoginPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
 import { AdminPage } from "./features/admin/AdminPage";
+import { DonationPage } from "./features/donation/DonationPage";
 
 export default function App() {
   const page = usePage();
@@ -13,6 +14,7 @@ export default function App() {
 
   if (page === "login") return <LoginPage />;
   if (page === "register") return <RegisterPage />;
+  if (page === "donation") return <DonationPage />;
 
   if (page === "admin") {
     if (!user) return <LoginPage />;

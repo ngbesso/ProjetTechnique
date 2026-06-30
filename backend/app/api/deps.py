@@ -4,50 +4,30 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
-async def get_current_member_optional(token: str = Depends(oauth2_scheme)):
+def _decode_user_id(token: str | None) -> int | None:
+    """Décode le JWT et retourne l'user_id (sub), ou None si invalide."""
     if not token:
         return None
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-        return payload
-    except JWTError:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        sub = payload.get("sub")
+        return int(sub) if sub is not None else None
+    except (JWTError, ValueError):
         return None
 
 
-async def get_current_member(token: str = Depends(oauth2_scheme)):
-    member = await get_current_member_optional(token)
-    if not member:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Non authentifié",
-        )
-    return member
-
-
-async def get_current_admin(token: str = Depends(oauth2_scheme)):
-    member = await get_current_member(token)
-    if member.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès réservé aux administrateurs",
-        )
-    return member
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
 def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str | None, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
     credentials_exc = HTTPException(
@@ -55,20 +35,52 @@ def get_current_user(
         detail="Identifiants invalides",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        payload = jwt.decode(
-            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
-        )
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise credentials_exc
-    except JWTError:
+    user_id = _decode_user_id(token)
+    if user_id is None:
         raise credentials_exc
-
-    user = db.get(User, int(user_id))
+    user = db.get(User, user_id)
     if user is None or not user.is_active:
         raise credentials_exc
     return user
+
+
+def get_current_member_optional(
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Retourne le Member associé au token JWT, ou None si absent/invalide."""
+    user_id = _decode_user_id(token)
+    if user_id is None:
+        return None
+    from app.models.member import Member  # noqa: PLC0415
+    return db.scalar(select(Member).where(Member.user_id == user_id))
+
+
+def get_current_member(
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Retourne le Member associé au token JWT. Lève 401 si absent ou invalide."""
+    member = get_current_member_optional(token, db)
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentification requise ou profil membre introuvable",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return member
+
+
+def get_current_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Réservé aux utilisateurs avec permission globale '*' (administrateurs)."""
+    if not current_user.has_global_permission("*"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès réservé aux administrateurs",
+        )
+    return current_user
 
 
 def require_permissions(*required: str) -> Callable[..., User]:
