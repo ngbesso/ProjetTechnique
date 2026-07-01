@@ -86,6 +86,35 @@ export interface ChurchInput {
   founded_on?: string | null;
 }
 
+export interface MemberSelfInput {
+  first_name?: string;
+  last_name?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  family_status?: string | null;
+}
+
+export interface AssignmentRead {
+  role: string;
+  role_id: number;
+  church_id: number;
+  church_name: string;
+}
+
+export interface UserAdmin {
+  id: number;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  assignments: AssignmentRead[];
+}
+
+export interface RoleAssignmentInput {
+  user_id: number;
+  role_id: number;
+  church_id: number;
+}
+
 export type MemberStatus = "pending" | "active" | "inactive" | "rejected";
 
 export interface Member {
