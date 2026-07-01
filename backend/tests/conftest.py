@@ -11,7 +11,7 @@ from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.church import Church
-from app.models.member import Member  # noqa: F401 (enregistre la table)
+from app.models.member import Member, MemberStatus  # noqa: F401
 from app.models.rbac import Role, UserRole
 from app.models.user import User
 from app.seed import ensure_mother_church, seed_roles_permissions
@@ -81,3 +81,24 @@ def auth_header(client):
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
     return _header
+
+
+@pytest.fixture
+def make_member(db_session, make_user):
+    """Crée un User + un Member actif lié (nécessaire pour get_current_member)."""
+
+    def _make(email, church_id, password="secret123"):
+        user = make_user(email, password=password)
+        member = Member(
+            church_id=church_id,
+            first_name="Test",
+            last_name="Member",
+            email=email,
+            status=MemberStatus.active,
+            user_id=user.id,
+        )
+        db_session.add(member)
+        db_session.flush()
+        return member
+
+    return _make

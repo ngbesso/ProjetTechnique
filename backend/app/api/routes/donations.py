@@ -13,7 +13,9 @@ router = APIRouter(prefix="/api/donations", tags=["donations"])
 def _get_church_or_404(db: Session, church_id: int) -> Church:
     church = db.get(Church, church_id)
     if church is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Église introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Église introuvable"
+        )
     return church
 
 
@@ -64,10 +66,14 @@ def get_donation(
     """Retourne un don. Le membre ne peut accéder qu'à ses propres dons."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
+        )
 
     if donation.member_id != current_member.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
+        )
 
     return donation
 
@@ -81,10 +87,14 @@ def get_receipt(
     """Retourne le reçu fiscal d'un don."""
     donation = donation_service.get_donation(db, donation_id)
     if donation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Don introuvable"
+        )
 
     if donation.member_id != current_member.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit"
+        )
 
     return ReceiptRead(
         receipt_number=donation.receipt_number,
