@@ -29,7 +29,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" ;
 
 export type DonationCategory =
   | "soutien_spirituel"

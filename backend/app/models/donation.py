@@ -41,11 +41,17 @@ class Donation(Base):
     )
     # Église destinataire du don (obligatoire)
     church_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("churches.id", ondelete="RESTRICT"), nullable=False, index=True
+        Integer,
+        ForeignKey("churches.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     # Membre donateur (obligatoire)
     member_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("members.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("members.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
