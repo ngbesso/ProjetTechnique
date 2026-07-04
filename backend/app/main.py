@@ -6,6 +6,7 @@ from app.api.routes import (
     auth,
     admin_rbac,
     churches,
+    dashboard,
     donations,
     health,
     members,
@@ -49,6 +50,7 @@ app.include_router(sermons.router)
 app.include_router(admin_users.router)
 app.include_router(parameters.router)
 app.include_router(settings_routes.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/")
