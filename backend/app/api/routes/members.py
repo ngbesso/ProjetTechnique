@@ -279,3 +279,17 @@ def deactivate_member(
     db.commit()
     db.refresh(member)
     return member
+
+
+@router.post("/{member_id}/activate", response_model=MemberRead)
+def activate_member(
+    member_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    member = _load(db, member_id)
+    _ensure(current_user, member, "member:update")
+    member.status = MemberStatus.active
+    db.commit()
+    db.refresh(member)
+    return member
