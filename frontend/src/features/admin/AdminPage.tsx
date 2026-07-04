@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { DashboardPanel } from "./DashboardPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
@@ -14,6 +15,7 @@ import { UsersPanel } from "./UsersPanel";
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
 type Section =
+  | "dashboard"
   | "membres"
   | "eglises"
   | "dons"
@@ -24,6 +26,7 @@ type Section =
   | "parametres";
 
 const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
+  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
@@ -219,9 +222,7 @@ export function AdminPage() {
     (item) => !item.globalOnly || isGlobalAdmin,
   );
 
-  const [section, setSection] = useState<Section>(
-    isGlobalAdmin ? "utilisateurs" : "membres",
-  );
+  const [section, setSection] = useState<Section>("dashboard");
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
@@ -360,7 +361,9 @@ export function AdminPage() {
 
         {/* Content */}
         <main className={styles.content}>
-          {section === "utilisateurs" ? (
+          {section === "dashboard" ? (
+              <DashboardPanel />
+          ) : section === "utilisateurs" ? (
               <>
               <UsersPanel />
               <RbacPanel
