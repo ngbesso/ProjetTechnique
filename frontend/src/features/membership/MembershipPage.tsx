@@ -8,6 +8,8 @@ import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
 const FAMILY = ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"];
+const SEXE_OPTIONS = ["Masculin", "Féminin", "Autre"];
+const TODAY = new Date().toISOString().split("T")[0];
 
 const WHY_ITEMS = [
   {
@@ -34,13 +36,15 @@ interface FormState {
   email: string;
   address: string;
   birth_date: string;
+  sexe: string;
+  telephone: string;
   family_status: string;
   is_baptized: boolean;
 }
 
 const EMPTY: FormState = {
   church_id: "", first_name: "", last_name: "", email: "",
-  address: "", birth_date: "", family_status: "", is_baptized: false,
+  address: "", birth_date: "", sexe: "", telephone: "", family_status: "", is_baptized: false,
 };
 
 export function MembershipPage() {
@@ -60,6 +64,10 @@ export function MembershipPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.church_id) { setError("Veuillez choisir une église."); return; }
+    if (form.birth_date && form.birth_date > TODAY) {
+      setError("La date de naissance ne peut pas être une date future.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     const payload: MembershipInput = {
@@ -69,6 +77,8 @@ export function MembershipPage() {
       email: form.email.trim(),
       address: form.address.trim() || undefined,
       birth_date: form.birth_date || undefined,
+      sexe: form.sexe || undefined,
+      telephone: form.telephone.trim() || undefined,
       family_status: form.family_status || undefined,
       is_baptized: form.is_baptized,
     };
@@ -214,8 +224,26 @@ export function MembershipPage() {
 
                   <div className={styles.row}>
                     <div className={styles.col}>
+                      <label className={styles.label}>Sexe</label>
+                      <select className={styles.select} value={form.sexe}
+                        onChange={(e) => set("sexe", e.target.value)}>
+                        <option value="">—</option>
+                        {SEXE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className={styles.col}>
+                      <label className={styles.label}>Téléphone</label>
+                      <input className={styles.input} type="tel" value={form.telephone}
+                        placeholder="+1 (514) 000-0000"
+                        onChange={(e) => set("telephone", e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className={styles.row}>
+                    <div className={styles.col}>
                       <label className={styles.label}>Date de naissance</label>
                       <input className={styles.input} type="date" value={form.birth_date}
+                        max={TODAY}
                         onChange={(e) => set("birth_date", e.target.value)} />
                     </div>
                     <div className={styles.col}>

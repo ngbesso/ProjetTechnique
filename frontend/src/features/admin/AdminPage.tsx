@@ -21,14 +21,14 @@ type Section =
   | "pages"
   | "utilisateurs";
 
-const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
+const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
   { id: "membres", label: "Membres", icon: "👥" },
-  { id: "eglises", label: "Églises", icon: "⛪" },
+  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "evenements", label: "Événements", icon: "📅" },
-  { id: "pages", label: "Pages & Menu", icon: "📄" },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑" },
+  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
+  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
 ];
 
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
@@ -211,7 +211,14 @@ export function AdminPage() {
 
   const { count: pendingCount, refresh: refreshPending } = usePendingCount();
 
-  const [section, setSection] = useState<Section>("utilisateurs");
+  const isGlobalAdmin = user?.is_global_admin ?? false;
+  const NAV_ITEMS = ALL_NAV_ITEMS.filter(
+    (item) => !item.globalOnly || isGlobalAdmin,
+  );
+
+  const [section, setSection] = useState<Section>(
+    isGlobalAdmin ? "utilisateurs" : "membres",
+  );
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");

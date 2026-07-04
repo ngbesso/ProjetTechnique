@@ -16,6 +16,7 @@ class UserRead(BaseModel):
     created_at: datetime
     roles: list[str] = []
     permissions: list[str] = []
+    is_global_admin: bool = False
 
 
 class Token(BaseModel):

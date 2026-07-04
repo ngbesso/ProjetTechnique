@@ -57,8 +57,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
                 className={styles.btnSecondary}
                 onClick={() =>
                   navigate(
-                    user.permissions.includes("*") ||
-                      user.permissions.includes("rbac:manage")
+                    user.is_global_admin || user.roles.includes("admin")
                       ? "admin"
                       : "mon-profil",
                   )
