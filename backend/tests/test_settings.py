@@ -1,8 +1,9 @@
 """Tests pour GET /settings, PUT /settings/{key} et intégration auto-approve."""
+
 import re
 from datetime import date
 
-import pytest
+
 from sqlalchemy import select
 
 from app.models.church import Church
@@ -15,7 +16,12 @@ def _mother_id(db) -> int:
 def _request_membership(client, church_id, email, first="Test", last="User"):
     return client.post(
         "/members/request",
-        json={"church_id": church_id, "first_name": first, "last_name": last, "email": email},
+        json={
+            "church_id": church_id,
+            "first_name": first,
+            "last_name": last,
+            "email": email,
+        },
     )
 
 
@@ -129,7 +135,9 @@ def test_auto_approve_disabled_member_stays_pending(
     # S'assurer que le flag est désactivé (valeur par défaut du seed)
     client.put("/settings/auto_approve_members", json={"value": "false"}, headers=h)
 
-    r = _request_membership(client, _mother_id(db_session), "paulo@s.com", "Paulo", "Pending")
+    r = _request_membership(
+        client, _mother_id(db_session), "paulo@s.com", "Paulo", "Pending"
+    )
     assert r.status_code == 201
     body = r.json()
     assert body["status"] == "pending"
@@ -143,7 +151,9 @@ def test_auto_approve_enabled_member_becomes_active_with_code(
     h = auth_header("admin@s.com")
     client.put("/settings/auto_approve_members", json={"value": "true"}, headers=h)
 
-    r = _request_membership(client, _mother_id(db_session), "auto@s.com", "Auto", "Approved")
+    r = _request_membership(
+        client, _mother_id(db_session), "auto@s.com", "Auto", "Approved"
+    )
     assert r.status_code == 201
     body = r.json()
     assert body["status"] == "active"

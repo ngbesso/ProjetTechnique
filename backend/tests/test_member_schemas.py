@@ -2,18 +2,31 @@
 
 Aucune base de données, aucun HTTP — uniquement la logique de validation.
 """
+
 import pytest
 from datetime import date, timedelta
 from pydantic import ValidationError
 
-from app.schemas.member import MemberCreate, MembershipRequest, MemberSelfUpdate, MemberUpdate
+from app.schemas.member import (
+    MemberCreate,
+    MembershipRequest,
+    MemberSelfUpdate,
+    MemberUpdate,
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _base(**kwargs):
     """Champs minimaux pour MembershipRequest."""
-    return {"church_id": 1, "first_name": "X", "last_name": "Y", "email": "x@b.com", **kwargs}
+    return {
+        "church_id": 1,
+        "first_name": "X",
+        "last_name": "Y",
+        "email": "x@b.com",
+        **kwargs,
+    }
 
 
 def _future(days=1) -> date:

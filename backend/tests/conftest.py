@@ -17,7 +17,12 @@ from app.models.parameter import ParameterValue  # noqa: F401
 from app.models.rbac import Role, UserRole
 from app.models.setting import AppSetting  # noqa: F401
 from app.models.user import User
-from app.seed import ensure_mother_church, seed_parameters, seed_roles_permissions, seed_settings
+from app.seed import (
+    ensure_mother_church,
+    seed_parameters,
+    seed_roles_permissions,
+    seed_settings,
+)
 
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or (
     settings.database_url.rsplit("/", 1)[0] + "/obnl_test"

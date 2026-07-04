@@ -25,8 +25,20 @@ from app.schemas.dashboard import (
 
 router = APIRouter(prefix="/admin", tags=["dashboard"])
 
-MONTHS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-             "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+MONTHS_FR = [
+    "Jan",
+    "Fév",
+    "Mar",
+    "Avr",
+    "Mai",
+    "Juin",
+    "Juil",
+    "Août",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Déc",
+]
 
 
 def _six_months() -> list[tuple[int, int, str]]:
@@ -55,12 +67,15 @@ def get_dashboard(
 
     members_by_month: list[MonthCount] = []
     for y, m, label in _six_months():
-        cnt = db.scalar(
-            select(func.count(Member.id)).where(
-                func.extract("year", Member.created_at) == y,
-                func.extract("month", Member.created_at) == m,
+        cnt = (
+            db.scalar(
+                select(func.count(Member.id)).where(
+                    func.extract("year", Member.created_at) == y,
+                    func.extract("month", Member.created_at) == m,
+                )
             )
-        ) or 0
+            or 0
+        )
         members_by_month.append(MonthCount(month=label, count=cnt))
 
     total_members = sum(status_map.values())
@@ -76,9 +91,10 @@ def get_dashboard(
 
     # ── Églises ───────────────────────────────────────────────────────────────
     church_total = db.scalar(select(func.count(Church.id))) or 0
-    church_affiliates = db.scalar(
-        select(func.count(Church.id)).where(Church.parent_id.isnot(None))
-    ) or 0
+    church_affiliates = (
+        db.scalar(select(func.count(Church.id)).where(Church.parent_id.isnot(None)))
+        or 0
+    )
 
     eglise_stats = ChurchStats(total=church_total, affiliates=church_affiliates)
 
@@ -103,13 +119,16 @@ def get_dashboard(
 
     dons_by_month: list[MonthAmount] = []
     for y, m, label in _six_months():
-        amt = db.scalar(
-            select(func.sum(Donation.amount)).where(
-                Donation.currency == DonationCurrency.CAD,
-                func.extract("year", Donation.created_at) == y,
-                func.extract("month", Donation.created_at) == m,
+        amt = (
+            db.scalar(
+                select(func.sum(Donation.amount)).where(
+                    Donation.currency == DonationCurrency.CAD,
+                    func.extract("year", Donation.created_at) == y,
+                    func.extract("month", Donation.created_at) == m,
+                )
             )
-        ) or 0
+            or 0
+        )
         dons_by_month.append(MonthAmount(month=label, amount=float(amt)))
 
     don_stats = DonationStats(

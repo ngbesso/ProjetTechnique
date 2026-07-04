@@ -1,7 +1,7 @@
 import re
 from datetime import date
 
-import pytest
+
 from sqlalchemy import select
 
 from app.models.church import Church
@@ -46,7 +46,12 @@ def test_request_creates_pending_and_emails(client, fake_email, db_session):
 def test_request_unknown_church(client, fake_email):
     r = client.post(
         "/members/request",
-        json={"church_id": 999999, "first_name": "X", "last_name": "Y", "email": "x@b.com"},
+        json={
+            "church_id": 999999,
+            "first_name": "X",
+            "last_name": "Y",
+            "email": "x@b.com",
+        },
     )
     assert r.status_code == 404
 
@@ -61,9 +66,13 @@ def test_request_invalid_email(client, db_session):
 
 def test_request_with_sexe_and_telephone(client, fake_email, db_session):
     r = _request(
-        client, _mother_id(db_session),
-        email="ali@b.com", first="Ali", last="Baba",
-        sexe="Masculin", telephone="+1 514 555-9999",
+        client,
+        _mother_id(db_session),
+        email="ali@b.com",
+        first="Ali",
+        last="Baba",
+        sexe="Masculin",
+        telephone="+1 514 555-9999",
     )
     assert r.status_code == 201
     body = r.json()
@@ -82,13 +91,19 @@ def test_request_pending_has_no_member_code(client, fake_email, db_session):
 
 def test_request_birth_date_future_rejected(client, db_session):
     from datetime import timedelta
+
     future = (date.today() + timedelta(days=1)).isoformat()
     r = _request(client, _mother_id(db_session), "bd@b.com", birth_date=future)
     assert r.status_code == 422
 
 
 def test_request_birth_date_today_accepted(client, fake_email, db_session):
-    r = _request(client, _mother_id(db_session), "born@b.com", birth_date=date.today().isoformat())
+    r = _request(
+        client,
+        _mother_id(db_session),
+        "born@b.com",
+        birth_date=date.today().isoformat(),
+    )
     assert r.status_code == 201
 
 
@@ -116,7 +131,9 @@ def test_request_telephone_7_digits_accepted(client, fake_email, db_session):
 
 
 def test_request_telephone_formatted_accepted(client, fake_email, db_session):
-    r = _request(client, _mother_id(db_session), "telfmt@b.com", telephone="+1 (514) 555-0101")
+    r = _request(
+        client, _mother_id(db_session), "telfmt@b.com", telephone="+1 (514) 555-0101"
+    )
     assert r.status_code == 201
 
 
@@ -140,7 +157,9 @@ def test_admin_can_list_members(client, fake_email, make_user, auth_header, db_s
     assert r.json()["total"] >= 1
 
 
-def test_list_with_status_filter(client, fake_email, make_user, auth_header, db_session):
+def test_list_with_status_filter(
+    client, fake_email, make_user, auth_header, db_session
+):
     make_user("admin@b.com", roles=["admin"])
     _request(client, _mother_id(db_session), email="f@b.com")
     h = auth_header("admin@b.com")
@@ -213,8 +232,11 @@ def test_update_member(client, fake_email, make_user, auth_header, db_session):
     assert body["address"] == "12 rue des Lilas"
 
 
-def test_update_member_birth_date_future_rejected(client, fake_email, make_user, auth_header, db_session):
+def test_update_member_birth_date_future_rejected(
+    client, fake_email, make_user, auth_header, db_session
+):
     from datetime import timedelta
+
     make_user("admin@b.com", roles=["admin"])
     h = auth_header("admin@b.com")
     mid = _request(client, _mother_id(db_session), "upd2@b.com").json()["id"]
@@ -256,7 +278,9 @@ def test_approve_existing_user_sends_approval(
     assert fake_email.sent
 
 
-def test_approve_assigns_member_code(client, fake_email, make_user, auth_header, db_session):
+def test_approve_assigns_member_code(
+    client, fake_email, make_user, auth_header, db_session
+):
     make_user("admin@b.com", roles=["admin"])
     h = auth_header("admin@b.com")
     mid = _request(client, _mother_id(db_session), "code@b.com").json()["id"]
@@ -267,7 +291,9 @@ def test_approve_assigns_member_code(client, fake_email, make_user, auth_header,
     assert re.match(rf"MBR-{date.today().year}-\d{{4}}", code)
 
 
-def test_approve_sequential_member_codes(client, fake_email, make_user, auth_header, db_session):
+def test_approve_sequential_member_codes(
+    client, fake_email, make_user, auth_header, db_session
+):
     make_user("admin@b.com", roles=["admin"])
     h = auth_header("admin@b.com")
     mid1 = _request(client, _mother_id(db_session), "seq1@b.com").json()["id"]
@@ -279,7 +305,9 @@ def test_approve_sequential_member_codes(client, fake_email, make_user, auth_hea
     assert n2 == n1 + 1
 
 
-def test_cannot_approve_outside_scope(client, fake_email, make_user, auth_header, db_session):
+def test_cannot_approve_outside_scope(
+    client, fake_email, make_user, auth_header, db_session
+):
     make_user("boss@b.com", roles=["admin"])
     h = auth_header("boss@b.com")
     a = _affiliate(client, h, "A", "Ouest")
@@ -356,7 +384,9 @@ def test_me_shows_member_code(client, make_member, auth_header, db_session):
 # ── PATCH /members/me ─────────────────────────────────────────────────────────
 
 
-def test_patch_me_updates_sexe_and_telephone(client, make_member, auth_header, db_session):
+def test_patch_me_updates_sexe_and_telephone(
+    client, make_member, auth_header, db_session
+):
     church_id = _mother_id(db_session)
     make_member("patched@b.com", church_id)
     h = auth_header("patched@b.com")
@@ -371,7 +401,9 @@ def test_patch_me_updates_sexe_and_telephone(client, make_member, auth_header, d
     assert body["telephone"] == "+1 (514) 555-0101"
 
 
-def test_patch_me_telephone_too_short_rejected(client, make_member, auth_header, db_session):
+def test_patch_me_telephone_too_short_rejected(
+    client, make_member, auth_header, db_session
+):
     church_id = _mother_id(db_session)
     make_member("shorttel@b.com", church_id)
     r = client.patch(
@@ -382,8 +414,11 @@ def test_patch_me_telephone_too_short_rejected(client, make_member, auth_header,
     assert r.status_code == 422
 
 
-def test_patch_me_birth_date_future_rejected(client, make_member, auth_header, db_session):
+def test_patch_me_birth_date_future_rejected(
+    client, make_member, auth_header, db_session
+):
     from datetime import timedelta
+
     church_id = _mother_id(db_session)
     make_member("futurebd@b.com", church_id)
     future = (date.today() + timedelta(days=1)).isoformat()

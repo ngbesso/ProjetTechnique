@@ -49,9 +49,14 @@ def _ensure(user: User, member: Member, code: str) -> None:
 def _generate_member_code(db: Session) -> str:
     year = date.today().year
     prefix = f"MBR-{year}-"
-    count = db.scalar(
-        select(func.count()).select_from(Member).where(Member.member_code.like(f"{prefix}%"))
-    ) or 0
+    count = (
+        db.scalar(
+            select(func.count())
+            .select_from(Member)
+            .where(Member.member_code.like(f"{prefix}%"))
+        )
+        or 0
+    )
     return f"{prefix}{count + 1:04d}"
 
 
@@ -94,14 +99,24 @@ def _do_approve(
             )
         )
         if not exists:
-            db.add(UserRole(user_id=user.id, role_id=role_membre.id, church_id=member.church_id))
+            db.add(
+                UserRole(
+                    user_id=user.id, role_id=role_membre.id, church_id=member.church_id
+                )
+            )
 
     if invite_link:
         background.add_task(
-            membership_approved_invite, sender, member.email, member.first_name, invite_link
+            membership_approved_invite,
+            sender,
+            member.email,
+            member.first_name,
+            invite_link,
         )
     else:
-        background.add_task(membership_approved, sender, member.email, member.first_name)
+        background.add_task(
+            membership_approved, sender, member.email, member.first_name
+        )
 
 
 @router.post("/request", response_model=MemberRead, status_code=201)
@@ -121,7 +136,9 @@ def request_membership(
     if _auto_approve_enabled(db):
         _do_approve(member, db, background, sender)
     else:
-        background.add_task(membership_received, sender, member.email, member.first_name)
+        background.add_task(
+            membership_received, sender, member.email, member.first_name
+        )
 
     db.commit()
     db.refresh(member)
