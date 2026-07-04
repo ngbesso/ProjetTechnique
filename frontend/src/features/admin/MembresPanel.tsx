@@ -45,6 +45,7 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
         : "—";
 
     const details: { label: string; value: string }[] = [
+        { label: "Code membre", value: member.member_code ?? "—" },
         { label: "Église souhaitée", value: churchLabel },
         { label: "Courriel", value: member.email },
         { label: "Téléphone", value: member.telephone ?? "—" },

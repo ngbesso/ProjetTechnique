@@ -92,6 +92,7 @@ class MemberRead(BaseModel):
     family_status: str | None
     conversion_date: date | None
     is_baptized: bool
+    member_code: str | None
     status: str
     created_at: datetime
 

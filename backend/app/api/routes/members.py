@@ -1,4 +1,5 @@
 import secrets
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -45,6 +46,15 @@ def _ensure(user: User, member: Member, code: str) -> None:
         raise HTTPException(403, "Permission insuffisante sur cette église")
 
 
+def _generate_member_code(db: Session) -> str:
+    year = date.today().year
+    prefix = f"MBR-{year}-"
+    count = db.scalar(
+        select(func.count()).select_from(Member).where(Member.member_code.like(f"{prefix}%"))
+    ) or 0
+    return f"{prefix}{count + 1:04d}"
+
+
 def _auto_approve_enabled(db: Session) -> bool:
     row = db.get(AppSetting, "auto_approve_members")
     return row is not None and row.value == "true"
@@ -58,6 +68,8 @@ def _do_approve(
 ) -> None:
     """Approuve un membre : active le compte, crée/lie l'utilisateur, envoie l'email."""
     member.status = MemberStatus.active
+    if not member.member_code:
+        member.member_code = _generate_member_code(db)
 
     user = db.scalar(select(User).where(User.email == member.email))
     invite_link: str | None = None
