@@ -91,5 +91,15 @@ def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
         to,
         "Adhésion approuvée — activez votre compte",
         f"Bonjour {name}, votre adhésion a été approuvée. "
-        f"Définissez votre mot de passe pour accéder à votre espace : {link}",
+        f"Définissez votre mot de passe pour accéder à votre espace (lien valable 48 h) :\n{link}",
+    )
+
+
+def password_reset_email(sender: EmailSender, to: str, link: str) -> None:
+    sender.send(
+        to,
+        "Réinitialisation de votre mot de passe",
+        f"Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\n"
+        f"Cliquez sur le lien suivant pour choisir un nouveau mot de passe (valable 2 h) :\n{link}\n\n"
+        f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
     )

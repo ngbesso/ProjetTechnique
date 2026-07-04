@@ -29,6 +29,10 @@ class SetPasswordRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
 class RoleAssignmentRead(BaseModel):
     role: str
     role_id: int
