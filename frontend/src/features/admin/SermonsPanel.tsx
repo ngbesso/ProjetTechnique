@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
-import type { SermonInput, SermonStatus } from "../../types";
+import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
   title: "",
@@ -27,6 +27,11 @@ export function SermonsPanel() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingSermon, setEditingSermon] = useState<Sermon | null>(null);
+  const [editForm, setEditForm] = useState<SermonInput>(EMPTY);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const canManage =
     user?.permissions.includes("*") || user?.permissions.includes("sermon:manage");
@@ -69,6 +74,45 @@ export function SermonsPanel() {
       await remove(id);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Suppression impossible");
+    }
+  }
+
+  function openEdit(s: Sermon) {
+    setEditingSermon(s);
+    setEditForm({
+      title: s.title,
+      preacher: s.preacher,
+      sermon_date: s.sermon_date,
+      description: s.description ?? "",
+      series: s.series ?? "",
+      status: s.status,
+    });
+    setEditError("");
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingSermon) return;
+    if (!editForm.title.trim() || !editForm.preacher.trim() || !editForm.sermon_date) {
+      setEditError("Titre, prédicateur et date sont requis.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError("");
+    try {
+      await edit(editingSermon.id, {
+        title: editForm.title,
+        preacher: editForm.preacher,
+        sermon_date: editForm.sermon_date,
+        description: editForm.description || undefined,
+        series: editForm.series || undefined,
+        status: editForm.status,
+      });
+      setEditingSermon(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -200,6 +244,12 @@ export function SermonsPanel() {
                     <td className={styles.td}>
                       <div className={styles.actions}>
                         <button
+                          className={styles.btnOutlineSm}
+                          onClick={() => openEdit(s)}
+                        >
+                          Modifier
+                        </button>
+                        <button
                           className={styles.btnDanger}
                           onClick={() => handleDelete(s.id, s.title)}
                         >
@@ -214,6 +264,105 @@ export function SermonsPanel() {
           </table>
         )}
       </section>
+
+      {editingSermon && (
+        <div className={styles.modalOverlay} onClick={() => setEditingSermon(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalName}>Modifier le sermon</h2>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  {editingSermon.format === "video" ? "Vidéo" : "Audio"} · {editingSermon.sermon_date}
+                </span>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => setEditingSermon(null)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form id="editSermonForm" onSubmit={handleEditSubmit}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <input
+                    className={styles.input}
+                    placeholder="Titre *"
+                    required
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Prédicateur *"
+                    required
+                    value={editForm.preacher}
+                    onChange={(e) => setEditForm({ ...editForm, preacher: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    type="date"
+                    required
+                    value={editForm.sermon_date}
+                    onChange={(e) => setEditForm({ ...editForm, sermon_date: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Série (optionnel)"
+                    value={editForm.series ?? ""}
+                    onChange={(e) => setEditForm({ ...editForm, series: e.target.value })}
+                  />
+                  <select
+                    className={styles.select}
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, status: e.target.value as SermonStatus })
+                    }
+                  >
+                    {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    className={styles.input}
+                    placeholder="Description (optionnel)"
+                    value={editForm.description ?? ""}
+                    rows={3}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
+                </div>
+                {editError && (
+                  <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
+                    {editError}
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => setEditingSermon(null)}
+                  disabled={editSaving}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnPrimary}
+                  disabled={editSaving}
+                >
+                  {editSaving ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
