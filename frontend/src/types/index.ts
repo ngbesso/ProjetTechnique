@@ -59,7 +59,20 @@ export interface Donation {
   created_at: string;
 }
 
-export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
+export type District = string;
+
+export interface ParameterValue {
+  id: number;
+  category: string;
+  label: string;
+  position: number;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+  description: string;
+}
 
 export interface Church {
   id: number;

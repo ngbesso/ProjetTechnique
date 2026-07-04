@@ -10,7 +10,9 @@ from app.api.routes import (
     health,
     members,
     admin_users,
+    parameters,
     sermons,
+    settings as settings_routes,
 )
 from app.core.config import settings
 from app.seed import run as seed_run
@@ -45,6 +47,8 @@ app.include_router(members.router)
 app.include_router(donations.router)
 app.include_router(sermons.router)
 app.include_router(admin_users.router)
+app.include_router(parameters.router)
+app.include_router(settings_routes.router)
 
 
 @app.get("/")

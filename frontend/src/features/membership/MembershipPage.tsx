@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import styles from "./MembershipPage.module.css";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
+import { useParameters } from "../../hooks/useParameters";
 import { requestMembership } from "../../lib/api/members";
 import type { MembershipInput } from "../../types";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
-const FAMILY = ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"];
-const SEXE_OPTIONS = ["Masculin", "Féminin", "Autre"];
 const TODAY = new Date().toISOString().split("T")[0];
 
 const WHY_ITEMS = [
@@ -50,12 +49,14 @@ const EMPTY: FormState = {
 export function MembershipPage() {
   const navigate = useNavigate();
   const { churches, load } = useChurches();
+  const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
+  const { values: familyOptions, load: loadFamily } = useParameters("family_status");
   const [form, setForm] = useState<FormState>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ church: string } | null>(null);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -228,7 +229,7 @@ export function MembershipPage() {
                       <select className={styles.select} value={form.sexe}
                         onChange={(e) => set("sexe", e.target.value)}>
                         <option value="">—</option>
-                        {SEXE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        {sexeOptions.map((s) => <option key={s.id} value={s.label}>{s.label}</option>)}
                       </select>
                     </div>
                     <div className={styles.col}>
@@ -251,7 +252,7 @@ export function MembershipPage() {
                       <select className={styles.select} value={form.family_status}
                         onChange={(e) => set("family_status", e.target.value)}>
                         <option value="">—</option>
-                        {FAMILY.map((f) => <option key={f} value={f}>{f}</option>)}
+                        {familyOptions.map((f) => <option key={f.id} value={f.label}>{f.label}</option>)}
                       </select>
                     </div>
                   </div>

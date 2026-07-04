@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import styles from "../auth/SetPasswordPage.module.css";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
 import { useNavigate } from "../../context/RouterContext";
+import { useParameters } from "../../hooks/useParameters";
 import type { Member } from "../../types";
 
-const SEXE_OPTIONS = ["Masculin", "Féminin", "Autre"];
 const TODAY = new Date().toISOString().split("T")[0];
 
 export function MyProfilePage() {
@@ -13,13 +13,17 @@ export function MyProfilePage() {
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
+    const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
+    const { values: familyOptions, load: loadFamily } = useParameters("family_status");
 
     useEffect(() => {
         fetchMyProfile()
             .then(setM)
             .catch(() => setError("Aucune fiche membre n'est liée à votre compte."))
             .finally(() => setLoading(false));
-    }, []);
+        loadSexe();
+        loadFamily();
+    }, [loadSexe, loadFamily]);
 
     async function save(e: React.FormEvent) {
         e.preventDefault();
@@ -72,7 +76,7 @@ export function MyProfilePage() {
                         <select className={styles.input} value={m.sexe ?? ""}
                                 onChange={(e) => setM({ ...m, sexe: e.target.value || null })}>
                             <option value="">—</option>
-                            {SEXE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                            {sexeOptions.map((s) => <option key={s.id} value={s.label}>{s.label}</option>)}
                         </select>
 
                         <label className={styles.label}>Téléphone</label>
@@ -89,8 +93,8 @@ export function MyProfilePage() {
                         <select className={styles.input} value={m.family_status ?? ""}
                                 onChange={(e) => setM({ ...m, family_status: e.target.value || null })}>
                             <option value="">—</option>
-                            {["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"].map((f) => (
-                                <option key={f} value={f}>{f}</option>
+                            {familyOptions.map((f) => (
+                                <option key={f.id} value={f.label}>{f.label}</option>
                             ))}
                         </select>
 

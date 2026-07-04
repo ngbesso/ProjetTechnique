@@ -10,22 +10,22 @@ from app.core.email import (
     EmailSender,
     get_email_sender,
     membership_approved,
+    membership_approved_invite,
     membership_received,
 )
-from app.core.email import membership_approved_invite
 from app.core.config import settings
 from app.core.security import create_setup_token, hash_password
-from app.models.rbac import Role, UserRole
-from app.schemas.member import MemberSelfUpdate
-
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
+from app.models.rbac import Role, UserRole
+from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.member import (
     MemberCreate,
     MemberList,
     MemberRead,
+    MemberSelfUpdate,
     MembershipRequest,
     MemberUpdate,
 )
@@ -45,6 +45,53 @@ def _ensure(user: User, member: Member, code: str) -> None:
         raise HTTPException(403, "Permission insuffisante sur cette église")
 
 
+def _auto_approve_enabled(db: Session) -> bool:
+    row = db.get(AppSetting, "auto_approve_members")
+    return row is not None and row.value == "true"
+
+
+def _do_approve(
+    member: Member,
+    db: Session,
+    background: BackgroundTasks,
+    sender: EmailSender,
+) -> None:
+    """Approuve un membre : active le compte, crée/lie l'utilisateur, envoie l'email."""
+    member.status = MemberStatus.active
+
+    user = db.scalar(select(User).where(User.email == member.email))
+    invite_link: str | None = None
+    if user is None:
+        user = User(
+            email=member.email,
+            hashed_password=hash_password(secrets.token_urlsafe(16)),
+        )
+        db.add(user)
+        db.flush()
+        token = create_setup_token(user.id)
+        invite_link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
+    member.user_id = user.id
+
+    role_membre = db.scalar(select(Role).where(Role.name == "membre"))
+    if role_membre:
+        exists = db.scalar(
+            select(UserRole).where(
+                UserRole.user_id == user.id,
+                UserRole.role_id == role_membre.id,
+                UserRole.church_id == member.church_id,
+            )
+        )
+        if not exists:
+            db.add(UserRole(user_id=user.id, role_id=role_membre.id, church_id=member.church_id))
+
+    if invite_link:
+        background.add_task(
+            membership_approved_invite, sender, member.email, member.first_name, invite_link
+        )
+    else:
+        background.add_task(membership_approved, sender, member.email, member.first_name)
+
+
 @router.post("/request", response_model=MemberRead, status_code=201)
 def request_membership(
     data: MembershipRequest,
@@ -54,11 +101,18 @@ def request_membership(
 ):
     if not db.get(Church, data.church_id):
         raise HTTPException(404, "Église introuvable")
+
     member = Member(**data.model_dump(), status=MemberStatus.pending)
     db.add(member)
+    db.flush()
+
+    if _auto_approve_enabled(db):
+        _do_approve(member, db, background, sender)
+    else:
+        background.add_task(membership_received, sender, member.email, member.first_name)
+
     db.commit()
     db.refresh(member)
-    background.add_task(membership_received, sender, member.email, member.first_name)
     return member
 
 
@@ -181,51 +235,9 @@ def approve_member(
 ):
     member = _load(db, member_id)
     _ensure(current_user, member, "member:approve")
-    member.status = MemberStatus.active
-
-    # Option C : relier un compte existant, sinon en créer un et inviter.
-    user = db.scalar(select(User).where(User.email == member.email))
-    invite_link: str | None = None
-    if user is None:
-        user = User(
-            email=member.email, hashed_password=hash_password(secrets.token_urlsafe(16))
-        )
-        db.add(user)
-        db.flush()
-        token = create_setup_token(user.id)
-        invite_link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
-    member.user_id = user.id
-
-    # Rôle « membre » porté sur l'église du membre (si absent).
-    membre = db.scalar(select(Role).where(Role.name == "membre"))
-    if membre:
-        exists = db.scalar(
-            select(UserRole).where(
-                UserRole.user_id == user.id,
-                UserRole.role_id == membre.id,
-                UserRole.church_id == member.church_id,
-            )
-        )
-        if not exists:
-            db.add(
-                UserRole(user_id=user.id, role_id=membre.id, church_id=member.church_id)
-            )
-
+    _do_approve(member, db, background, sender)
     db.commit()
     db.refresh(member)
-
-    if invite_link:
-        background.add_task(
-            membership_approved_invite,
-            sender,
-            member.email,
-            member.first_name,
-            invite_link,
-        )
-    else:
-        background.add_task(
-            membership_approved, sender, member.email, member.first_name
-        )
     return member
 
 
