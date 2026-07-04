@@ -100,6 +100,9 @@ export function MyProfilePage() {
 
                         <p className={styles.sub} style={{ marginTop: ".75rem" }}>
                             Courriel : {m.email} · Statut : {m.status}
+                            {m.member_code && (
+                                <> · <strong style={{ color: "var(--vivid-violet)" }}>Code : {m.member_code}</strong></>
+                            )}
                         </p>
                         {saved && <p style={{ color: "#166534", fontSize: ".85rem" }}>Enregistré ✓</p>}
                         <button className={styles.submit}>Enregistrer</button>

@@ -146,6 +146,7 @@ export interface Member {
   family_status: string | null;
   conversion_date: string | null;
   is_baptized: boolean;
+  member_code: string | null;
   status: MemberStatus;
   created_at: string;
 }

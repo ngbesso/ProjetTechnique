@@ -34,6 +34,7 @@ class Member(Base):
     family_status: Mapped[str | None] = mapped_column(String(50), default=None)
     conversion_date: Mapped[date | None] = mapped_column(Date, default=None)
     is_baptized: Mapped[bool] = mapped_column(Boolean, default=False)
+    member_code: Mapped[str | None] = mapped_column(String(30), unique=True, default=None)
     status: Mapped[MemberStatus] = mapped_column(
         Enum(MemberStatus, native_enum=False, length=20), default=MemberStatus.pending
     )
