@@ -107,6 +107,7 @@ class MemberList(BaseModel):
 class MemberSelfUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
+    email: EmailStr | None = None
     address: str | None = None
     birth_date: date | None = None
     sexe: str | None = None
