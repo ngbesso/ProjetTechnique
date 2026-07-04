@@ -142,7 +142,9 @@ def test_forgot_password_unknown_email_no_email_sent(client, fake_email):
     assert not fake_email.sent
 
 
-def test_forgot_password_inactive_user_no_email_sent(client, fake_email, make_user, db_session):
+def test_forgot_password_inactive_user_no_email_sent(
+    client, fake_email, make_user, db_session
+):
     user = make_user("inactive@b.com")
     user.is_active = False
     db_session.flush()
@@ -156,7 +158,9 @@ def test_forgot_password_inactive_user_no_email_sent(client, fake_email, make_us
 def test_reset_password_success(client, make_user, db_session):
     user = make_user("reset@b.com")
     token = create_reset_token(user.id, user.token_version)
-    r = client.post("/auth/reset-password", json={"token": token, "password": "newpass99"})
+    r = client.post(
+        "/auth/reset-password", json={"token": token, "password": "newpass99"}
+    )
     assert r.status_code == 200
     assert "access_token" in r.json()
 
@@ -165,7 +169,9 @@ def test_reset_password_can_login_after(client, make_user, db_session):
     user = make_user("resetlogin@b.com", password="oldpass")
     token = create_reset_token(user.id, user.token_version)
     client.post("/auth/reset-password", json={"token": token, "password": "newpass99"})
-    r = client.post("/auth/login", data={"username": "resetlogin@b.com", "password": "newpass99"})
+    r = client.post(
+        "/auth/login", data={"username": "resetlogin@b.com", "password": "newpass99"}
+    )
     assert r.status_code == 200
 
 
@@ -173,26 +179,34 @@ def test_reset_password_token_single_use(client, make_user, db_session):
     user = make_user("singleuse@b.com")
     token = create_reset_token(user.id, user.token_version)
     client.post("/auth/reset-password", json={"token": token, "password": "newpass99"})
-    r = client.post("/auth/reset-password", json={"token": token, "password": "again999"})
+    r = client.post(
+        "/auth/reset-password", json={"token": token, "password": "again999"}
+    )
     assert r.status_code == 400
 
 
 def test_reset_password_wrong_purpose_rejected(client, make_user):
     user = make_user("wrongp@b.com")
     setup_token = create_setup_token(user.id, user.token_version)
-    r = client.post("/auth/reset-password", json={"token": setup_token, "password": "newpass99"})
+    r = client.post(
+        "/auth/reset-password", json={"token": setup_token, "password": "newpass99"}
+    )
     assert r.status_code == 400
 
 
 def test_set_password_wrong_purpose_rejected(client, make_user):
     user = make_user("wrongp2@b.com")
     reset_token = create_reset_token(user.id, user.token_version)
-    r = client.post("/auth/set-password", json={"token": reset_token, "password": "newpass99"})
+    r = client.post(
+        "/auth/set-password", json={"token": reset_token, "password": "newpass99"}
+    )
     assert r.status_code == 400
 
 
 def test_reset_password_invalid_token(client):
-    r = client.post("/auth/reset-password", json={"token": "garbage", "password": "newpass99"})
+    r = client.post(
+        "/auth/reset-password", json={"token": "garbage", "password": "newpass99"}
+    )
     assert r.status_code == 400
 
 

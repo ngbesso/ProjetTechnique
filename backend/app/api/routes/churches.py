@@ -22,9 +22,7 @@ def get_mother(db: Session) -> Church:
 
 
 @router.get("", response_model=list[ChurchRead])
-def list_churches(
-    db: Annotated[Session, Depends(get_db)], district: str | None = None
-):
+def list_churches(db: Annotated[Session, Depends(get_db)], district: str | None = None):
     query = select(Church)
     if district:
         query = query.where(Church.district == district)

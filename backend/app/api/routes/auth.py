@@ -20,7 +20,13 @@ from app.db.session import get_db
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
 from app.models.user import User
-from app.schemas.user import ForgotPasswordRequest, SetPasswordRequest, Token, UserCreate, UserRead
+from app.schemas.user import (
+    ForgotPasswordRequest,
+    SetPasswordRequest,
+    Token,
+    UserCreate,
+    UserRead,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,7 +48,9 @@ def to_read(user: User) -> dict:
 def _apply_new_password(user: User, password: str, db: Session) -> Token:
     """Met à jour le mot de passe, incrémente token_version et retourne un access token."""
     if len(password) < _MIN_PASSWORD_LENGTH:
-        raise HTTPException(422, f"Mot de passe trop court ({_MIN_PASSWORD_LENGTH} caractères minimum)")
+        raise HTTPException(
+            422, f"Mot de passe trop court ({_MIN_PASSWORD_LENGTH} caractères minimum)"
+        )
     user.hashed_password = hash_password(password)
     user.is_active = True
     user.token_version += 1

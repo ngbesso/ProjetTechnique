@@ -20,7 +20,10 @@ router = APIRouter(prefix="/parameters", tags=["paramètres"])
 
 def _check_category(category: str) -> None:
     if category not in VALID_CATEGORIES:
-        raise HTTPException(400, f"Catégorie inconnue. Valeurs acceptées : {', '.join(sorted(VALID_CATEGORIES))}")
+        raise HTTPException(
+            400,
+            f"Catégorie inconnue. Valeurs acceptées : {', '.join(sorted(VALID_CATEGORIES))}",
+        )
 
 
 def _require_admin(user: User) -> None:

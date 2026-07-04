@@ -1,5 +1,5 @@
 """Tests pour GET/POST /parameters/{category} et PATCH/DELETE /parameters/{id}."""
-import pytest
+
 from sqlalchemy import select
 
 from app.models.church import Church
@@ -146,7 +146,9 @@ def test_created_value_appears_in_list(client, make_user, auth_header):
 def test_rename_parameter_value(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     h = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/district", json={"label": "TempDist"}, headers=h).json()["id"]
+    pv_id = client.post(
+        "/parameters/district", json={"label": "TempDist"}, headers=h
+    ).json()["id"]
     r = client.patch(f"/parameters/{pv_id}", json={"label": "Renamed"}, headers=h)
     assert r.status_code == 200
     assert r.json()["label"] == "Renamed"
@@ -155,7 +157,9 @@ def test_rename_parameter_value(client, make_user, auth_header):
 def test_reorder_parameter_value(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     h = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/district", json={"label": "DistA", "position": 99}, headers=h).json()["id"]
+    pv_id = client.post(
+        "/parameters/district", json={"label": "DistA", "position": 99}, headers=h
+    ).json()["id"]
     r = client.patch(f"/parameters/{pv_id}", json={"position": 1}, headers=h)
     assert r.status_code == 200
     assert r.json()["position"] == 1
@@ -175,7 +179,9 @@ def test_rename_requires_global_admin(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     make_user("membre@p.com", roles=["membre"])
     h_admin = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/sexe", json={"label": "TmpForPatch"}, headers=h_admin).json()["id"]
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "TmpForPatch"}, headers=h_admin
+    ).json()["id"]
     r = client.patch(
         f"/parameters/{pv_id}",
         json={"label": "ShouldFail"},
@@ -190,7 +196,9 @@ def test_rename_requires_global_admin(client, make_user, auth_header):
 def test_delete_parameter_value(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     h = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/sexe", json={"label": "ToDelete"}, headers=h).json()["id"]
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "ToDelete"}, headers=h
+    ).json()["id"]
     r = client.delete(f"/parameters/{pv_id}", headers=h)
     assert r.status_code == 204
 
@@ -198,7 +206,9 @@ def test_delete_parameter_value(client, make_user, auth_header):
 def test_deleted_value_absent_from_list(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     h = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/sexe", json={"label": "WillDisappear"}, headers=h).json()["id"]
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "WillDisappear"}, headers=h
+    ).json()["id"]
     client.delete(f"/parameters/{pv_id}", headers=h)
     labels = [v["label"] for v in client.get("/parameters/sexe").json()]
     assert "WillDisappear" not in labels
@@ -214,6 +224,8 @@ def test_delete_requires_global_admin(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     make_user("membre@p.com", roles=["membre"])
     h_admin = auth_header("admin@p.com")
-    pv_id = client.post("/parameters/sexe", json={"label": "ForDelTest"}, headers=h_admin).json()["id"]
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "ForDelTest"}, headers=h_admin
+    ).json()["id"]
     r = client.delete(f"/parameters/{pv_id}", headers=auth_header("membre@p.com"))
     assert r.status_code == 403

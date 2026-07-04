@@ -33,7 +33,9 @@ class MembershipRequest(BaseModel):
             return v
         digits = "".join(c for c in v if c.isdigit())
         if len(digits) < 7:
-            raise ValueError("Le numéro de téléphone doit contenir au moins 7 chiffres.")
+            raise ValueError(
+                "Le numéro de téléphone doit contenir au moins 7 chiffres."
+            )
         return v
 
 
@@ -74,7 +76,9 @@ class MemberUpdate(BaseModel):
             return v
         digits = "".join(c for c in v if c.isdigit())
         if len(digits) < 7:
-            raise ValueError("Le numéro de téléphone doit contenir au moins 7 chiffres.")
+            raise ValueError(
+                "Le numéro de téléphone doit contenir au moins 7 chiffres."
+            )
         return v
 
 
@@ -126,5 +130,7 @@ class MemberSelfUpdate(BaseModel):
             return v
         digits = "".join(c for c in v if c.isdigit())
         if len(digits) < 7:
-            raise ValueError("Le numéro de téléphone doit contenir au moins 7 chiffres.")
+            raise ValueError(
+                "Le numéro de téléphone doit contenir au moins 7 chiffres."
+            )
         return v
