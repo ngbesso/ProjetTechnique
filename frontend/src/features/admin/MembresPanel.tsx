@@ -47,7 +47,9 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
     const details: { label: string; value: string }[] = [
         { label: "Église souhaitée", value: churchLabel },
         { label: "Courriel", value: member.email },
+        { label: "Téléphone", value: member.telephone ?? "—" },
         { label: "Adresse", value: member.address ?? "—" },
+        { label: "Sexe", value: member.sexe ?? "—" },
         { label: "Date de naissance", value: formatDate(member.birth_date) },
         { label: "Statut familial", value: member.family_status ?? "—" },
         { label: "Baptême", value: member.is_baptized ? "Baptisé(e)" : "Non baptisé(e)" },

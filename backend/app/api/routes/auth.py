@@ -29,6 +29,7 @@ def to_read(user: User) -> dict:
         "created_at": user.created_at,
         "roles": sorted({a.role.name for a in user.role_assignments}),
         "permissions": sorted(user.permission_codes),
+        "is_global_admin": user.has_global_permission("*"),
     }
 
 

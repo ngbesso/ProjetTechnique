@@ -5,6 +5,7 @@ export interface UserInfo {
   created_at: string;
   roles: string[];
   permissions: string[];
+  is_global_admin: boolean;
 }
 
 export interface Token {
@@ -91,6 +92,8 @@ export interface MemberSelfInput {
   last_name?: string;
   address?: string | null;
   birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
   family_status?: string | null;
 }
 
@@ -125,6 +128,8 @@ export interface Member {
   email: string;
   address: string | null;
   birth_date: string | null;
+  sexe: string | null;
+  telephone: string | null;
   family_status: string | null;
   conversion_date: string | null;
   is_baptized: boolean;
@@ -153,6 +158,8 @@ export interface MembershipInput {
   email: string;
   address?: string | null;
   birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
   family_status?: string | null;
   is_baptized: boolean;
 }
