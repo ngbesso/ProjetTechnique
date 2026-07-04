@@ -5,30 +5,36 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { DashboardPanel } from "./DashboardPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
+import { ParametresPanel } from "./ParametresPanel";
 import { SermonsPanel } from "./SermonsPanel";
-import {UsersPanel} from "./UsersPanel";
+import { UsersPanel } from "./UsersPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
 type Section =
+  | "dashboard"
   | "membres"
   | "eglises"
   | "dons"
   | "sermons"
   | "evenements"
   | "pages"
-  | "utilisateurs";
+  | "utilisateurs"
+  | "parametres";
 
-const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
+const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
+  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
-  { id: "eglises", label: "Églises", icon: "⛪" },
+  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "evenements", label: "Événements", icon: "📅" },
-  { id: "pages", label: "Pages & Menu", icon: "📄" },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑" },
+  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
+  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
+  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
 ];
 
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
@@ -211,7 +217,12 @@ export function AdminPage() {
 
   const { count: pendingCount, refresh: refreshPending } = usePendingCount();
 
-  const [section, setSection] = useState<Section>("utilisateurs");
+  const isGlobalAdmin = user?.is_global_admin ?? false;
+  const NAV_ITEMS = ALL_NAV_ITEMS.filter(
+    (item) => !item.globalOnly || isGlobalAdmin,
+  );
+
+  const [section, setSection] = useState<Section>("dashboard");
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
@@ -350,7 +361,9 @@ export function AdminPage() {
 
         {/* Content */}
         <main className={styles.content}>
-          {section === "utilisateurs" ? (
+          {section === "dashboard" ? (
+              <DashboardPanel />
+          ) : section === "utilisateurs" ? (
               <>
               <UsersPanel />
               <RbacPanel
@@ -382,6 +395,8 @@ export function AdminPage() {
               />
           ) : section === "sermons" ? (
               <SermonsPanel />
+          ) : section === "parametres" ? (
+              <ParametresPanel />
           ) : (
               <PlaceholderPanel label={activeLabel} />
           )}

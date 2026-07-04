@@ -84,9 +84,13 @@ export function LoginPage() {
             )}
 
             <div className={styles.forgotRow}>
-              <a href="#" className={styles.link}>
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => navigate("mot-de-passe-oublie")}
+              >
                 Mot de passe oublié ?
-              </a>
+              </button>
             </div>
 
             <button

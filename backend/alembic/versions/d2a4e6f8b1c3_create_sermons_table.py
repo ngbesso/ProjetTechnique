@@ -34,7 +34,9 @@ def upgrade() -> None:
         )
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_sermons_status ON sermons (status)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_sermons_sermon_date ON sermons (sermon_date)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_sermons_sermon_date ON sermons (sermon_date)"
+    )
 
 
 def downgrade() -> None:

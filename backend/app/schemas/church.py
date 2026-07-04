@@ -1,14 +1,11 @@
 from datetime import date, datetime
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
-
-District = Literal["Ouest", "Est", "Centre", "Sud", "Outremer"]
 
 
 class ChurchBase(BaseModel):
     name: str
-    district: District | None = None
+    district: str | None = None
     address: str | None = None
     phone: str | None = None
     email: EmailStr | None = None
@@ -23,7 +20,7 @@ class ChurchCreate(ChurchBase):
 
 class ChurchUpdate(BaseModel):
     name: str | None = None
-    district: District | None = None
+    district: str | None = None
     address: str | None = None
     phone: str | None = None
     email: EmailStr | None = None

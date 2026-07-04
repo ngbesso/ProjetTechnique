@@ -29,9 +29,10 @@ interface ModalProps {
     onApprove: (id: number) => Promise<void>;
     onReject: (id: number) => Promise<void>;
     onDeactivate: (id: number) => Promise<void>;
+    onActivate: (id: number) => Promise<void>;
 }
 
-function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onReject, onDeactivate }: ModalProps) {
+function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onReject, onDeactivate, onActivate }: ModalProps) {
     const [busy, setBusy] = useState(false);
     const meta = STATUS_META[member.status];
 
@@ -44,16 +45,26 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
         ? `${church.name}${church.district ? ` — ${church.district}` : ""}`
         : "—";
 
+    const churchFieldLabel = member.status === "active" ? "Église" : "Église souhaitée";
+
     const details: { label: string; value: string }[] = [
-        { label: "Église souhaitée", value: churchLabel },
+        { label: "Code membre", value: member.member_code ?? "—" },
+        { label: churchFieldLabel, value: churchLabel },
         { label: "Courriel", value: member.email },
+        { label: "Téléphone", value: member.telephone ?? "—" },
         { label: "Adresse", value: member.address ?? "—" },
+        { label: "Sexe", value: member.sexe ?? "—" },
         { label: "Date de naissance", value: formatDate(member.birth_date) },
         { label: "Statut familial", value: member.family_status ?? "—" },
         { label: "Baptême", value: member.is_baptized ? "Baptisé(e)" : "Non baptisé(e)" },
-        { label: "Date de conversion", value: formatDate(member.conversion_date) },
         { label: "Inscrit le", value: formatDate(member.created_at) },
     ];
+
+    const showFooter = canApprove && (
+        member.status === "pending" ||
+        member.status === "active" ||
+        member.status === "inactive"
+    );
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
@@ -84,7 +95,7 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
                     </dl>
                 </div>
 
-                {canApprove && (member.status === "pending" || member.status === "active") && (
+                {showFooter && (
                     <div className={styles.modalFooter}>
                         {member.status === "pending" && (
                             <>
@@ -104,6 +115,12 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
                                 {busy ? "…" : "Désactiver"}
                             </button>
                         )}
+                        {member.status === "inactive" && (
+                            <button className={styles.btnPrimary} disabled={busy}
+                                onClick={() => act(() => onActivate(member.id))}>
+                                {busy ? "…" : "Activer"}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -119,7 +136,7 @@ interface MembresPanelProps {
 
 export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const { user } = useAuth();
-    const { members, total, loading, error, load, approve, reject, deactivate } = useMembers();
+    const { members, total, loading, error, load, approve, reject, deactivate, activate } = useMembers();
     const { churches, load: loadChurches } = useChurches();
     const [q, setQ] = useState("");
     const [status, setStatus] = useState<MemberStatus | "">(initialStatus ?? "");
@@ -213,6 +230,12 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                                                         Désactiver
                                                     </button>
                                                 )}
+                                                {canApprove && m.status === "inactive" && (
+                                                    <button className={styles.btnPrimarySm}
+                                                        onClick={() => activate(m.id)}>
+                                                        Activer
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -232,6 +255,7 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                     onApprove={approve}
                     onReject={reject}
                     onDeactivate={deactivate}
+                    onActivate={activate}
                 />
             )}
         </div>

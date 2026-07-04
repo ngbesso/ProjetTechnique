@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import type { Member, MemberQuery } from "../types";
 import {
-    fetchMembers, approveMember, rejectMember, deactivateMember,
+    fetchMembers, approveMember, rejectMember, deactivateMember, activateMember,
 } from "../lib/api/members";
 
 export function useMembers() {
@@ -40,5 +40,10 @@ export function useMembers() {
         setMembers((prev) => prev.map((m) => (m.id === u.id ? u : m)));
     }, []);
 
-    return { members, total, loading, error, load, approve, reject, deactivate };
+    const activate = useCallback(async (id: number) => {
+        const u = await activateMember(id);
+        setMembers((prev) => prev.map((m) => (m.id === u.id ? u : m)));
+    }, []);
+
+    return { members, total, loading, error, load, approve, reject, deactivate, activate };
 }
