@@ -5,6 +5,7 @@ import {
   fetchSermonsAdmin,
   createSermon,
   updateSermon,
+  replaceSermonMedia,
   deleteSermon,
 } from "../lib/api/sermons";
 
@@ -60,10 +61,16 @@ export function useSermons() {
     return updated;
   }, []);
 
+  const replaceMedia = useCallback(async (id: number, file: File) => {
+    const updated = await replaceSermonMedia(id, file);
+    setSermons((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  }, []);
+
   const remove = useCallback(async (id: number) => {
     await deleteSermon(id);
     setSermons((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  return { sermons, total, loading, error, load, loadAdmin, add, edit, remove };
+  return { sermons, total, loading, error, load, loadAdmin, add, edit, replaceMedia, remove };
 }

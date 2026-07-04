@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
+import { sermonAdminStreamUrl } from "../../lib/api/sermons";
 import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
@@ -21,15 +22,18 @@ const STATUS_LABELS: Record<SermonStatus, string> = {
 
 export function SermonsPanel() {
   const { user } = useAuth();
-  const { sermons, loading, error, loadAdmin, add, edit, remove } = useSermons();
+  const { sermons, loading, error, loadAdmin, add, edit, replaceMedia, remove } = useSermons();
   const [form, setForm] = useState<SermonInput>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [playingSermon, setPlayingSermon] = useState<Sermon | null>(null);
   const [editingSermon, setEditingSermon] = useState<Sermon | null>(null);
   const [editForm, setEditForm] = useState<SermonInput>(EMPTY);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -87,6 +91,8 @@ export function SermonsPanel() {
       series: s.series ?? "",
       status: s.status,
     });
+    setEditFile(null);
+    if (editFileRef.current) editFileRef.current.value = "";
     setEditError("");
   }
 
@@ -108,6 +114,9 @@ export function SermonsPanel() {
         series: editForm.series || undefined,
         status: editForm.status,
       });
+      if (editFile) {
+        await replaceMedia(editingSermon.id, editFile);
+      }
       setEditingSermon(null);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
@@ -245,6 +254,12 @@ export function SermonsPanel() {
                       <div className={styles.actions}>
                         <button
                           className={styles.btnOutlineSm}
+                          onClick={() => setPlayingSermon(s)}
+                        >
+                          Lire
+                        </button>
+                        <button
+                          className={styles.btnOutlineSm}
                           onClick={() => openEdit(s)}
                         >
                           Modifier
@@ -264,6 +279,50 @@ export function SermonsPanel() {
           </table>
         )}
       </section>
+
+      {playingSermon && (
+        <div className={styles.modalOverlay} onClick={() => setPlayingSermon(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "640px" }}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalName}>{playingSermon.title}</h2>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  {playingSermon.preacher} · {playingSermon.sermon_date}
+                </span>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => setPlayingSermon(null)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {playingSermon.format === "video" ? (
+                <video
+                  controls
+                  autoPlay
+                  style={{ width: "100%", borderRadius: "6px" }}
+                  src={sermonAdminStreamUrl(playingSermon.id)}
+                />
+              ) : (
+                <audio
+                  controls
+                  autoPlay
+                  style={{ width: "100%" }}
+                  src={sermonAdminStreamUrl(playingSermon.id)}
+                />
+              )}
+              {playingSermon.description && (
+                <p style={{ marginTop: "1rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                  {playingSermon.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {editingSermon && (
         <div className={styles.modalOverlay} onClick={() => setEditingSermon(null)}>
@@ -334,6 +393,21 @@ export function SermonsPanel() {
                     rows={3}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   />
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem" }}>
+                      Remplacer le fichier média (optionnel)
+                    </label>
+                    <input
+                      ref={editFileRef}
+                      className={styles.input}
+                      type="file"
+                      accept="audio/*,video/*"
+                      onChange={(e) => setEditFile(e.target.files?.[0] ?? null)}
+                    />
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+                      Actuel : {editingSermon.format === "video" ? "Vidéo" : "Audio"} — laissez vide pour conserver le fichier existant.
+                    </p>
+                  </div>
                 </div>
                 {editError && (
                   <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
