@@ -9,12 +9,16 @@
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: var(--sidebar-w);
-  flex-shrink: 0;
+  height: 100vh;
   background: var(--deep-violet);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
 }
 
 .sidebarBrand {
@@ -128,10 +132,14 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  margin-left: var(--sidebar-w);
 }
 
 /* ── Top bar ────────────────────────────────────────────────── */
 .topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -519,6 +527,7 @@
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { width: 56px; }
+  .main { margin-left: 56px; }
   .brandName, .brandSub, .navItem span:not(.navIcon), .backBtn { display: none; }
   .navItem { justify-content: center; padding: 0.75rem; }
   .sidebarBrand { padding: 1rem 0.5rem; justify-content: center; }
