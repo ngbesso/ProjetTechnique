@@ -5,6 +5,7 @@ export interface UserInfo {
   created_at: string;
   roles: string[];
   permissions: string[];
+  is_global_admin: boolean;
 }
 
 export interface Token {
@@ -29,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" ;
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -58,7 +59,20 @@ export interface Donation {
   created_at: string;
 }
 
-export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
+export type District = string;
+
+export interface ParameterValue {
+  id: number;
+  category: string;
+  label: string;
+  position: number;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+  description: string;
+}
 
 export interface Church {
   id: number;
@@ -89,8 +103,11 @@ export interface ChurchInput {
 export interface MemberSelfInput {
   first_name?: string;
   last_name?: string;
+  email?: string;
   address?: string | null;
   birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
   family_status?: string | null;
 }
 
@@ -125,9 +142,12 @@ export interface Member {
   email: string;
   address: string | null;
   birth_date: string | null;
+  sexe: string | null;
+  telephone: string | null;
   family_status: string | null;
   conversion_date: string | null;
   is_baptized: boolean;
+  member_code: string | null;
   status: MemberStatus;
   created_at: string;
 }
@@ -153,6 +173,8 @@ export interface MembershipInput {
   email: string;
   address?: string | null;
   birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
   family_status?: string | null;
   is_baptized: boolean;
 }

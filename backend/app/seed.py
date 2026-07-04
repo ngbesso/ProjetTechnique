@@ -6,8 +6,16 @@ from app.core.permissions import DEFAULT_ROLES, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
+from app.models.parameter import ParameterValue
+from app.models.setting import AppSetting
 from app.models.rbac import Permission, Role, UserRole
 from app.models.user import User
+
+DEFAULT_PARAMETERS: dict[str, list[str]] = {
+    "sexe": ["Masculin", "Féminin", "Autre"],
+    "family_status": ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"],
+    "district": ["Ouest", "Est", "Centre", "Sud", "Outremer"],
+}
 
 MOTHER_NAME = "Église mère (Mission)"
 
@@ -70,12 +78,36 @@ def seed_admin_user(db: Session) -> None:
         print(f"[seed] Rôle admin attribué à : {settings.admin_email}")
 
 
+def seed_parameters(db: Session) -> None:
+    """Insère (idempotent) les valeurs de paramètres par défaut."""
+    for category, labels in DEFAULT_PARAMETERS.items():
+        for pos, label in enumerate(labels):
+            exists = db.scalar(
+                select(ParameterValue).where(
+                    ParameterValue.category == category,
+                    ParameterValue.label == label,
+                )
+            )
+            if exists is None:
+                db.add(ParameterValue(category=category, label=label, position=pos))
+
+
+def seed_settings(db: Session) -> None:
+    """Insère (idempotent) les paramètres système par défaut."""
+    defaults = {"auto_approve_members": "false"}
+    for key, value in defaults.items():
+        if db.get(AppSetting, key) is None:
+            db.add(AppSetting(key=key, value=value))
+
+
 def run() -> None:
     db = SessionLocal()
     try:
         seed_roles_permissions(db)
         ensure_mother_church(db)
         seed_admin_user(db)
+        seed_parameters(db)
+        seed_settings(db)
         db.commit()
         print("[seed] Initialisation terminée.")
     finally:

@@ -1,21 +1,22 @@
 import { useState } from "react";
 import styles from "./AuthPage.module.css";
-import { setPassword, fetchMe } from "../../lib/api/auth";
+import { resetPassword, fetchMe } from "../../lib/api/auth";
 import { setToken } from "../../lib/api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
-function IconKey() {
+function IconLock() {
     return (
         <svg viewBox="0 0 24 24">
-            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
     );
 }
 
-export function SetPasswordPage({ token }: { token: string }) {
+export function ResetPasswordPage({ token }: { token: string }) {
     const { setUser } = useAuth();
     const navigate = useNavigate();
     const [pwd, setPwd] = useState("");
@@ -30,13 +31,13 @@ export function SetPasswordPage({ token }: { token: string }) {
         setBusy(true);
         setError("");
         try {
-            const { access_token } = await setPassword(token, pwd);
+            const { access_token } = await resetPassword(token, pwd);
             setToken(access_token);
             setUser(await fetchMe());
             window.history.replaceState({}, "", "/");
-            navigate("mon-profil");
+            navigate("home");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Ce lien est invalide ou a déjà été utilisé.");
+            setError(err instanceof Error ? err.message : "Ce lien est invalide ou a expiré.");
         } finally {
             setBusy(false);
         }
@@ -52,18 +53,18 @@ export function SetPasswordPage({ token }: { token: string }) {
                     <div className={styles.cardBody}>
 
                         <div className={styles.iconWrap}>
-                            <IconKey />
+                            <IconLock />
                         </div>
 
-                        <h1 className={styles.title}>Activez votre compte</h1>
+                        <h1 className={styles.title}>Nouveau mot de passe</h1>
                         <p className={styles.sub}>
-                            Bienvenue ! Choisissez un mot de passe pour accéder à votre espace membre.
-                            Ce lien est valable <strong>48 heures</strong> et ne peut être utilisé qu'une seule fois.
+                            Choisissez un nouveau mot de passe sécurisé pour votre compte.
+                            Ce lien est valable <strong>2 heures</strong> et ne peut être utilisé qu'une seule fois.
                         </p>
 
                         <form onSubmit={submit} noValidate>
                             <div className={styles.fieldGroup}>
-                                <label className={styles.label} htmlFor="pwd">Mot de passe</label>
+                                <label className={styles.label} htmlFor="pwd">Nouveau mot de passe</label>
                                 <input
                                     id="pwd"
                                     className={styles.input}
@@ -92,13 +93,13 @@ export function SetPasswordPage({ token }: { token: string }) {
                             {error && <p className={styles.error} role="alert">{error}</p>}
 
                             <button className={styles.btn} disabled={busy}>
-                                {busy ? "Activation en cours…" : "Activer mon compte"}
+                                {busy ? "Enregistrement…" : "Enregistrer le mot de passe"}
                             </button>
                         </form>
 
                         <div className={styles.divider} />
                         <button className={styles.btnGhost} onClick={() => navigate("login")}>
-                            Déjà un compte ? Se connecter
+                            ← Retour à la connexion
                         </button>
                     </div>
                 </div>

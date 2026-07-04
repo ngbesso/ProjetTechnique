@@ -8,18 +8,26 @@ import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
 import { SermonsPage } from "./features/sermons/SermonsPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
+import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
+import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
 import {MyProfilePage} from "./features/member/MyProfilePage";
 
 export default function App() {
   const page = usePage();
   const { user, loading } = useAuth();
 
-  const inviteToken = new URLSearchParams(window.location.search).get("token");
+  const params = new URLSearchParams(window.location.search);
+
+  const resetToken = params.get("reset");
+  if (resetToken) return <ResetPasswordPage token={resetToken} />;
+
+  const inviteToken = params.get("token");
   if (inviteToken) return <SetPasswordPage token={inviteToken} />;
 
   if (loading) return <div className="loading">Chargement…</div>;
 
   if (page === "login") return <LoginPage />;
+  if (page === "mot-de-passe-oublie") return <ForgotPasswordPage />;
   /*if (page === "register") return <RegisterPage />;*/
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;

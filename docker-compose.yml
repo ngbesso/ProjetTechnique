@@ -40,7 +40,7 @@ services:
     volumes:
       - ./backend:/app
     depends_on:
-      mailpit:
+      "mailpit":
         condition: service_started
       postgres:
         condition: service_healthy

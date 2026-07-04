@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
+import { useParameters } from "../../hooks/useParameters";
 import type { Church, ChurchInput, District } from "../../types";
-
-const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
@@ -23,6 +22,7 @@ function churchToForm(c: Church): ChurchInput {
 export function EglisesPanel() {
     const { user } = useAuth();
     const { churches, loading, error, load, add, edit, remove } = useChurches();
+    const { values: districtValues, load: loadDistricts } = useParameters("district");
     const [form, setForm] = useState<ChurchInput>(EMPTY);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
@@ -34,7 +34,8 @@ export function EglisesPanel() {
 
     useEffect(() => {
         load();
-    }, [load]);
+        loadDistricts();
+    }, [load, loadDistricts]);
 
     function startEdit(c: Church) {
         setEditingId(c.id);
@@ -94,7 +95,7 @@ export function EglisesPanel() {
                         <select className={styles.select} value={form.district ?? ""}
                                 onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}>
                             <option value="">District…</option>
-                            {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                            {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
                         </select>
                         <input className={styles.input} placeholder="Pasteur / représentant"
                                value={form.pastor_name ?? ""} onChange={(e) => setForm({ ...form, pastor_name: e.target.value })} />

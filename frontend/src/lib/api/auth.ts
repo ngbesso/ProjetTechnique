@@ -24,3 +24,11 @@ export function logout(): void {
 export function setPassword(token: string, password: string): Promise<Token> {
   return http.post<Token>("/auth/set-password", { token, password });
 }
+
+export function forgotPassword(email: string): Promise<void> {
+  return http.post<void>("/auth/forgot-password", { email });
+}
+
+export function resetPassword(token: string, password: string): Promise<Token> {
+  return http.post<Token>("/auth/reset-password", { token, password });
+}

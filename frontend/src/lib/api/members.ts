@@ -23,6 +23,10 @@ export function rejectMember(id: number): Promise<Member> {
 export function deactivateMember(id: number): Promise<Member> {
     return http.post<Member>(`/members/${id}/deactivate`, {});
 }
+
+export function activateMember(id: number): Promise<Member> {
+    return http.post<Member>(`/members/${id}/activate`, {});
+}
 export function requestMembership(data: MembershipInput): Promise<Member> {
     return http.post<Member>("/members/request", data);
 }

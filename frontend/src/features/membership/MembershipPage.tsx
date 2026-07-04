@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import styles from "./MembershipPage.module.css";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
+import { useParameters } from "../../hooks/useParameters";
 import { requestMembership } from "../../lib/api/members";
 import type { MembershipInput } from "../../types";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
-const FAMILY = ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"];
+const TODAY = new Date().toISOString().split("T")[0];
 
 const WHY_ITEMS = [
   {
@@ -34,24 +35,28 @@ interface FormState {
   email: string;
   address: string;
   birth_date: string;
+  sexe: string;
+  telephone: string;
   family_status: string;
   is_baptized: boolean;
 }
 
 const EMPTY: FormState = {
   church_id: "", first_name: "", last_name: "", email: "",
-  address: "", birth_date: "", family_status: "", is_baptized: false,
+  address: "", birth_date: "", sexe: "", telephone: "", family_status: "", is_baptized: false,
 };
 
 export function MembershipPage() {
   const navigate = useNavigate();
   const { churches, load } = useChurches();
+  const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
+  const { values: familyOptions, load: loadFamily } = useParameters("family_status");
   const [form, setForm] = useState<FormState>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ church: string } | null>(null);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -60,6 +65,10 @@ export function MembershipPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.church_id) { setError("Veuillez choisir une église."); return; }
+    if (form.birth_date && form.birth_date > TODAY) {
+      setError("La date de naissance ne peut pas être une date future.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     const payload: MembershipInput = {
@@ -69,6 +78,8 @@ export function MembershipPage() {
       email: form.email.trim(),
       address: form.address.trim() || undefined,
       birth_date: form.birth_date || undefined,
+      sexe: form.sexe || undefined,
+      telephone: form.telephone.trim() || undefined,
       family_status: form.family_status || undefined,
       is_baptized: form.is_baptized,
     };
@@ -214,8 +225,26 @@ export function MembershipPage() {
 
                   <div className={styles.row}>
                     <div className={styles.col}>
+                      <label className={styles.label}>Sexe</label>
+                      <select className={styles.select} value={form.sexe}
+                        onChange={(e) => set("sexe", e.target.value)}>
+                        <option value="">—</option>
+                        {sexeOptions.map((s) => <option key={s.id} value={s.label}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div className={styles.col}>
+                      <label className={styles.label}>Téléphone</label>
+                      <input className={styles.input} type="tel" value={form.telephone}
+                        placeholder="+1 (514) 000-0000"
+                        onChange={(e) => set("telephone", e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className={styles.row}>
+                    <div className={styles.col}>
                       <label className={styles.label}>Date de naissance</label>
                       <input className={styles.input} type="date" value={form.birth_date}
+                        max={TODAY}
                         onChange={(e) => set("birth_date", e.target.value)} />
                     </div>
                     <div className={styles.col}>
@@ -223,7 +252,7 @@ export function MembershipPage() {
                       <select className={styles.select} value={form.family_status}
                         onChange={(e) => set("family_status", e.target.value)}>
                         <option value="">—</option>
-                        {FAMILY.map((f) => <option key={f} value={f}>{f}</option>)}
+                        {familyOptions.map((f) => <option key={f.id} value={f.label}>{f.label}</option>)}
                       </select>
                     </div>
                   </div>
