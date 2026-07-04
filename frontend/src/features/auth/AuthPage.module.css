@@ -1,0 +1,237 @@
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(150deg, #f5f3ff 0%, #ede9fe 50%, #f0f4ff 100%);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow:
+    0 2px 8px rgba(83, 74, 183, 0.08),
+    0 12px 40px rgba(83, 74, 183, 0.14);
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+}
+
+.cardTop {
+  height: 5px;
+  background: linear-gradient(90deg, var(--vivid-violet) 0%, #a78bfa 100%);
+}
+
+.cardBody {
+  padding: 2.5rem 2.25rem 2rem;
+}
+
+/* ── Icon ────────────────────────────────────────────────────────────────── */
+.iconWrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: rgba(83, 74, 183, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vivid-violet);
+  margin-bottom: 1.25rem;
+}
+
+.iconWrap svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--vivid-violet);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+.title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0 0 0.4rem;
+  line-height: 1.2;
+}
+
+.sub {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0 0 2rem;
+  line-height: 1.6;
+}
+
+/* ── Form fields ─────────────────────────────────────────────────────────── */
+.fieldGroup {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.35rem;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--vivid-violet);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  width: 100%;
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  box-shadow: 0 3px 12px rgba(83, 74, 183, 0.3);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--vivid-violet-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(83, 74, 183, 0.35);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btnGhost {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.55rem;
+  margin-top: 0.5rem;
+  border-radius: var(--radius);
+  transition: color 0.15s, background 0.15s;
+}
+
+.btnGhost:hover {
+  color: var(--vivid-violet);
+  background: rgba(83, 74, 183, 0.05);
+}
+
+/* ── Feedback ────────────────────────────────────────────────────────────── */
+.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+  line-height: 1.4;
+}
+
+.sentBox {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.sentIcon {
+  width: 44px;
+  height: 44px;
+  background: rgba(22, 163, 74, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+}
+
+.sentIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #16a34a;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sentTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #166534;
+  margin: 0 0 0.4rem;
+}
+
+.sentText {
+  font-size: 0.85rem;
+  color: #15803d;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.5rem 0 1.25rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .main {
+    padding: 1.5rem 1rem;
+    align-items: flex-start;
+  }
+
+  .card {
+    border-radius: 14px;
+  }
+
+  .cardBody {
+    padding: 2rem 1.25rem 1.5rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+}

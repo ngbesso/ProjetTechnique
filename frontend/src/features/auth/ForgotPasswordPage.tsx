@@ -1,7 +1,26 @@
 import { useState } from "react";
-import styles from "./SetPasswordPage.module.css";
+import styles from "./AuthPage.module.css";
 import { forgotPassword } from "../../lib/api/auth";
 import { useNavigate } from "../../context/RouterContext";
+import { SiteHeader } from "../../components/layout/SiteHeader";
+import { SiteFooter } from "../../components/layout/SiteFooter";
+
+function IconEnvelope() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+        </svg>
+    );
+}
+
+function IconCheck() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12" />
+        </svg>
+    );
+}
 
 export function ForgotPasswordPage() {
     const navigate = useNavigate();
@@ -20,55 +39,80 @@ export function ForgotPasswordPage() {
         }
     }
 
-    if (sent) {
-        return (
-            <div className={styles.page}>
-                <div className={styles.card}>
-                    <h1 className={styles.title}>Courriel envoyé</h1>
-                    <p className={styles.sub}>
-                        Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation dans les prochaines minutes.
-                        Le lien est valable <strong>2 heures</strong>.
-                    </p>
-                    <button className={styles.submit} onClick={() => navigate("login")}>
-                        Retour à la connexion
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className={styles.page}>
-            <form className={styles.card} onSubmit={submit}>
-                <h1 className={styles.title}>Mot de passe oublié</h1>
-                <p className={styles.sub}>
-                    Entrez votre adresse courriel pour recevoir un lien de réinitialisation.
-                </p>
-                <label className={styles.label}>Adresse courriel</label>
-                <input
-                    className={styles.input}
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    placeholder="vous@exemple.com"
-                />
-                <button className={styles.submit} disabled={busy}>
-                    {busy ? "Envoi…" : "Envoyer le lien"}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => navigate("login")}
-                    style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        marginTop: ".75rem", fontSize: ".85rem", color: "var(--text-muted)",
-                        display: "block", width: "100%", textAlign: "center",
-                    }}
-                >
-                    ← Retour à la connexion
-                </button>
-            </form>
+            <SiteHeader />
+
+            <main className={styles.main}>
+                <div className={styles.card}>
+                    <div className={styles.cardTop} />
+                    <div className={styles.cardBody}>
+
+                        <div className={styles.iconWrap}>
+                            <IconEnvelope />
+                        </div>
+
+                        <h1 className={styles.title}>Mot de passe oublié ?</h1>
+                        <p className={styles.sub}>
+                            Entrez votre adresse courriel et nous vous enverrons un lien
+                            pour réinitialiser votre mot de passe.
+                        </p>
+
+                        {sent ? (
+                            <>
+                                <div className={styles.sentBox}>
+                                    <div className={styles.sentIcon}>
+                                        <IconCheck />
+                                    </div>
+                                    <p className={styles.sentTitle}>Courriel envoyé</p>
+                                    <p className={styles.sentText}>
+                                        Si un compte existe avec l'adresse <strong>{email}</strong>,
+                                        vous recevrez un lien valable <strong>2 heures</strong>.
+                                        Vérifiez aussi vos indésirables.
+                                    </p>
+                                </div>
+                                <button className={styles.btn} onClick={() => navigate("login")}>
+                                    Retour à la connexion
+                                </button>
+                                <button className={styles.btnGhost} onClick={() => setSent(false)}>
+                                    Renvoyer un lien
+                                </button>
+                            </>
+                        ) : (
+                            <form onSubmit={submit} noValidate>
+                                <div className={styles.fieldGroup}>
+                                    <label className={styles.label} htmlFor="email">Adresse courriel</label>
+                                    <input
+                                        id="email"
+                                        className={styles.input}
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        autoComplete="email"
+                                        placeholder="vous@exemple.com"
+                                    />
+                                </div>
+
+                                <button className={styles.btn} disabled={busy}>
+                                    {busy ? "Envoi en cours…" : "Envoyer le lien"}
+                                </button>
+
+                                <div className={styles.divider} />
+                                <button
+                                    type="button"
+                                    className={styles.btnGhost}
+                                    onClick={() => navigate("login")}
+                                >
+                                    ← Retour à la connexion
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            <SiteFooter />
         </div>
     );
 }
