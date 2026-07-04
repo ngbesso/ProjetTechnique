@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
-import { sermonAdminStreamUrl } from "../../lib/api/sermons";
+import { fetchSermonAdminMediaUrl } from "../../lib/api/sermons";
 import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
@@ -30,6 +30,8 @@ export function SermonsPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [playingSermon, setPlayingSermon] = useState<Sermon | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [editingSermon, setEditingSermon] = useState<Sermon | null>(null);
   const [editForm, setEditForm] = useState<SermonInput>(EMPTY);
   const [editFile, setEditFile] = useState<File | null>(null);
@@ -78,6 +80,20 @@ export function SermonsPanel() {
       await remove(id);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Suppression impossible");
+    }
+  }
+
+  async function openPlayer(s: Sermon) {
+    setPlayingSermon(s);
+    setMediaUrl(null);
+    setMediaLoading(true);
+    try {
+      const res = await fetchSermonAdminMediaUrl(s.id);
+      setMediaUrl(res.url);
+    } catch {
+      setMediaUrl(null);
+    } finally {
+      setMediaLoading(false);
     }
   }
 
@@ -254,7 +270,7 @@ export function SermonsPanel() {
                       <div className={styles.actions}>
                         <button
                           className={styles.btnOutlineSm}
-                          onClick={() => setPlayingSermon(s)}
+                          onClick={() => openPlayer(s)}
                         >
                           Lire
                         </button>
@@ -281,7 +297,7 @@ export function SermonsPanel() {
       </section>
 
       {playingSermon && (
-        <div className={styles.modalOverlay} onClick={() => setPlayingSermon(null)}>
+        <div className={styles.modalOverlay} onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "640px" }}>
             <div className={styles.modalHeader}>
               <div>
@@ -292,27 +308,37 @@ export function SermonsPanel() {
               </div>
               <button
                 className={styles.modalClose}
-                onClick={() => setPlayingSermon(null)}
+                onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}
                 aria-label="Fermer"
               >
                 ✕
               </button>
             </div>
             <div className={styles.modalBody}>
-              {playingSermon.format === "video" ? (
-                <video
-                  controls
-                  autoPlay
-                  style={{ width: "100%", borderRadius: "6px" }}
-                  src={sermonAdminStreamUrl(playingSermon.id)}
-                />
-              ) : (
-                <audio
-                  controls
-                  autoPlay
-                  style={{ width: "100%" }}
-                  src={sermonAdminStreamUrl(playingSermon.id)}
-                />
+              {mediaLoading && (
+                <p style={{ textAlign: "center", color: "var(--text-muted)" }}>Chargement…</p>
+              )}
+              {!mediaLoading && mediaUrl && (
+                playingSermon.format === "video" ? (
+                  <video
+                    controls
+                    autoPlay
+                    style={{ width: "100%", borderRadius: "6px" }}
+                    src={mediaUrl}
+                  />
+                ) : (
+                  <audio
+                    controls
+                    autoPlay
+                    style={{ width: "100%" }}
+                    src={mediaUrl}
+                  />
+                )
+              )}
+              {!mediaLoading && !mediaUrl && (
+                <p style={{ textAlign: "center", color: "var(--color-danger)" }}>
+                  Impossible de charger le fichier média.
+                </p>
               )}
               {playingSermon.description && (
                 <p style={{ marginTop: "1rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
