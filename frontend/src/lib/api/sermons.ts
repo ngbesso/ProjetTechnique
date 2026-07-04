@@ -39,6 +39,10 @@ export function sermonAdminStreamUrl(id: number): string {
   return `${BASE_URL}/sermons/${id}/admin-stream`;
 }
 
+export function fetchSermonAdminMediaUrl(id: number): Promise<{ url: string; format: string }> {
+  return http.get(`/sermons/${id}/admin-media-url`);
+}
+
 export function createSermon(data: SermonInput, file: File): Promise<Sermon> {
   const fd = new FormData();
   fd.append("title", data.title);

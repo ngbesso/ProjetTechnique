@@ -115,6 +115,16 @@ def stream_sermon_admin(
     return _stream_response(_load(db, sermon_id), request)
 
 
+@router.get("/{sermon_id}/admin-media-url", dependencies=[can_manage])
+def get_admin_media_url(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
+    """Retourne une URL présignée valide 5 min — évite le problème de header auth dans audio/video."""
+    sermon = _load(db, sermon_id)
+    if not sermon.file_key:
+        raise HTTPException(404, "Aucun fichier associé à ce sermon")
+    url = storage.presigned_url(sermon.file_key, expires=300)
+    return {"url": url, "format": sermon.format}
+
+
 @router.post("", response_model=SermonRead, status_code=201, dependencies=[can_manage])
 def create_sermon(
     db: Annotated[Session, Depends(get_db)],

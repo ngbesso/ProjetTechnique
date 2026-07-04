@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
 
     s3_endpoint_url: str = "http://minio:9000"
+    s3_public_url: str = "http://localhost:9000"
     s3_bucket: str = "sermons"
     minio_root_user: str = "minioadmin"
     minio_root_password: str = "minioadmin"
