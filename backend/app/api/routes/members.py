@@ -148,7 +148,24 @@ def update_my_profile(
     member = db.scalar(select(Member).where(Member.user_id == current_user.id))
     if not member:
         raise HTTPException(404, "Aucune fiche membre liée à ce compte")
-    for k, v in data.model_dump(exclude_unset=True).items():
+
+    dump = data.model_dump(exclude_unset=True)
+
+    if "email" in dump:
+        new_email = str(dump.pop("email"))
+        if new_email != member.email:
+            taken_user = db.scalar(
+                select(User).where(User.email == new_email, User.id != current_user.id)
+            )
+            taken_member = db.scalar(
+                select(Member).where(Member.email == new_email, Member.id != member.id)
+            )
+            if taken_user or taken_member:
+                raise HTTPException(409, "Cette adresse courriel est déjà utilisée.")
+            member.email = new_email
+            current_user.email = new_email
+
+    for k, v in dump.items():
         setattr(member, k, v)
     db.commit()
     db.refresh(member)
