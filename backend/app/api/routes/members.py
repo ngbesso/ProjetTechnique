@@ -80,7 +80,7 @@ def _do_approve(
         )
         db.add(user)
         db.flush()
-        token = create_setup_token(user.id)
+        token = create_setup_token(user.id, user.token_version)
         invite_link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
     member.user_id = user.id
 

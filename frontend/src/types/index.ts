@@ -30,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" ;
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
