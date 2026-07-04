@@ -263,6 +263,41 @@ def test_update_requires_permission(client, db_session, make_user, auth_header):
     assert r.status_code == 403
 
 
+# ── POST /{id}/media (remplacement fichier) ───────────────────────────────────
+
+def test_replace_media(client, db_session, make_user, auth_header):
+    s = _sermon(db_session, "Media Test", SermonStatus.draft)
+    original_key = s.file_key  # capturer avant que db.refresh l'écrase
+    h = _admin_header(make_user, auth_header)
+    fake_storage = MagicMock()
+
+    with patch("app.api.routes.sermons.storage", fake_storage):
+        r = client.post(
+            f"/sermons/{s.id}/media",
+            headers=h,
+            files={"file": ("nouveau.mp4", b"fakevideo", "video/mp4")},
+        )
+
+    assert r.status_code == 200
+    assert r.json()["format"] == "video"
+    fake_storage.upload_file.assert_called_once()
+    fake_storage.delete_file.assert_called_once_with(original_key)
+
+
+def test_replace_media_requires_permission(client, db_session, make_user, auth_header):
+    s = _sermon(db_session, "Media Perm Test", SermonStatus.draft)
+    make_user("noperm_media@test.com")
+    h = auth_header("noperm_media@test.com")
+
+    with patch("app.api.routes.sermons.storage", MagicMock()):
+        r = client.post(
+            f"/sermons/{s.id}/media",
+            headers=h,
+            files={"file": ("f.mp3", b"data", "audio/mpeg")},
+        )
+    assert r.status_code == 403
+
+
 # ── DELETE ─────────────────────────────────────────────────────────────────────
 
 def test_delete_sermon(client, db_session, make_user, auth_header):

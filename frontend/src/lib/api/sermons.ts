@@ -35,6 +35,10 @@ export function sermonStreamUrl(id: number): string {
   return `${BASE_URL}/sermons/${id}/stream`;
 }
 
+export function sermonAdminStreamUrl(id: number): string {
+  return `${BASE_URL}/sermons/${id}/admin-stream`;
+}
+
 export function createSermon(data: SermonInput, file: File): Promise<Sermon> {
   const fd = new FormData();
   fd.append("title", data.title);
@@ -49,6 +53,12 @@ export function createSermon(data: SermonInput, file: File): Promise<Sermon> {
 
 export function updateSermon(id: number, data: Partial<SermonInput>): Promise<Sermon> {
   return http.patch<Sermon>(`/sermons/${id}`, data);
+}
+
+export function replaceSermonMedia(id: number, file: File): Promise<Sermon> {
+  const fd = new FormData();
+  fd.append("file", file);
+  return http.postMultipart<Sermon>(`/sermons/${id}/media`, fd);
 }
 
 export function deleteSermon(id: number): Promise<void> {
