@@ -243,13 +243,8 @@ function DonationBand() {
         <h2 className={styles.donationTitle}>Soutenir la mission</h2>
         <p className={styles.donationDesc}>
           Votre don soutient les Églises locales, les programmes de formation et les
-          actions d'évangélisation. Reçu fiscal disponible.
+          actions d'évangélisation
         </p>
-        <div className={styles.paymentMethods}>
-          {["Carte", "Mobile money", "PayPal"].map((method) => (
-            <span key={method} className={styles.paymentChip}>{method}</span>
-          ))}
-        </div>
       </div>
       <button
         className={styles.btnOutlineWhite}
