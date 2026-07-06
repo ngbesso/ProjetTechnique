@@ -21,13 +21,26 @@ export function DonsPanel() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterCurrency, setFilterCurrency] = useState("");
 
-  useEffect(() => {
-    fetchAllDonations()
+  function fetchDonations(overrides?: Record<string, string>) {
+    setLoading(true);
+    setError("");
+    fetchAllDonations({
+      q: (overrides?.q ?? q).trim() || undefined,
+      payment_status: (overrides?.payment_status ?? filterStatus) || undefined,
+      category: (overrides?.category ?? filterCategory) || undefined,
+      currency: (overrides?.currency ?? filterCurrency) || undefined,
+    })
       .then(setDonations)
       .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchDonations(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = donations.reduce((sum, d) => sum + d.amount, 0);
 
@@ -50,6 +63,32 @@ export function DonsPanel() {
             </span>
           )}
         </h3>
+
+        <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+          <input
+            className={styles.input}
+            placeholder="Rechercher (nom, courriel, reçu)…"
+            value={q}
+            style={{ flex: "1 1 180px" }}
+            onChange={(e) => { setQ(e.target.value); fetchDonations({ q: e.target.value }); }}
+          />
+          <select className={styles.select} value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); fetchDonations({ payment_status: e.target.value }); }}>
+            <option value="">Tous les statuts</option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <select className={styles.select} value={filterCategory}
+            onChange={(e) => { setFilterCategory(e.target.value); fetchDonations({ category: e.target.value }); }}>
+            <option value="">Toutes les catégories</option>
+            {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <select className={styles.select} value={filterCurrency}
+            onChange={(e) => { setFilterCurrency(e.target.value); fetchDonations({ currency: e.target.value }); }}>
+            <option value="">Toutes les devises</option>
+            <option value="CAD">CAD</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
 
         {donations.length === 0 ? (
           <p className={styles.empty}>Aucun don enregistré.</p>
