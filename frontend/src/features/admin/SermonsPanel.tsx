@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
-import { fetchSermonAdminMediaUrl } from "../../lib/api/sermons";
+import { fetchSermonAdminMediaUrl, fetchSermonSeries } from "../../lib/api/sermons";
 import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
@@ -42,9 +42,29 @@ export function SermonsPanel() {
   const canManage =
     user?.permissions.includes("*") || user?.permissions.includes("sermon:manage");
 
+  const [filterQ, setFilterQ] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterSeries, setFilterSeries] = useState("");
+  const [filterFormat, setFilterFormat] = useState("");
+  const [seriesList, setSeriesList] = useState<string[]>([]);
+
   useEffect(() => {
     loadAdmin();
+    fetchSermonSeries().then(setSeriesList).catch(() => {});
   }, [loadAdmin]);
+
+  function applyAdminFilters(overrides?: Record<string, string>) {
+    const q = overrides?.q ?? filterQ;
+    const status = overrides?.status ?? filterStatus;
+    const series = overrides?.series ?? filterSeries;
+    const format = overrides?.format ?? filterFormat;
+    loadAdmin({
+      q: q.trim() || undefined,
+      status: status || undefined,
+      series: series || undefined,
+      format: format || undefined,
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -223,6 +243,46 @@ export function SermonsPanel() {
 
       <section className={styles.card}>
         <h3 className={styles.cardTitle}>Sermons ({sermons.length})</h3>
+
+        <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+          <input
+            className={styles.input}
+            placeholder="Rechercher…"
+            value={filterQ}
+            style={{ flex: "1 1 160px" }}
+            onChange={(e) => { setFilterQ(e.target.value); applyAdminFilters({ q: e.target.value }); }}
+          />
+          <select
+            className={styles.select}
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); applyAdminFilters({ status: e.target.value }); }}
+          >
+            <option value="">Tous statuts</option>
+            {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+          <select
+            className={styles.select}
+            value={filterSeries}
+            onChange={(e) => { setFilterSeries(e.target.value); applyAdminFilters({ series: e.target.value }); }}
+          >
+            <option value="">Toutes les séries</option>
+            {seriesList.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            className={styles.select}
+            value={filterFormat}
+            onChange={(e) => { setFilterFormat(e.target.value); applyAdminFilters({ format: e.target.value }); }}
+          >
+            <option value="">Tous formats</option>
+            <option value="audio">Audio</option>
+            <option value="video">Vidéo</option>
+          </select>
+        </div>
+
         {sermons.length === 0 ? (
           <p className={styles.empty}>Aucun sermon enregistré.</p>
         ) : (
