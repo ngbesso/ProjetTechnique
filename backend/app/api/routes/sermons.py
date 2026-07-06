@@ -36,12 +36,24 @@ def _load_published(db: Session, sermon_id: int) -> Sermon:
 def list_sermons(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
+    series: str | None = None,
+    format: SermonFormat | None = None,
     limit: int = 20,
     offset: int = 0,
 ):
     query = select(Sermon).where(Sermon.status == SermonStatus.published)
     if q:
-        query = query.where(Sermon.title.ilike(f"%{q}%"))
+        term = f"%{q}%"
+        query = query.where(
+            Sermon.title.ilike(term)
+            | Sermon.preacher.ilike(term)
+            | Sermon.series.ilike(term)
+            | Sermon.description.ilike(term)
+        )
+    if series:
+        query = query.where(Sermon.series == series)
+    if format:
+        query = query.where(Sermon.format == format)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     rows = db.scalars(
         query.order_by(Sermon.sermon_date.desc()).limit(limit).offset(offset)
@@ -52,14 +64,28 @@ def list_sermons(
 @router.get("/admin", response_model=SermonList, dependencies=[can_manage])
 def list_sermons_admin(
     db: Annotated[Session, Depends(get_db)],
+    q: str | None = None,
     status: SermonStatus | None = None,
+    series: str | None = None,
+    format: SermonFormat | None = None,
     limit: int = 50,
     offset: int = 0,
 ):
-    """Liste tous les sermons, tous statuts confondus — réservé aux gestionnaires."""
+    """Liste tous les sermons avec filtres — réservé aux gestionnaires."""
     query = select(Sermon)
+    if q:
+        term = f"%{q}%"
+        query = query.where(
+            Sermon.title.ilike(term)
+            | Sermon.preacher.ilike(term)
+            | Sermon.series.ilike(term)
+        )
     if status:
         query = query.where(Sermon.status == status)
+    if series:
+        query = query.where(Sermon.series == series)
+    if format:
+        query = query.where(Sermon.format == format)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     rows = db.scalars(
         query.order_by(Sermon.created_at.desc()).limit(limit).offset(offset)
