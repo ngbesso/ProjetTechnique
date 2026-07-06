@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./RegisterPage.module.css";
+import { useNavigate } from "../../context/RouterContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -96,9 +97,7 @@ function Stepper({ step }: { step: 1 | 2 | 3 }) {
                 .filter(Boolean)
                 .join(" ")}
             >
-              <div className={styles.stepBadge}>
-                {isDone ? "✓" : n}
-              </div>
+              <div className={styles.stepBadge}>{isDone ? "✓" : n}</div>
               {label}
             </div>
           </div>
@@ -134,7 +133,10 @@ interface Step1Props {
 }
 
 function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
-  const eglises = data.district ? (EGLISES_PAR_DISTRICT[data.district] ?? []) : [];
+  const navigate = useNavigate();
+  const eglises = data.district
+    ? (EGLISES_PAR_DISTRICT[data.district] ?? [])
+    : [];
 
   return (
     <>
@@ -175,7 +177,9 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
           >
             <option value="">Sélectionner…</option>
             {STATUTS_FAMILIAUX.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </Field>
@@ -218,7 +222,9 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
           >
             <option value="">Sélectionner…</option>
             {DISTRICTS.map((d) => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d} value={d}>
+                {d}
+              </option>
             ))}
           </select>
         </Field>
@@ -231,7 +237,9 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
           >
             <option value="">Sélectionner…</option>
             {eglises.map((e) => (
-              <option key={e} value={e}>{e}</option>
+              <option key={e} value={e}>
+                {e}
+              </option>
             ))}
           </select>
         </Field>
@@ -263,9 +271,12 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
       </Field>
 
       <div className={styles.formFooter}>
-        <a href="#connexion" className={styles.linkMuted}>
+        <button
+          className={styles.linkMuted}
+          onClick={() => navigate("login")}
+        >
           Déjà membre ? Se connecter
-        </a>
+        </button>
         <button className={styles.btnPrimary} onClick={onSubmit}>
           Continuer &gt;
         </button>
@@ -294,7 +305,8 @@ function Step2({ data, onBack, onConfirm, submitting }: Step2Props) {
     { key: "Église affiliée", value: data.eglise },
     {
       key: "Statut baptême",
-      value: data.statutBapteme === "baptise" ? "Baptisé(e)" : "Non baptisé(e)",
+      value:
+        data.statutBapteme === "baptise" ? "Baptisé(e)" : "Non baptisé(e)",
     },
   ];
 
@@ -310,8 +322,9 @@ function Step2({ data, onBack, onConfirm, submitting }: Step2Props) {
         ))}
       </div>
       <p className={styles.confirmNotice}>
-        En confirmant, votre demande d'adhésion sera transmise à l'administrateur
-        qui l'approuvera. Vous recevrez un courriel de confirmation.
+        En confirmant, votre demande d'adhésion sera transmise à
+        l'administrateur qui l'approuvera. Vous recevrez un courriel de
+        confirmation.
       </p>
       <div className={styles.formFooter}>
         <button className={styles.btnGhost} onClick={onBack}>
@@ -339,8 +352,8 @@ function Step3({ prenom }: { prenom: string }) {
       <p className={styles.successText}>
         Votre demande d'adhésion a bien été transmise.
         <br />
-        L'administrateur l'examinera et vous recevrez un courriel de confirmation
-        dans les prochaines heures.
+        L'administrateur l'examinera et vous recevrez un courriel de
+        confirmation dans les prochaines heures.
       </p>
     </div>
   );
@@ -348,7 +361,7 @@ function Step3({ prenom }: { prenom: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function RegisterPage() {
+export function RegisterPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [data, setData] = useState<FormData>(INITIAL);
   const [errors, setErrors] = useState<Errors>({});
@@ -370,7 +383,7 @@ export default function RegisterPage() {
 
   async function handleConfirm() {
     setSubmitting(true);
-    // Branchement futur : await api.post("/membres", data)
+    // Branchement futur : await register({ email: data.courriel, password: data.motDePasse })
     await new Promise((r) => setTimeout(r, 1200));
     setSubmitting(false);
     setStep(3);
