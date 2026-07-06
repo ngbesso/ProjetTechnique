@@ -1,19 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin, get_current_member, get_current_member_optional
+from app.api.deps import get_current_admin, get_current_member
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
 from app.schemas.donation import (
-    DonationConfirm,
     DonationCreate,
     DonationRead,
-    PaymentIntentRequest,
-    PaymentIntentResponse,
     ReceiptRead,
 )
-from app.schemas.donation import DonationCurrency
-from app.services import donation_service, stripe_service
+from app.services import donation_service
 
 router = APIRouter(prefix="/api/donations", tags=["donations"])
 
@@ -27,64 +24,63 @@ def _get_church_or_404(db: Session, church_id: int) -> Church:
     return church
 
 
-@router.post("/payment-intent", response_model=PaymentIntentResponse)
-def create_payment_intent(
-    payload: PaymentIntentRequest,
+@router.post("/webhooks/zeffy", status_code=status.HTTP_200_OK)
+def zeffy_webhook(
+    payload: dict,
+    request: Request,
     db: Session = Depends(get_db),
-    current_member=Depends(get_current_member_optional),
 ):
-    """Crée un Stripe PaymentIntent. Ouvert à tous (membre ou anonyme)."""
-    _get_church_or_404(db, payload.church_id)
-    amount_cents = int(round(payload.amount * 100))
-    pi = stripe_service.create_payment_intent(
-        amount_cents=amount_cents,
-        currency=payload.currency.value.lower(),
-        metadata={
-            "member_id": str(current_member.id) if current_member else "",
-            "church_id": str(payload.church_id),
-            "category": payload.category.value,
-            "donor_name": payload.donor_name,
-            "donor_email": payload.donor_email or "",
-        },
-    )
-    return PaymentIntentResponse(client_secret=pi.client_secret, payment_intent_id=pi.id)
+    """Reçoit les notifications du webhook natif Zeffy (Réglages > Intégrations).
 
+    Zeffy attend un 2xx pour confirmer la réception, sinon il retente la
+    livraison. On vérifie un secret partagé passé en paramètre d'URL, faute
+    de signature documentée par Zeffy.
+    """
+    if not settings.zeffy_webhook_secret or (
+        request.query_params.get("secret") != settings.zeffy_webhook_secret
+    ):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Secret invalide")
 
-@router.post("/confirm", response_model=DonationRead, status_code=status.HTTP_201_CREATED)
-def confirm_donation(
-    payload: DonationConfirm,
-    db: Session = Depends(get_db),
-    current_member=Depends(get_current_member_optional),
-):
-    """Vérifie que le paiement Stripe a réussi et crée le don en base."""
-    pi = stripe_service.retrieve_payment_intent(payload.payment_intent_id)
-    if pi.status != "succeeded":
+    event = payload.get("event")
+    if event != "payment.completed":
+        return {"status": "ignored"}
+
+    payment = payload.get("payment") or {}
+    payment_reference = str(payment.get("id") or "")
+    if not payment_reference:
         raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Paiement non confirmé par Stripe",
+            status_code=status.HTTP_400_BAD_REQUEST, detail="payment.id manquant"
         )
 
-    existing = donation_service.get_by_payment_intent(db, payload.payment_intent_id)
+    existing = donation_service.get_by_payment_reference(db, payment_reference)
     if existing:
-        return existing
+        return {"status": "duplicate", "donation_id": existing.id}
 
-    _get_church_or_404(db, payload.church_id)
+    amount = payment.get("amount")
+    if not isinstance(amount, (int, float)) or amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="payment.amount invalide"
+        )
 
-    donation_payload = DonationCreate(
-        amount=round(pi.amount / 100, 2),
-        currency=DonationCurrency(pi.currency.upper()),
-        category=payload.category,
-        church_id=payload.church_id,
-    )
-    return donation_service.create_donation(
+    currency = str(payment.get("currency", "CAD")).upper()
+    if currency not in ("CAD", "USD"):
+        currency = "CAD"
+
+    buyer = payment.get("buyer") or {}
+    donor_name = buyer.get("name") or " ".join(
+        filter(None, [buyer.get("firstName"), buyer.get("lastName")])
+    ) or None
+    donor_email = buyer.get("email")
+
+    donation = donation_service.create_from_zeffy(
         db,
-        donation_payload,
-        member_id=current_member.id if current_member else None,
-        donor_name=payload.donor_name,
-        donor_email=payload.donor_email,
-        payment_intent_id=payload.payment_intent_id,
-        payment_status="succeeded",
+        amount=round(float(amount), 2),
+        currency=currency,
+        payment_reference=payment_reference,
+        donor_name=donor_name,
+        donor_email=donor_email,
     )
+    return {"status": "created", "donation_id": donation.id}
 
 
 @router.post("/", response_model=DonationRead, status_code=status.HTTP_201_CREATED)
@@ -93,7 +89,7 @@ def create_donation(
     db: Session = Depends(get_db),
     current_member=Depends(get_current_member),
 ):
-    """Crée un don direct (sans Stripe). Nécessite d'être membre."""
+    """Crée un don direct (hors ligne de paiement). Nécessite d'être membre."""
     _get_church_or_404(db, payload.church_id)
 
     return donation_service.create_donation(
