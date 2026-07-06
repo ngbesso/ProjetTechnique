@@ -60,7 +60,7 @@ function Hero() {
           <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
             Devenir membre
           </button>
-          <button className={styles.btnOutlineWhite}>
+          <button className={styles.btnOutlineWhite} onClick={() => navigate("donation")}>
             <span>♥</span> Faire un don
           </button>
         </div>
