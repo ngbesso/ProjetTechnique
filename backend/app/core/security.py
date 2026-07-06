@@ -1,22 +1,19 @@
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
 from jose import jwt
+from passlib.context import CryptContext
 
 from app.core.config import settings
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def hash_password(password: str) -> str:
-    pw = password.encode("utf-8")[:72]
-    return bcrypt.hashpw(pw, bcrypt.gensalt()).decode("utf-8")
+    return pwd_context.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    pw = plain.encode("utf-8")[:72]
-    try:
-        return bcrypt.checkpw(pw, hashed.encode("utf-8"))
-    except ValueError:
-        return False
+    return pwd_context.verify(plain, hashed)
 
 
 def create_access_token(subject: str) -> str:
@@ -27,57 +24,3 @@ def create_access_token(subject: str) -> str:
     return jwt.encode(
         payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
     )
-
-
-_SETUP_PURPOSE = "set_password"
-_RESET_PURPOSE = "reset_password"
-
-
-def create_setup_token(user_id: int, token_version: int, hours: int = 48) -> str:
-    """Jeton d'activation pour un nouveau compte (envoyé à l'approbation du membre)."""
-    expire = datetime.now(timezone.utc) + timedelta(hours=hours)
-    return jwt.encode(
-        {
-            "sub": str(user_id),
-            "purpose": _SETUP_PURPOSE,
-            "ver": token_version,
-            "exp": expire,
-        },
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
-    )
-
-
-def decode_setup_token(token: str) -> tuple[int, int]:
-    """Décode le jeton d'activation. Retourne (user_id, token_version)."""
-    data = jwt.decode(
-        token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
-    )
-    if data.get("purpose") != _SETUP_PURPOSE:
-        raise ValueError("Mauvais type de jeton")
-    return int(data["sub"]), int(data.get("ver", -1))
-
-
-def create_reset_token(user_id: int, token_version: int, hours: int = 2) -> str:
-    """Jeton de réinitialisation du mot de passe (valable 2 h)."""
-    expire = datetime.now(timezone.utc) + timedelta(hours=hours)
-    return jwt.encode(
-        {
-            "sub": str(user_id),
-            "purpose": _RESET_PURPOSE,
-            "ver": token_version,
-            "exp": expire,
-        },
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
-    )
-
-
-def decode_reset_token(token: str) -> tuple[int, int]:
-    """Décode le jeton de réinitialisation. Retourne (user_id, token_version)."""
-    data = jwt.decode(
-        token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
-    )
-    if data.get("purpose") != _RESET_PURPOSE:
-        raise ValueError("Mauvais type de jeton")
-    return int(data["sub"]), int(data.get("ver", -1))
