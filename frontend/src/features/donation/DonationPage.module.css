@@ -55,22 +55,7 @@
   padding: 2.5rem 2rem 3rem;
 }
 
-/* ── Two-column layout ──────────────────────────────────────────────────── */
-
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 1.5rem;
-  max-width: 1280px;
-  margin: 0 auto;
-  align-items: start;
-}
-
 @media (max-width: 768px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
   .main {
     padding: 1.5rem 1rem 2rem;
   }
@@ -103,140 +88,20 @@
   margin: 0 0 1.75rem;
 }
 
-/* ── Tabs ───────────────────────────────────────────────────────────────── */
+/* ── Zeffy embed ────────────────────────────────────────────────────────── */
 
-.tabs {
-  display: flex;
-  background: var(--neutral-bg);
+.zeffyEmbedWrapper {
   border-radius: 8px;
-  padding: 3px;
-  margin-bottom: 1.75rem;
-  gap: 2px;
+  overflow: hidden;
+  border: 1px solid var(--border);
 }
 
-.tab {
-  flex: 1;
-  padding: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-}
-
-.tabActive {
-  background: #fff;
-  color: var(--vivid-violet);
-  font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* ── Fields ─────────────────────────────────────────────────────────────── */
-
-.fieldGroup {
-  margin-bottom: 1.25rem;
-}
-
-.label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 0.45rem;
-}
-
-.input,
-.select {
+.zeffyEmbed {
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  background: #fff;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
-  appearance: auto;
-}
-
-.input:focus,
-.select:focus {
-  outline: none;
-  border-color: var(--vivid-violet);
-  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
-}
-
-/* ── Presets ─────────────────────────────────────────────────────────────── */
-
-.presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-}
-
-.presetBtn {
-  padding: 0.6rem 0;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: transparent;
-  color: var(--text-main);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-}
-
-.presetBtn:hover {
-  border-color: var(--vivid-violet);
-  color: var(--vivid-violet);
-}
-
-.presetBtnActive {
-  background: var(--vivid-violet);
-  border-color: var(--vivid-violet);
-  color: #fff;
-}
-
-/* ── Row (2 cols) ───────────────────────────────────────────────────────── */
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-/* ── Payment chips ──────────────────────────────────────────────────────── */
-
-.paymentChips {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.chip {
-  padding: 0.4rem 1rem;
-  border: 1.5px solid var(--border);
-  border-radius: 20px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.chip:hover {
-  border-color: var(--vivid-violet);
-  color: var(--vivid-violet);
-}
-
-.chipActive {
-  border-color: var(--vivid-violet);
-  background: rgba(83, 74, 183, 0.08);
-  color: var(--vivid-violet);
+  height: 900px;
+  max-height: 80vh;
+  border: none;
+  display: block;
 }
 
 /* ── Error ──────────────────────────────────────────────────────────────── */
@@ -251,98 +116,7 @@
   margin: 0.5rem 0 0;
 }
 
-/* ── Summary card ───────────────────────────────────────────────────────── */
-
-.summaryCard {
-  background: var(--deep-violet);
-  border-radius: 12px;
-  padding: 1.75rem;
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(42, 38, 96, 0.25);
-  position: sticky;
-  top: 80px; /* below sticky header */
-}
-
-.summaryTitle {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.55;
-  margin: 0 0 1.25rem;
-}
-
-.summaryRows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  margin-bottom: 1rem;
-}
-
-.summaryRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 0.875rem;
-  opacity: 0.85;
-  gap: 0.5rem;
-}
-
-.summaryValue {
-  text-align: right;
-  max-width: 55%;
-  font-size: 0.82rem;
-}
-
-.summaryTotal {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1.05rem;
-  font-weight: 700;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding-top: 0.875rem;
-  margin-bottom: 1.1rem;
-}
-
-.summaryInfo {
-  font-size: 0.78rem;
-  opacity: 0.65;
-  line-height: 1.55;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
-  padding: 0.65rem 0.8rem;
-  margin-bottom: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ── Donate button ──────────────────────────────────────────────────────── */
-
-.btnDonate {
-  width: 100%;
-  padding: 0.8rem;
-  background: #fff;
-  color: var(--deep-violet);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  margin-bottom: 1rem;
-}
-
-.btnDonate:hover:not(:disabled) {
-  opacity: 0.92;
-  transform: translateY(-1px);
-}
-
-.btnDonate:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Summary badges ─────────────────────────────────────────────────────── */
+/* ── Trust badges ───────────────────────────────────────────────────────── */
 
 .summaryBadges {
   display: flex;
@@ -353,118 +127,8 @@
 
 .badge {
   font-size: 0.72rem;
-  opacity: 0.55;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  background: var(--neutral-bg);
   border-radius: 20px;
   padding: 0.25rem 0.6rem;
-}
-
-/* ── Success screen ─────────────────────────────────────────────────────── */
-
-.successWrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1.5rem;
-}
-
-.successCard {
-  background: #fff;
-  border-radius: 16px;
-  padding: 3rem 2rem;
-  max-width: 440px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border);
-}
-
-.successIcon {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: #dcfce7;
-  color: #16a34a;
-  font-size: 1.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-  box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.08);
-}
-
-.successTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0 0 0.5rem;
-}
-
-.successDesc {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin: 0 0 1.75rem;
-}
-
-.successMeta {
-  background: var(--neutral-bg);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.successMetaRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  color: var(--text-main);
-}
-
-.successActions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-/* ── Shared buttons ─────────────────────────────────────────────────────── */
-
-.btnPrimary {
-  padding: 0.7rem 1.5rem;
-  background: var(--vivid-violet);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  width: 100%;
-}
-
-.btnPrimary:hover {
-  background: var(--vivid-violet-hover);
-  transform: translateY(-1px);
-}
-
-.btnOutline {
-  padding: 0.7rem 1.5rem;
-  background: transparent;
-  color: var(--text-muted);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  width: 100%;
-}
-
-.btnOutline:hover {
-  border-color: var(--text-muted);
-  color: var(--text-main);
 }

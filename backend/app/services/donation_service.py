@@ -13,6 +13,8 @@ def create_donation(
     member_id: int,
     donor_name: str,
     donor_email: str | None = None,
+    payment_reference: str | None = None,
+    payment_status: str = "manual",
 ) -> Donation:
     donation = Donation(
         receipt_number=_receipt_number(),
@@ -24,11 +26,54 @@ def create_donation(
         donor_name=donor_name,
         donor_email=donor_email,
         created_at=datetime.now(timezone.utc),
+        payment_reference=payment_reference,
+        payment_status=payment_status,
     )
     db.add(donation)
     db.commit()
     db.refresh(donation)
     return donation
+
+
+def create_from_zeffy(
+    db: Session,
+    *,
+    amount: float,
+    currency: str,
+    payment_reference: str,
+    donor_name: str | None = None,
+    donor_email: str | None = None,
+) -> Donation:
+    """Enregistre un don reçu via le webhook Zeffy.
+
+    Église et catégorie sont inconnues (le formulaire Zeffy générique ne les
+    demande pas) : elles restent nulles, à compléter manuellement si besoin.
+    """
+    donation = Donation(
+        receipt_number=_receipt_number(),
+        amount=amount,
+        currency=currency,
+        category=None,
+        church_id=None,
+        member_id=None,
+        donor_name=donor_name,
+        donor_email=donor_email,
+        created_at=datetime.now(timezone.utc),
+        payment_reference=payment_reference,
+        payment_status="succeeded",
+    )
+    db.add(donation)
+    db.commit()
+    db.refresh(donation)
+    return donation
+
+
+def get_by_payment_reference(db: Session, payment_reference: str) -> Donation | None:
+    return (
+        db.query(Donation)
+        .filter(Donation.payment_reference == payment_reference)
+        .first()
+    )
 
 
 def get_donation(db: Session, donation_id: int) -> Donation | None:
