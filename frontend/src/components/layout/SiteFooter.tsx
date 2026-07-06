@@ -23,6 +23,7 @@ export function SiteFooter() {
             <ul className={styles.links}>
               <li><button onClick={() => navigate("home")}>Qui sommes-nous</button></li>
               <li><button onClick={() => navigate("sermons")}>Sermons</button></li>
+              <li><button onClick={() => navigate("blog")}>Blog</button></li>
             </ul>
           </div>
 
