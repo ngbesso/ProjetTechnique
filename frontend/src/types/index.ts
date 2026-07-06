@@ -55,7 +55,31 @@ export interface Donation {
   member_id: number | null;
   donor_name: string | null;
   donor_email: string | null;
+  payment_intent_id: string | null;
+  payment_status: string;
   created_at: string;
+}
+
+export interface PaymentIntentRequest {
+  amount: number;
+  currency: DonationCurrency;
+  category: DonationCategory;
+  church_id: number;
+  donor_name: string;
+  donor_email?: string;
+}
+
+export interface PaymentIntentResponse {
+  client_secret: string;
+  payment_intent_id: string;
+}
+
+export interface DonationConfirm {
+  payment_intent_id: string;
+  category: DonationCategory;
+  church_id: number;
+  donor_name: string;
+  donor_email?: string;
 }
 
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
