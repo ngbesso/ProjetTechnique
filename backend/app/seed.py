@@ -95,7 +95,10 @@ def seed_parameters(db: Session) -> None:
 
 def seed_settings(db: Session) -> None:
     """Insère (idempotent) les paramètres système par défaut."""
-    defaults = {"auto_approve_members": "false"}
+    defaults = {
+        "auto_approve_members": "false",
+        "zeffy_embed_path": "",
+    }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:
             db.add(AppSetting(key=key, value=value))
