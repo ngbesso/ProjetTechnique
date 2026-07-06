@@ -10,6 +10,7 @@ const SECTIONS = [
     { category: "sexe", label: "Sexe" },
     { category: "family_status", label: "Statut familial" },
     { category: "district", label: "Districts" },
+    { category: "donation_category", label: "Catégories de don" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];

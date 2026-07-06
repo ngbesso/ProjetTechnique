@@ -6,6 +6,7 @@ import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
 import { DashboardPanel } from "./DashboardPanel";
+import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
@@ -393,6 +394,8 @@ export function AdminPage() {
                 initialStatus={membresInitialStatus}
                 key={membresInitialStatus ?? "all"}
               />
+          ) : section === "dons" ? (
+              <DonsPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
           ) : section === "parametres" ? (
