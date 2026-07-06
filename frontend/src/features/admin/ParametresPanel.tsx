@@ -4,6 +4,73 @@ import { useParameters } from "../../hooks/useParameters";
 import { fetchSettings, updateSetting } from "../../lib/api/settings";
 import type { AppSetting } from "../../types";
 
+// ── Intégrations (Zeffy, etc.) ────────────────────────────────────────────────
+
+function IntegrationsPanel() {
+    const [zeffyPath, setZeffyPath] = useState("");
+    const [draft, setDraft] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchSettings()
+            .then((list) => {
+                const val = list.find((s) => s.key === "zeffy_embed_path")?.value ?? "";
+                setZeffyPath(val);
+                setDraft(val);
+            })
+            .catch(() => {});
+    }, []);
+
+    async function handleSave(e: React.FormEvent) {
+        e.preventDefault();
+        setSaving(true);
+        setError("");
+        setSaved(false);
+        try {
+            await updateSetting("zeffy_embed_path", draft.trim());
+            setZeffyPath(draft.trim());
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Intégration Zeffy</h3>
+            <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+                Chemin du formulaire de don Zeffy. Exemple&nbsp;:{" "}
+                <code style={{ fontSize: ".8rem", background: "#f3f4f6", padding: "0 .3rem", borderRadius: 4 }}>
+                    /fr/donation-form/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                </code>
+            </p>
+            <form onSubmit={handleSave} className={styles.inlineForm}>
+                <input
+                    className={styles.input}
+                    style={{ flex: 1, fontFamily: "monospace", fontSize: ".875rem" }}
+                    placeholder="/fr/donation-form/..."
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                />
+                <button
+                    type="submit"
+                    className={styles.btnPrimary}
+                    disabled={saving || draft.trim() === zeffyPath}
+                >
+                    {saving ? "…" : "Enregistrer"}
+                </button>
+            </form>
+            {saved && <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>Enregistré ✓</p>}
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        </section>
+    );
+}
+
 // ── Listes de valeurs (sexe / statut familial / districts) ───────────────────
 
 const SECTIONS = [
@@ -227,6 +294,7 @@ export function ParametresPanel() {
     return (
         <div className={styles.rbacWrapper}>
             <OptionsPanel />
+            <IntegrationsPanel />
             <p style={{ color: "var(--text-muted)", fontSize: ".875rem", margin: "0 0 1rem" }}>
                 Ces valeurs alimentent les menus déroulants des formulaires (adhésion, profil, églises).
             </p>

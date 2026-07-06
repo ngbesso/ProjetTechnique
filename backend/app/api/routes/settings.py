@@ -8,7 +8,12 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.setting import AppSetting
 from app.models.user import User
-from app.schemas.setting import SETTING_META, AppSettingRead, AppSettingUpdate
+from app.schemas.setting import (
+    PUBLIC_SETTINGS,
+    SETTING_META,
+    AppSettingRead,
+    AppSettingUpdate,
+)
 
 router = APIRouter(prefix="/settings", tags=["paramètres système"])
 
@@ -24,6 +29,14 @@ def _enrich(s: AppSetting) -> AppSettingRead:
         value=s.value,
         description=SETTING_META.get(s.key, ""),
     )
+
+
+@router.get("/public", response_model=dict[str, str])
+def get_public_settings(db: Annotated[Session, Depends(get_db)]):
+    rows = db.scalars(
+        select(AppSetting).where(AppSetting.key.in_(PUBLIC_SETTINGS))
+    ).all()
+    return {r.key: r.value for r in rows}
 
 
 @router.get("", response_model=list[AppSettingRead])

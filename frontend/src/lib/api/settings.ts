@@ -1,6 +1,10 @@
 import { http } from "./client";
 import type { AppSetting } from "../../types";
 
+export function fetchPublicSettings(): Promise<Record<string, string>> {
+    return http.get<Record<string, string>>("/settings/public");
+}
+
 export function fetchSettings(): Promise<AppSetting[]> {
     return http.get<AppSetting[]>("/settings");
 }
