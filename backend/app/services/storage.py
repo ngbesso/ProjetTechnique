@@ -32,6 +32,20 @@ def delete_file(key: str) -> None:
     _client.delete_object(Bucket=settings.s3_bucket, Key=key)
 
 
+def presigned_url(key: str, expires: int = 300) -> str:
+    """Génère une URL présignée valide pendant `expires` secondes.
+
+    boto3 utilise s3_endpoint_url (hostname Docker interne) pour signer l'URL ;
+    on remplace ce hostname par s3_public_url pour que le navigateur puisse y accéder.
+    """
+    url = _client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.s3_bucket, "Key": key},
+        ExpiresIn=expires,
+    )
+    return url.replace(settings.s3_endpoint_url, settings.s3_public_url, 1)
+
+
 def get_object(key: str, range_header: str | None = None) -> dict:
     """Lit un objet depuis MinIO côté serveur, pour le proxy-streamer au navigateur (évite CORS)."""
     params = {"Bucket": settings.s3_bucket, "Key": key}
