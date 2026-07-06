@@ -27,16 +27,32 @@ class DonationCreate(BaseModel):
         return round(v, 2)
 
 
+class ZeffyWebhookPayload(BaseModel):
+    """Payload envoyé par le webhook natif Zeffy (Réglages > Intégrations).
+
+    Zeffy ne documente pas un schéma strict champ par champ ; on ne retient
+    que ce dont on a besoin et on ignore le reste pour tolérer les évolutions
+    de leur format.
+    """
+
+    event: str | None = None
+    payment: dict | None = None
+
+    model_config = {"extra": "ignore"}
+
+
 class DonationRead(BaseModel):
     id: int
     receipt_number: str
     amount: float
     currency: DonationCurrency
-    category: DonationCategory
-    church_id: int
+    category: DonationCategory | None
+    church_id: int | None
     member_id: int | None
     donor_name: str | None
     donor_email: str | None
+    payment_reference: str | None
+    payment_status: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

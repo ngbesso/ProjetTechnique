@@ -51,15 +51,17 @@ export interface Donation {
   receipt_number: string;
   amount: number;
   currency: DonationCurrency;
-  category: DonationCategory;
-  church_id: number;
+  category: DonationCategory | null;
+  church_id: number | null;
   member_id: number | null;
   donor_name: string | null;
   donor_email: string | null;
+  payment_reference: string | null;
+  payment_status: string;
   created_at: string;
 }
 
-export type District = string;
+export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
 
 export interface ParameterValue {
   id: number;
