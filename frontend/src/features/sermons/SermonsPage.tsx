@@ -3,7 +3,7 @@ import styles from "./SermonsPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useSermons } from "../../hooks/useSermons";
-import { fetchSermon, sermonStreamUrl } from "../../lib/api/sermons";
+import { fetchSermon, fetchSermonSeries, sermonStreamUrl } from "../../lib/api/sermons";
 import type { Sermon } from "../../types";
 
 function formatDate(iso: string): string {
@@ -47,14 +47,36 @@ export function SermonsPage() {
   const { sermons, loading, error, load } = useSermons();
   const [selected, setSelected] = useState<Sermon | null>(null);
   const [q, setQ] = useState("");
+  const [series, setSeries] = useState("");
+  const [format, setFormat] = useState("");
+  const [seriesList, setSeriesList] = useState<string[]>([]);
 
   useEffect(() => {
     load();
+    fetchSermonSeries().then(setSeriesList).catch(() => {});
   }, [load]);
+
+  function applyFilters(overrides?: { q?: string; series?: string; format?: string }) {
+    load({
+      q: (overrides?.q ?? q).trim() || undefined,
+      series: (overrides?.series ?? series) || undefined,
+      format: (overrides?.format ?? format) || undefined,
+    });
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    load({ q: q.trim() || undefined });
+    applyFilters();
+  }
+
+  function handleSeriesChange(val: string) {
+    setSeries(val);
+    applyFilters({ series: val });
+  }
+
+  function handleFormatChange(val: string) {
+    setFormat(val);
+    applyFilters({ format: val });
   }
 
   async function play(sermon: Sermon) {
@@ -84,7 +106,7 @@ export function SermonsPage() {
         <form className={styles.searchBar} onSubmit={handleSearch}>
           <input
             className={styles.searchInput}
-            placeholder="Rechercher un sermon…"
+            placeholder="Rechercher par titre, prédicateur, série…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -92,6 +114,32 @@ export function SermonsPage() {
             Rechercher
           </button>
         </form>
+
+        <div className={styles.filters}>
+          <select
+            className={styles.filterSelect}
+            value={series}
+            onChange={(e) => handleSeriesChange(e.target.value)}
+          >
+            <option value="">Toutes les séries</option>
+            {seriesList.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <div className={styles.formatChips}>
+            {(["", "audio", "video"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`${styles.chip} ${format === f ? styles.chipActive : ""}`}
+                onClick={() => handleFormatChange(f)}
+              >
+                {f === "" ? "Tous" : f === "audio" ? "🎧 Audio" : "🎬 Vidéo"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {error && (
           <p className={styles.errorMsg} role="alert">
@@ -102,7 +150,7 @@ export function SermonsPage() {
         {loading ? (
           <p className={styles.stateMsg}>Chargement…</p>
         ) : sermons.length === 0 ? (
-          <p className={styles.stateMsg}>Aucun sermon publié pour le moment.</p>
+          <p className={styles.stateMsg}>Aucun sermon trouvé.</p>
         ) : (
           <div className={styles.grid}>
             {sermons.map((sermon) => (
@@ -123,7 +171,13 @@ export function SermonsPage() {
                     {sermon.preacher} · {formatDate(sermon.sermon_date)}
                   </p>
                   {sermon.series && (
-                    <span className={styles.seriesTag}>{sermon.series}</span>
+                    <button
+                      className={styles.seriesTag}
+                      type="button"
+                      onClick={() => handleSeriesChange(sermon.series!)}
+                    >
+                      {sermon.series}
+                    </button>
                   )}
                 </div>
               </article>

@@ -3,15 +3,23 @@ import type { Sermon, SermonListResult, SermonInput } from "../../types";
 
 export function fetchSermons(params?: {
   q?: string;
+  series?: string;
+  format?: string;
   limit?: number;
   offset?: number;
 }): Promise<SermonListResult> {
   const qs = new URLSearchParams();
   if (params?.q) qs.set("q", params.q);
+  if (params?.series) qs.set("series", params.series);
+  if (params?.format) qs.set("format", params.format);
   if (params?.limit) qs.set("limit", String(params.limit));
   if (params?.offset) qs.set("offset", String(params.offset));
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return http.get<SermonListResult>(`/sermons${suffix}`);
+}
+
+export function fetchSermonSeries(): Promise<string[]> {
+  return http.get<string[]>("/sermons/series");
 }
 
 export function fetchSermon(id: number): Promise<Sermon> {
@@ -19,12 +27,18 @@ export function fetchSermon(id: number): Promise<Sermon> {
 }
 
 export function fetchSermonsAdmin(params?: {
+  q?: string;
   status?: string;
+  series?: string;
+  format?: string;
   limit?: number;
   offset?: number;
 }): Promise<SermonListResult> {
   const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
   if (params?.status) qs.set("status", params.status);
+  if (params?.series) qs.set("series", params.series);
+  if (params?.format) qs.set("format", params.format);
   if (params?.limit) qs.set("limit", String(params.limit));
   if (params?.offset) qs.set("offset", String(params.offset));
   const suffix = qs.toString() ? `?${qs.toString()}` : "";

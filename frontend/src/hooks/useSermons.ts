@@ -16,7 +16,7 @@ export function useSermons() {
   const [error, setError] = useState("");
 
   const load = useCallback(
-    async (params?: { q?: string; limit?: number; offset?: number }) => {
+    async (params?: { q?: string; series?: string; format?: string; limit?: number; offset?: number }) => {
       setLoading(true);
       setError("");
       try {
@@ -33,7 +33,7 @@ export function useSermons() {
   );
 
   const loadAdmin = useCallback(
-    async (params?: { status?: string; limit?: number; offset?: number }) => {
+    async (params?: { q?: string; status?: string; series?: string; format?: string; limit?: number; offset?: number }) => {
       setLoading(true);
       setError("");
       try {

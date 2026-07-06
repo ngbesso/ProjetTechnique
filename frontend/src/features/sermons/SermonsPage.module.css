@@ -58,8 +58,53 @@
 .searchBar {
   display: flex;
   gap: 0.75rem;
+  margin-bottom: 1rem;
+  max-width: 560px;
+}
+
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 2rem;
-  max-width: 480px;
+}
+
+.filterSelect {
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: #fff;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.formatChips {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.chip {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: #fff;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+  border-color: var(--deep-violet);
+  background: #f5f3ff;
+}
+
+.chipActive {
+  background: var(--deep-violet);
+  border-color: var(--deep-violet);
+  color: #fff;
 }
 
 .searchInput {
@@ -165,6 +210,14 @@
   border: 1px solid var(--border);
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.seriesTag:hover {
+  border-color: var(--deep-violet);
+  background: #f5f3ff;
+  color: var(--deep-violet);
 }
 
 /* ── Player overlay ─────────────────────────────────────────────────────── */

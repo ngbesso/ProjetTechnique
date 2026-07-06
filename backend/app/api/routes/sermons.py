@@ -93,6 +93,18 @@ def list_sermons_admin(
     return SermonList(items=list(rows), total=total or 0, limit=limit, offset=offset)
 
 
+@router.get("/series", response_model=list[str])
+def list_series(db: Annotated[Session, Depends(get_db)]):
+    """Retourne les noms de séries distincts (sermons publiés uniquement)."""
+    rows = db.scalars(
+        select(Sermon.series)
+        .where(Sermon.status == SermonStatus.published, Sermon.series.isnot(None))
+        .distinct()
+        .order_by(Sermon.series)
+    ).all()
+    return list(rows)
+
+
 @router.get("/{sermon_id}", response_model=SermonRead)
 def get_sermon(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
     sermon = _load_published(db, sermon_id)
