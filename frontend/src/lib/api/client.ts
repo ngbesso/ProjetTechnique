@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+export const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 let _token: string | null = localStorage.getItem("access_token");
 
@@ -24,9 +24,12 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const isForm = options.body instanceof URLSearchParams;
+  const isMultipart = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isForm
         ? { "Content-Type": "application/x-www-form-urlencoded" }
+        : isMultipart
+        ? {}
         : { "Content-Type": "application/json" }),
     ...(_token ? { Authorization: `Bearer ${_token}` } : {}),
   };
@@ -45,6 +48,8 @@ export const http = {
       request<T>(path, { method: "POST", body: JSON.stringify(body) }),
   postForm: <T>(path: string, fields: Record<string, string>) =>
       request<T>(path, { method: "POST", body: new URLSearchParams(fields) }),
+  postMultipart: <T>(path: string, formData: FormData) =>
+      request<T>(path, { method: "POST", body: formData }),
   put: <T>(path: string, body: unknown) =>
       request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) =>

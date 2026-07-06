@@ -5,6 +5,7 @@ export interface UserInfo {
   created_at: string;
   roles: string[];
   permissions: string[];
+  is_global_admin: boolean;
 }
 
 export interface Token {
@@ -29,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "donation";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -84,6 +85,19 @@ export interface DonationConfirm {
 
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
 
+export interface ParameterValue {
+  id: number;
+  category: string;
+  label: string;
+  position: number;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+  description: string;
+}
+
 export interface Church {
   id: number;
   name: string;
@@ -110,6 +124,38 @@ export interface ChurchInput {
   founded_on?: string | null;
 }
 
+export interface MemberSelfInput {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
+  family_status?: string | null;
+}
+
+export interface AssignmentRead {
+  role: string;
+  role_id: number;
+  church_id: number;
+  church_name: string;
+}
+
+export interface UserAdmin {
+  id: number;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  assignments: AssignmentRead[];
+}
+
+export interface RoleAssignmentInput {
+  user_id: number;
+  role_id: number;
+  church_id: number;
+}
+
 export type MemberStatus = "pending" | "active" | "inactive" | "rejected";
 
 export interface Member {
@@ -120,9 +166,12 @@ export interface Member {
   email: string;
   address: string | null;
   birth_date: string | null;
+  sexe: string | null;
+  telephone: string | null;
   family_status: string | null;
   conversion_date: string | null;
   is_baptized: boolean;
+  member_code: string | null;
   status: MemberStatus;
   created_at: string;
 }
@@ -139,4 +188,50 @@ export interface MemberQuery {
   status?: MemberStatus;
   limit?: number;
   offset?: number;
+}
+
+export interface MembershipInput {
+  church_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  address?: string | null;
+  birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
+  family_status?: string | null;
+  is_baptized: boolean;
+}
+
+export type SermonFormat = "audio" | "video";
+export type SermonStatus = "draft" | "published" | "archived";
+
+export interface Sermon {
+  id: number;
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description: string | null;
+  series: string | null;
+  format: SermonFormat;
+  status: SermonStatus;
+  duration_seconds: number | null;
+  views: number;
+  created_at: string;
+}
+
+export interface SermonListResult {
+  items: Sermon[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SermonInput {
+  title: string;
+  preacher: string;
+  sermon_date: string;
+  description?: string;
+  series?: string;
+  status?: SermonStatus;
 }

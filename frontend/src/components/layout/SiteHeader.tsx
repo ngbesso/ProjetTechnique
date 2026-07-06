@@ -9,7 +9,7 @@ interface SiteHeaderProps {
 
 const NAV_ITEMS = [
   { label: "Accueil", page: "home" as Page },
-  { label: "Sermons", page: null },
+  { label: "Sermons", page: "sermons" as Page },
   { label: "Événements", page: null },
   { label: "Formation", page: null },
   { label: "Faire un don", page: "donation" as Page },
@@ -55,7 +55,13 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
             <>
               <button
                 className={styles.btnSecondary}
-                onClick={() => navigate("admin")}
+                onClick={() =>
+                  navigate(
+                    user.is_global_admin || user.roles.includes("admin")
+                      ? "admin"
+                      : "mon-profil",
+                  )
+                }
               >
                 <span aria-hidden>&#128100;</span> {user.email}
               </button>
@@ -73,7 +79,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               </button>
               <button
                 className={styles.btnPrimary}
-                onClick={() => navigate("register")}
+                onClick={() => navigate("adhesion")}
               >
                 Devenir membre
               </button>

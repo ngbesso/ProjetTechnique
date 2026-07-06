@@ -8,7 +8,7 @@ from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member
-from app.schemas.church import ChurchCreate, ChurchRead, ChurchUpdate, District
+from app.schemas.church import ChurchCreate, ChurchRead, ChurchUpdate
 
 router = APIRouter(prefix="/churches", tags=["églises"])
 can_manage = Depends(require_global_permission("church:manage"))
@@ -22,9 +22,7 @@ def get_mother(db: Session) -> Church:
 
 
 @router.get("", response_model=list[ChurchRead])
-def list_churches(
-    db: Annotated[Session, Depends(get_db)], district: District | None = None
-):
+def list_churches(db: Annotated[Session, Depends(get_db)], district: str | None = None):
     query = select(Church)
     if district:
         query = query.where(Church.district == district)

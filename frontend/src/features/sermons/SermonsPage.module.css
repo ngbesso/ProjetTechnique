@@ -1,0 +1,242 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--neutral-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text-main);
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+
+.hero {
+  background: linear-gradient(135deg, var(--deep-violet) 0%, #3d3691 100%);
+  color: #fff;
+  padding: 3.5rem 2rem 4rem;
+}
+
+.heroInner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.heroEyebrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+
+.heroTitle {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.heroSubtitle {
+  font-size: 1rem;
+  opacity: 0.8;
+  max-width: 520px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Main ───────────────────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 3rem;
+}
+
+.searchBar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  max-width: 480px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+.btnPrimary {
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stateMsg {
+  color: var(--text-main);
+  opacity: 0.65;
+  padding: 2rem 0;
+}
+
+.errorMsg {
+  color: #b3261e;
+  margin-bottom: 1rem;
+}
+
+/* ── Grid ───────────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, var(--deep-violet) 0%, var(--vivid-violet) 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--deep-violet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.formatTag {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.cardBody {
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.cardTitle {
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.cardMeta {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  margin: 0;
+}
+
+.seriesTag {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  background: var(--neutral-bg);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+/* ── Player overlay ─────────────────────────────────────────────────────── */
+
+.playerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 50, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+}
+
+.playerCard {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 760px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.playerClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.playerMedia {
+  background: #000;
+}
+
+.mediaEl {
+  width: 100%;
+  max-height: 70vh;
+  display: block;
+}
+
+.mediaElAudio {
+  width: 100%;
+  display: block;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, var(--deep-violet) 0%, var(--vivid-violet) 100%);
+}
+
+.playerInfo {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.playerTitle {
+  margin: 0 0 0.35rem;
+}
+
+.playerMeta {
+  opacity: 0.65;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.playerDesc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}

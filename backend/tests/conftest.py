@@ -6,15 +6,23 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.email import get_email_sender
 from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.church import Church
-from app.models.member import Member  # noqa: F401 (enregistre la table)
+from app.models.member import Member, MemberStatus  # noqa: F401
+from app.models.parameter import ParameterValue  # noqa: F401
 from app.models.rbac import Role, UserRole
+from app.models.setting import AppSetting  # noqa: F401
 from app.models.user import User
-from app.seed import ensure_mother_church, seed_roles_permissions
+from app.seed import (
+    ensure_mother_church,
+    seed_parameters,
+    seed_roles_permissions,
+    seed_settings,
+)
 
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or (
     settings.database_url.rsplit("/", 1)[0] + "/obnl_test"
@@ -29,6 +37,8 @@ def _schema():
     with Session(engine) as s:
         seed_roles_permissions(s)
         ensure_mother_church(s)
+        seed_parameters(s)
+        seed_settings(s)
         s.commit()
     yield
     Base.metadata.drop_all(engine)
@@ -81,3 +91,40 @@ def auth_header(client):
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
     return _header
+
+
+@pytest.fixture
+def make_member(db_session, make_user):
+    """Crée un User + un Member actif lié."""
+
+    def _make(email, church_id, password="secret123"):
+        user = make_user(email, password=password)
+        member = Member(
+            church_id=church_id,
+            first_name="Test",
+            last_name="Member",
+            email=email,
+            status=MemberStatus.active,
+            user_id=user.id,
+        )
+        db_session.add(member)
+        db_session.flush()
+        return member
+
+    return _make
+
+
+class FakeSender:
+    def __init__(self):
+        self.sent: list[tuple[str, str]] = []
+
+    def send(self, to, subject, body):
+        self.sent.append((to, subject))
+
+
+@pytest.fixture
+def fake_email():
+    fake = FakeSender()
+    app.dependency_overrides[get_email_sender] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(get_email_sender, None)

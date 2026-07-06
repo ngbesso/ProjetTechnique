@@ -40,6 +40,8 @@ services:
     volumes:
       - ./backend:/app
     depends_on:
+      "mailpit":
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -65,3 +67,9 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # interface web (boîte de réception)
+      - "1025:1025"   # serveur SMTP
+    restart: unless-stopped

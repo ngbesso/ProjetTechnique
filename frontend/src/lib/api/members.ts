@@ -1,6 +1,6 @@
 // members.ts
 import { http } from "./client";
-import type { Member, MemberListResult, MemberQuery } from "../../types";
+import type {Member, MemberListResult, MemberQuery, MemberSelfInput, MembershipInput} from "../../types";
 
 export function fetchMembers(query: MemberQuery = {}): Promise<MemberListResult> {
     const params = new URLSearchParams();
@@ -22,4 +22,18 @@ export function rejectMember(id: number): Promise<Member> {
 
 export function deactivateMember(id: number): Promise<Member> {
     return http.post<Member>(`/members/${id}/deactivate`, {});
+}
+
+export function activateMember(id: number): Promise<Member> {
+    return http.post<Member>(`/members/${id}/activate`, {});
+}
+export function requestMembership(data: MembershipInput): Promise<Member> {
+    return http.post<Member>("/members/request", data);
+}
+
+export function fetchMyProfile(): Promise<Member> {
+    return http.get<Member>("/members/me");
+}
+export function updateMyProfile(data: MemberSelfInput): Promise<Member> {
+    return http.patch<Member>("/members/me", data);
 }
