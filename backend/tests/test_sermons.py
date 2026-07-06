@@ -1,13 +1,15 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from app.models.sermon import Sermon, SermonStatus
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _sermon(db_session, title="Titre Test", status=SermonStatus.draft, preacher="Pasteur X"):
+
+def _sermon(
+    db_session, title="Titre Test", status=SermonStatus.draft, preacher="Pasteur X"
+):
     s = Sermon(
         title=title,
         preacher=preacher,
@@ -27,6 +29,7 @@ def _admin_header(make_user, auth_header):
 
 
 # ── Liste publique ─────────────────────────────────────────────────────────────
+
 
 def test_list_public_only_published(client, db_session):
     _sermon(db_session, "Brouillon", SermonStatus.draft)
@@ -53,6 +56,7 @@ def test_list_public_search(client, db_session):
 
 
 # ── Liste admin ────────────────────────────────────────────────────────────────
+
 
 def test_list_admin_all_statuses(client, db_session, make_user, auth_header):
     _sermon(db_session, "A-draft", SermonStatus.draft)
@@ -94,6 +98,7 @@ def test_list_admin_requires_permission(client, make_user, auth_header):
 
 # ── GET /{id} ──────────────────────────────────────────────────────────────────
 
+
 def test_get_published_increments_views(client, db_session):
     s = _sermon(db_session, "Views Test", SermonStatus.published)
     initial_views = s.views
@@ -121,6 +126,7 @@ def test_get_nonexistent_returns_404(client):
 
 
 # ── POST (create) ──────────────────────────────────────────────────────────────
+
 
 def test_create_sermon(client, make_user, auth_header):
     h = _admin_header(make_user, auth_header)
@@ -196,6 +202,7 @@ def test_create_requires_permission(client, make_user, auth_header):
 
 # ── PATCH (update) ─────────────────────────────────────────────────────────────
 
+
 def test_update_sermon_fields(client, db_session, make_user, auth_header):
     s = _sermon(db_session, "Original", SermonStatus.draft)
     h = _admin_header(make_user, auth_header)
@@ -265,6 +272,7 @@ def test_update_requires_permission(client, db_session, make_user, auth_header):
 
 # ── POST /{id}/media (remplacement fichier) ───────────────────────────────────
 
+
 def test_replace_media(client, db_session, make_user, auth_header):
     s = _sermon(db_session, "Media Test", SermonStatus.draft)
     original_key = s.file_key  # capturer avant que db.refresh l'écrase
@@ -299,6 +307,7 @@ def test_replace_media_requires_permission(client, db_session, make_user, auth_h
 
 
 # ── DELETE ─────────────────────────────────────────────────────────────────────
+
 
 def test_delete_sermon(client, db_session, make_user, auth_header):
     s = _sermon(db_session, "A supprimer", SermonStatus.draft)
