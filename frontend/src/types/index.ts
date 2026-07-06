@@ -30,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -212,4 +212,37 @@ export interface SermonInput {
   description?: string;
   series?: string;
   status?: SermonStatus;
+}
+
+export type PostStatus = "draft" | "published" | "archived";
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  author: string;
+  status: PostStatus;
+  category: string | null;
+  cover_image_url: string | null;
+  views: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface PostListResult {
+  items: Post[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PostInput {
+  title: string;
+  content: string;
+  excerpt?: string;
+  author: string;
+  status?: PostStatus;
+  category?: string;
+  cover_image_url?: string;
 }
