@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
-import type { SermonInput, SermonStatus } from "../../types";
+import { fetchSermonAdminMediaUrl } from "../../lib/api/sermons";
+import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
   title: "",
@@ -21,12 +22,22 @@ const STATUS_LABELS: Record<SermonStatus, string> = {
 
 export function SermonsPanel() {
   const { user } = useAuth();
-  const { sermons, loading, error, loadAdmin, add, edit, remove } = useSermons();
+  const { sermons, loading, error, loadAdmin, add, edit, replaceMedia, remove } = useSermons();
   const [form, setForm] = useState<SermonInput>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [playingSermon, setPlayingSermon] = useState<Sermon | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [editingSermon, setEditingSermon] = useState<Sermon | null>(null);
+  const [editForm, setEditForm] = useState<SermonInput>(EMPTY);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const canManage =
     user?.permissions.includes("*") || user?.permissions.includes("sermon:manage");
@@ -69,6 +80,64 @@ export function SermonsPanel() {
       await remove(id);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Suppression impossible");
+    }
+  }
+
+  async function openPlayer(s: Sermon) {
+    setPlayingSermon(s);
+    setMediaUrl(null);
+    setMediaLoading(true);
+    try {
+      const res = await fetchSermonAdminMediaUrl(s.id);
+      setMediaUrl(res.url);
+    } catch {
+      setMediaUrl(null);
+    } finally {
+      setMediaLoading(false);
+    }
+  }
+
+  function openEdit(s: Sermon) {
+    setEditingSermon(s);
+    setEditForm({
+      title: s.title,
+      preacher: s.preacher,
+      sermon_date: s.sermon_date,
+      description: s.description ?? "",
+      series: s.series ?? "",
+      status: s.status,
+    });
+    setEditFile(null);
+    if (editFileRef.current) editFileRef.current.value = "";
+    setEditError("");
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingSermon) return;
+    if (!editForm.title.trim() || !editForm.preacher.trim() || !editForm.sermon_date) {
+      setEditError("Titre, prédicateur et date sont requis.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError("");
+    try {
+      await edit(editingSermon.id, {
+        title: editForm.title,
+        preacher: editForm.preacher,
+        sermon_date: editForm.sermon_date,
+        description: editForm.description || undefined,
+        series: editForm.series || undefined,
+        status: editForm.status,
+      });
+      if (editFile) {
+        await replaceMedia(editingSermon.id, editFile);
+      }
+      setEditingSermon(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -200,6 +269,18 @@ export function SermonsPanel() {
                     <td className={styles.td}>
                       <div className={styles.actions}>
                         <button
+                          className={styles.btnOutlineSm}
+                          onClick={() => openPlayer(s)}
+                        >
+                          Lire
+                        </button>
+                        <button
+                          className={styles.btnOutlineSm}
+                          onClick={() => openEdit(s)}
+                        >
+                          Modifier
+                        </button>
+                        <button
                           className={styles.btnDanger}
                           onClick={() => handleDelete(s.id, s.title)}
                         >
@@ -214,6 +295,174 @@ export function SermonsPanel() {
           </table>
         )}
       </section>
+
+      {playingSermon && (
+        <div className={styles.modalOverlay} onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "640px" }}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalName}>{playingSermon.title}</h2>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  {playingSermon.preacher} · {playingSermon.sermon_date}
+                </span>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {mediaLoading && (
+                <p style={{ textAlign: "center", color: "var(--text-muted)" }}>Chargement…</p>
+              )}
+              {!mediaLoading && mediaUrl && (
+                playingSermon.format === "video" ? (
+                  <video
+                    controls
+                    autoPlay
+                    style={{ width: "100%", borderRadius: "6px" }}
+                    src={mediaUrl}
+                  />
+                ) : (
+                  <audio
+                    controls
+                    autoPlay
+                    style={{ width: "100%" }}
+                    src={mediaUrl}
+                  />
+                )
+              )}
+              {!mediaLoading && !mediaUrl && (
+                <p style={{ textAlign: "center", color: "var(--color-danger)" }}>
+                  Impossible de charger le fichier média.
+                </p>
+              )}
+              {playingSermon.description && (
+                <p style={{ marginTop: "1rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                  {playingSermon.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingSermon && (
+        <div className={styles.modalOverlay} onClick={() => setEditingSermon(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalName}>Modifier le sermon</h2>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  {editingSermon.format === "video" ? "Vidéo" : "Audio"} · {editingSermon.sermon_date}
+                </span>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => setEditingSermon(null)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form id="editSermonForm" onSubmit={handleEditSubmit}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <input
+                    className={styles.input}
+                    placeholder="Titre *"
+                    required
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Prédicateur *"
+                    required
+                    value={editForm.preacher}
+                    onChange={(e) => setEditForm({ ...editForm, preacher: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    type="date"
+                    required
+                    value={editForm.sermon_date}
+                    onChange={(e) => setEditForm({ ...editForm, sermon_date: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Série (optionnel)"
+                    value={editForm.series ?? ""}
+                    onChange={(e) => setEditForm({ ...editForm, series: e.target.value })}
+                  />
+                  <select
+                    className={styles.select}
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, status: e.target.value as SermonStatus })
+                    }
+                  >
+                    {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    className={styles.input}
+                    placeholder="Description (optionnel)"
+                    value={editForm.description ?? ""}
+                    rows={3}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem" }}>
+                      Remplacer le fichier média (optionnel)
+                    </label>
+                    <input
+                      ref={editFileRef}
+                      className={styles.input}
+                      type="file"
+                      accept="audio/*,video/*"
+                      onChange={(e) => setEditFile(e.target.files?.[0] ?? null)}
+                    />
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+                      Actuel : {editingSermon.format === "video" ? "Vidéo" : "Audio"} — laissez vide pour conserver le fichier existant.
+                    </p>
+                  </div>
+                </div>
+                {editError && (
+                  <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
+                    {editError}
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => setEditingSermon(null)}
+                  disabled={editSaving}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnPrimary}
+                  disabled={editSaving}
+                >
+                  {editSaving ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

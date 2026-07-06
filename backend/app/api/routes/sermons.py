@@ -76,11 +76,7 @@ def get_sermon(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
     return sermon
 
 
-@router.get("/{sermon_id}/stream")
-def stream_sermon(
-    sermon_id: int, request: Request, db: Annotated[Session, Depends(get_db)]
-):
-    sermon = _load_published(db, sermon_id)
+def _stream_response(sermon: Sermon, request: Request) -> StreamingResponse:
     range_header = request.headers.get("range")
     try:
         obj = storage.get_object(sermon.file_key, range_header)
@@ -102,6 +98,31 @@ def stream_sermon(
         media_type=media_type,
         headers=headers,
     )
+
+
+@router.get("/{sermon_id}/stream")
+def stream_sermon(
+    sermon_id: int, request: Request, db: Annotated[Session, Depends(get_db)]
+):
+    return _stream_response(_load_published(db, sermon_id), request)
+
+
+@router.get("/{sermon_id}/admin-stream", dependencies=[can_manage])
+def stream_sermon_admin(
+    sermon_id: int, request: Request, db: Annotated[Session, Depends(get_db)]
+):
+    """Streaming sans vérification de statut — réservé aux gestionnaires."""
+    return _stream_response(_load(db, sermon_id), request)
+
+
+@router.get("/{sermon_id}/admin-media-url", dependencies=[can_manage])
+def get_admin_media_url(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
+    """Retourne une URL présignée valide 5 min — évite le problème de header auth dans audio/video."""
+    sermon = _load(db, sermon_id)
+    if not sermon.file_key:
+        raise HTTPException(404, "Aucun fichier associé à ce sermon")
+    url = storage.presigned_url(sermon.file_key, expires=300)
+    return {"url": url, "format": sermon.format}
 
 
 @router.post("", response_model=SermonRead, status_code=201, dependencies=[can_manage])
@@ -151,6 +172,32 @@ def update_sermon(
     sermon = _load(db, sermon_id)
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(sermon, k, v)
+    db.commit()
+    db.refresh(sermon)
+    return sermon
+
+
+@router.post("/{sermon_id}/media", response_model=SermonRead, dependencies=[can_manage])
+def replace_sermon_media(
+    sermon_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    file: Annotated[UploadFile, File()],
+):
+    sermon = _load(db, sermon_id)
+    if sermon.file_key:
+        try:
+            storage.delete_file(sermon.file_key)
+        except Exception:
+            pass
+    fmt = (
+        SermonFormat.video
+        if (file.content_type or "").startswith("video")
+        else SermonFormat.audio
+    )
+    new_key = f"sermons/{sermon.id}/{file.filename}"
+    storage.upload_file(file.file, new_key, file.content_type)
+    sermon.file_key = new_key
+    sermon.format = fmt
     db.commit()
     db.refresh(sermon)
     return sermon
