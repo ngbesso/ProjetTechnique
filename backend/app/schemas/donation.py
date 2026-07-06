@@ -27,31 +27,18 @@ class DonationCreate(BaseModel):
         return round(v, 2)
 
 
-class PaymentIntentRequest(BaseModel):
-    amount: float = Field(..., gt=0)
-    currency: DonationCurrency = DonationCurrency.CAD
-    category: DonationCategory
-    church_id: int
-    donor_name: str = Field(..., min_length=1)
-    donor_email: str | None = None
+class ZeffyWebhookPayload(BaseModel):
+    """Payload envoyé par le webhook natif Zeffy (Réglages > Intégrations).
 
-    @field_validator("amount")
-    @classmethod
-    def round_two_decimals(cls, v: float) -> float:
-        return round(v, 2)
+    Zeffy ne documente pas un schéma strict champ par champ ; on ne retient
+    que ce dont on a besoin et on ignore le reste pour tolérer les évolutions
+    de leur format.
+    """
 
+    event: str | None = None
+    payment: dict | None = None
 
-class PaymentIntentResponse(BaseModel):
-    client_secret: str
-    payment_intent_id: str
-
-
-class DonationConfirm(BaseModel):
-    payment_intent_id: str
-    category: DonationCategory
-    church_id: int
-    donor_name: str = Field(..., min_length=1)
-    donor_email: str | None = None
+    model_config = {"extra": "ignore"}
 
 
 class DonationRead(BaseModel):
@@ -59,12 +46,12 @@ class DonationRead(BaseModel):
     receipt_number: str
     amount: float
     currency: DonationCurrency
-    category: DonationCategory
-    church_id: int
+    category: DonationCategory | None
+    church_id: int | None
     member_id: int | None
     donor_name: str | None
     donor_email: str | None
-    payment_intent_id: str | None
+    payment_reference: str | None
     payment_status: str
     created_at: datetime
 

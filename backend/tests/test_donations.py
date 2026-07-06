@@ -1,9 +1,13 @@
+import pytest
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.models.church import Church
+from app.models.donation import Donation
 
 
 BASE = "/api/donations"
+WEBHOOK_SECRET = "test-zeffy-secret"
 
 
 # ── fixtures / helpers ────────────────────────────────────────────────────────
@@ -153,3 +157,92 @@ def test_admin_can_list_all_donations(
     r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
     assert r.status_code == 200
     assert len(r.json()) >= 1
+
+
+# ── POST /api/donations/webhooks/zeffy ────────────────────────────────────────
+
+
+def _zeffy_payload(payment_id="zeffy-pay-1", amount=42.5, currency="CAD"):
+    return {
+        "event": "payment.completed",
+        "payment": {
+            "id": payment_id,
+            "amount": amount,
+            "currency": currency,
+            "buyer": {"firstName": "Jean", "lastName": "Dupont", "email": "jean@ex.com"},
+        },
+    }
+
+
+@pytest.fixture(autouse=True)
+def _zeffy_secret(monkeypatch):
+    monkeypatch.setattr(settings, "zeffy_webhook_secret", WEBHOOK_SECRET)
+
+
+def test_zeffy_webhook_wrong_secret(client):
+    r = client.post(f"{BASE}/webhooks/zeffy", json=_zeffy_payload())
+    assert r.status_code == 401
+
+    r = client.post(
+        f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload()
+    )
+    assert r.status_code == 401
+
+
+def test_zeffy_webhook_creates_donation(client, db_session):
+    r = client.post(
+        f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=_zeffy_payload()
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "created"
+
+    donation = db_session.get(Donation, body["donation_id"])
+    assert donation.amount == 42.5
+    assert donation.currency == "CAD"
+    assert donation.church_id is None
+    assert donation.category is None
+    assert donation.member_id is None
+    assert donation.donor_name == "Jean Dupont"
+    assert donation.donor_email == "jean@ex.com"
+    assert donation.payment_reference == "zeffy-pay-1"
+    assert donation.payment_status == "succeeded"
+    assert donation.receipt_number.startswith("REC-")
+
+
+def test_zeffy_webhook_ignores_other_events(client, db_session):
+    payload = _zeffy_payload()
+    payload["event"] = "payment.refunded"
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 200
+    assert r.json()["status"] == "ignored"
+
+
+def test_zeffy_webhook_is_idempotent(client, db_session):
+    payload = _zeffy_payload(payment_id="zeffy-pay-dup")
+    r1 = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    r2 = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r1.json()["status"] == "created"
+    assert r2.json()["status"] == "duplicate"
+    assert r1.json()["donation_id"] == r2.json()["donation_id"]
+
+    count = (
+        db_session.query(Donation)
+        .filter(Donation.payment_reference == "zeffy-pay-dup")
+        .count()
+    )
+    assert count == 1
+
+
+def test_zeffy_webhook_missing_payment_id(client):
+    payload = _zeffy_payload()
+    payload["payment"].pop("id")
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 400
+
+
+def test_zeffy_webhook_invalid_amount(client):
+    payload = _zeffy_payload(payment_id="zeffy-pay-bad-amount")
+    payload["payment"]["amount"] = -5
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 400
