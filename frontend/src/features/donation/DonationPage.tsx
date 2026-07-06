@@ -134,8 +134,7 @@ export function DonationPage() {
                 </h2>
                 <p className={styles.stepSubtitle}>
                   Votre paiement est traité de façon sécurisée par{" "}
-                  <strong>Zeffy</strong>. Un reçu fiscal vous sera envoyé
-                  automatiquement par courriel.
+                  <strong>Zeffy</strong>.
                 </p>
 
                 {zeffyPath ? (
@@ -156,7 +155,6 @@ export function DonationPage() {
 
                 <div className={styles.badges}>
                   <span className={styles.badge}>🔒 Paiement sécurisé (Zeffy)</span>
-                  <span className={styles.badge}>📄 Reçu fiscal par courriel</span>
                   <span className={styles.badge}>✓ Aucun compte requis</span>
                 </div>
               </div>
