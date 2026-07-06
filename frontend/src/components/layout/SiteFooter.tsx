@@ -23,23 +23,21 @@ export function SiteFooter() {
             <ul className={styles.links}>
               <li><button onClick={() => navigate("home")}>Qui sommes-nous</button></li>
               <li><button onClick={() => navigate("sermons")}>Sermons</button></li>
-              <li><button onClick={() => navigate("home")}>Événements</button></li>
             </ul>
           </div>
 
           <div className={styles.col}>
             <p className={styles.colTitle}>Participer</p>
             <ul className={styles.links}>
-              <li><button onClick={() => navigate("home")}>Formation</button></li>
-              <li><button onClick={() => navigate("home")}>Blog &amp; Articles</button></li>
               <li><button onClick={() => navigate("donation")}>Faire un don</button></li>
+              <li><button onClick={() => navigate("adhesion")}>Devenir membre</button></li>
             </ul>
           </div>
 
           <div className={styles.col}>
             <p className={styles.colTitle}>Compte</p>
             <ul className={styles.links}>
-              <li><button onClick={() => navigate("register")}>Devenir membre</button></li>
+              <li><button onClick={() => navigate("adhesion")}>Devenir membre</button></li>
               <li><button onClick={() => navigate("login")}>Se connecter</button></li>
             </ul>
           </div>
