@@ -12,8 +12,17 @@ export function UsersPanel() {
     const [rId, setRId] = useState("");
     const [cId, setCId] = useState("");
     const [assignError, setAssignError] = useState("");
+    const [filterQ, setFilterQ] = useState("");
+    const [filterActive, setFilterActive] = useState("");
 
     useEffect(() => { load(); loadRbac(); loadChurches(); }, [load, loadRbac, loadChurches]);
+
+    const filteredUsers = users.filter((u) => {
+        if (filterQ && !u.email.toLowerCase().includes(filterQ.toLowerCase())) return false;
+        if (filterActive === "active" && !u.is_active) return false;
+        if (filterActive === "inactive" && u.is_active) return false;
+        return true;
+    });
 
     async function handleAssign(e: React.FormEvent) {
         e.preventDefault();
@@ -53,7 +62,24 @@ export function UsersPanel() {
             </section>
 
             <section className={styles.card}>
-                <h3 className={styles.cardTitle}>Utilisateurs ({users.length})</h3>
+                <h3 className={styles.cardTitle}>Utilisateurs ({filteredUsers.length})</h3>
+
+                <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+                    <input
+                        className={styles.input}
+                        placeholder="Rechercher par courriel…"
+                        value={filterQ}
+                        style={{ flex: "1 1 200px" }}
+                        onChange={(e) => setFilterQ(e.target.value)}
+                    />
+                    <select className={styles.select} value={filterActive}
+                        onChange={(e) => setFilterActive(e.target.value)}>
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="inactive">Désactivé</option>
+                    </select>
+                </div>
+
                 {loading ? <p className={styles.stateMsg}>Chargement…</p>
                     : error ? <p className={styles.errorMsg} role="alert">{error}</p>
                         : (
@@ -67,7 +93,7 @@ export function UsersPanel() {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {users.map((u) => (
+                                {filteredUsers.map((u) => (
                                     <tr key={u.id}>
                                         <td className={styles.td}>{u.email}</td>
                                         <td className={styles.td}>

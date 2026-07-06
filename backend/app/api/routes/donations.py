@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin, get_current_member
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
+from app.models.donation import Donation
 from app.schemas.donation import (
     DonationCreate,
     DonationRead,
@@ -39,7 +41,9 @@ def zeffy_webhook(
     if not settings.zeffy_webhook_secret or (
         request.query_params.get("secret") != settings.zeffy_webhook_secret
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Secret invalide")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Secret invalide"
+        )
 
     event = payload.get("event")
     if event != "payment.completed":
@@ -67,9 +71,11 @@ def zeffy_webhook(
         currency = "CAD"
 
     buyer = payment.get("buyer") or {}
-    donor_name = buyer.get("name") or " ".join(
-        filter(None, [buyer.get("firstName"), buyer.get("lastName")])
-    ) or None
+    donor_name = (
+        buyer.get("name")
+        or " ".join(filter(None, [buyer.get("firstName"), buyer.get("lastName")]))
+        or None
+    )
     donor_email = buyer.get("email")
 
     donation = donation_service.create_from_zeffy(
@@ -105,11 +111,33 @@ def create_donation(
 def list_donations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    q: str | None = None,
+    payment_status: str | None = None,
+    category: str | None = None,
+    currency: str | None = None,
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ):
-    """Liste tous les dons — réservé aux administrateurs."""
-    return donation_service.list_all(db, skip=skip, limit=limit)
+    """Liste tous les dons avec filtres — réservé aux administrateurs."""
+    query = select(Donation)
+    if q:
+        term = f"%{q}%"
+        query = query.where(
+            or_(
+                Donation.donor_name.ilike(term),
+                Donation.donor_email.ilike(term),
+                Donation.receipt_number.ilike(term),
+            )
+        )
+    if payment_status:
+        query = query.where(Donation.payment_status == payment_status)
+    if category:
+        query = query.where(Donation.category == category)
+    if currency:
+        query = query.where(Donation.currency == currency)
+    return db.scalars(
+        query.order_by(Donation.created_at.desc()).offset(skip).limit(limit)
+    ).all()
 
 
 @router.get("/me", response_model=list[DonationRead])

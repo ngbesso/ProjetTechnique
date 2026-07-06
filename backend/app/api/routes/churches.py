@@ -22,8 +22,15 @@ def get_mother(db: Session) -> Church:
 
 
 @router.get("", response_model=list[ChurchRead])
-def list_churches(db: Annotated[Session, Depends(get_db)], district: str | None = None):
+def list_churches(
+    db: Annotated[Session, Depends(get_db)],
+    q: str | None = None,
+    district: str | None = None,
+):
     query = select(Church)
+    if q:
+        term = f"%{q}%"
+        query = query.where(Church.name.ilike(term) | Church.pastor_name.ilike(term))
     if district:
         query = query.where(Church.district == district)
     return db.scalars(query.order_by(Church.name)).all()

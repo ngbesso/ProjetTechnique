@@ -150,9 +150,11 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
         loadChurches();
     }, [load, loadChurches, initialStatus]);
 
-    function applyFilters(e: React.FormEvent) {
-        e.preventDefault();
-        load({ q: q.trim() || undefined, status: status || undefined });
+    function applyFilters(overrides?: { q?: string; status?: string }) {
+        load({
+            q: (overrides?.q ?? q).trim() || undefined,
+            status: (overrides?.status ?? status) as MemberStatus | undefined,
+        });
     }
 
     return (
@@ -160,18 +162,17 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
             <section className={styles.card}>
                 <h3 className={styles.cardTitle}>Membres ({total})</h3>
 
-                <form onSubmit={applyFilters} className={styles.toolbar}>
+                <form onSubmit={(e) => { e.preventDefault(); applyFilters(); }} className={styles.toolbar}>
                     <input className={styles.input} placeholder="Rechercher (nom, courriel)…"
-                        value={q} onChange={(e) => setQ(e.target.value)} />
+                        value={q} onChange={(e) => { setQ(e.target.value); applyFilters({ q: e.target.value }); }} />
                     <select className={styles.select} value={status}
-                        onChange={(e) => setStatus(e.target.value as MemberStatus | "")}>
+                        onChange={(e) => { setStatus(e.target.value as MemberStatus | ""); applyFilters({ status: e.target.value }); }}>
                         <option value="">Tous les statuts</option>
                         <option value="pending">En attente</option>
                         <option value="active">Actif</option>
                         <option value="inactive">Inactif</option>
                         <option value="rejected">Refusé</option>
                     </select>
-                    <button type="submit" className={styles.btnPrimary}>Filtrer</button>
                 </form>
 
                 {error && <p className={styles.errorMsg} role="alert">{error}</p>}

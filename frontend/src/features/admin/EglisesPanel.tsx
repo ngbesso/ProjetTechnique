@@ -32,10 +32,27 @@ export function EglisesPanel() {
         user?.permissions.includes("*") || user?.permissions.includes("church:manage");
     const isEditing = editingId !== null;
 
+    const [filterQ, setFilterQ] = useState("");
+    const [filterDistrict, setFilterDistrict] = useState("");
+    const [filterType, setFilterType] = useState("");
+
     useEffect(() => {
         load();
         loadDistricts();
     }, [load, loadDistricts]);
+
+    const filteredChurches = churches.filter((c) => {
+        if (filterQ) {
+            const term = filterQ.toLowerCase();
+            if (!c.name.toLowerCase().includes(term) &&
+                !(c.pastor_name ?? "").toLowerCase().includes(term) &&
+                !(c.address ?? "").toLowerCase().includes(term)) return false;
+        }
+        if (filterDistrict && c.district !== filterDistrict) return false;
+        if (filterType === "mere" && !c.is_mother) return false;
+        if (filterType === "affiliee" && c.is_mother) return false;
+        return true;
+    });
 
     function startEdit(c: Church) {
         setEditingId(c.id);
@@ -123,9 +140,31 @@ export function EglisesPanel() {
             )}
 
             <section className={styles.card}>
-                <h3 className={styles.cardTitle}>Églises ({churches.length})</h3>
-                {churches.length === 0 ? (
-                    <p className={styles.empty}>Aucune église enregistrée.</p>
+                <h3 className={styles.cardTitle}>Églises ({filteredChurches.length})</h3>
+
+                <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+                    <input
+                        className={styles.input}
+                        placeholder="Rechercher (nom, pasteur, adresse)…"
+                        value={filterQ}
+                        style={{ flex: "1 1 180px" }}
+                        onChange={(e) => setFilterQ(e.target.value)}
+                    />
+                    <select className={styles.select} value={filterDistrict}
+                        onChange={(e) => setFilterDistrict(e.target.value)}>
+                        <option value="">Tous les districts</option>
+                        {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
+                    </select>
+                    <select className={styles.select} value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}>
+                        <option value="">Tous les types</option>
+                        <option value="mere">Mère</option>
+                        <option value="affiliee">Affiliée</option>
+                    </select>
+                </div>
+
+                {filteredChurches.length === 0 ? (
+                    <p className={styles.empty}>Aucune église trouvée.</p>
                 ) : (
                     <table className={styles.table}>
                         <thead>
@@ -138,7 +177,7 @@ export function EglisesPanel() {
                         </tr>
                         </thead>
                         <tbody>
-                        {churches.map((c) => (
+                        {filteredChurches.map((c) => (
                             <tr key={c.id} className={editingId === c.id ? styles.rowEditing : undefined}>
                                 <td className={styles.td}><strong>{c.name}</strong></td>
                                 <td className={styles.td}>{c.district ?? "—"}</td>
