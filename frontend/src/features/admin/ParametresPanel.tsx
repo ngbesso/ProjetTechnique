@@ -207,7 +207,7 @@ function OptionsPanel() {
 
     useEffect(() => {
         fetchSettings()
-            .then(setAppSettings)
+            .then((list) => setAppSettings(list.filter((s) => s.value === "true" || s.value === "false")))
             .catch((e) => setError(e instanceof Error ? e.message : "Erreur"))
             .finally(() => setLoading(false));
     }, []);
