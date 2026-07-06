@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     ai_service_url: str = "http://ai-service:8001"
 
+    zeffy_webhook_secret: str = ""
+
     admin_email: str = "admin@obnl.org"
     admin_password: str = "Admin1234!"
 

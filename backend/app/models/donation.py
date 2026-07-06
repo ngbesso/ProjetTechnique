@@ -36,17 +36,17 @@ class Donation(Base):
         nullable=False,
         default=DonationCurrency.CAD,
     )
-    category: Mapped[str] = mapped_column(
-        Enum(DonationCategory, name="donationcategory"), nullable=False
+    category: Mapped[str | None] = mapped_column(
+        Enum(DonationCategory, name="donationcategory"), nullable=True
     )
-    # Église destinataire du don (obligatoire)
-    church_id: Mapped[int] = mapped_column(
+    # Église destinataire du don (inconnue pour les dons reçus via le webhook Zeffy)
+    church_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("churches.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
-    # Membre donateur (obligatoire)
+    # Membre donateur (facultatif : anonyme pour les dons Zeffy)
     member_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("members.id", ondelete="SET NULL"),
@@ -55,6 +55,10 @@ class Donation(Base):
     )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    payment_reference: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, unique=True, index=True
+    )
+    payment_status: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
