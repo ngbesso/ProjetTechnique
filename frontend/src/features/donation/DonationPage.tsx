@@ -4,9 +4,8 @@ import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { fetchChurches } from "../../lib/api/churches";
 import { fetchParameters } from "../../lib/api/parameters";
+import { fetchPublicSettings } from "../../lib/api/settings";
 import type { Church, ParameterValue } from "../../types";
-
-const ZEFFY_EMBED_PATH = import.meta.env.VITE_ZEFFY_EMBED_PATH as string | undefined;
 
 export function DonationPage() {
   const [churches, setChurches] = useState<Church[]>([]);
@@ -16,6 +15,7 @@ export function DonationPage() {
   const [loadingChurches, setLoadingChurches] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [categoriesError, setCategoriesError] = useState(false);
+  const [zeffyPath, setZeffyPath] = useState<string>("");
 
   useEffect(() => {
     fetchChurches()
@@ -33,6 +33,10 @@ export function DonationPage() {
       })
       .catch(() => setCategoriesError(true))
       .finally(() => setLoadingCategories(false));
+
+    fetchPublicSettings()
+      .then((s) => setZeffyPath(s.zeffy_embed_path ?? ""))
+      .catch(() => {});
   }, []);
 
   // Zeffy est visible dès que l'église est choisie ET (catégorie choisie OU pas de catégories disponibles)
@@ -134,12 +138,12 @@ export function DonationPage() {
                   automatiquement par courriel.
                 </p>
 
-                {ZEFFY_EMBED_PATH ? (
+                {zeffyPath ? (
                   <div className={styles.zeffyWrapper}>
                     <iframe
                       key={`${selectedChurch!.id}-${selectedCategory?.id ?? 0}`}
                       title="Formulaire de don Zeffy"
-                      src={`https://www.zeffy.com${ZEFFY_EMBED_PATH}`}
+                      src={`https://www.zeffy.com${zeffyPath}`}
                       className={styles.zeffyEmbed}
                       allowFullScreen
                     />

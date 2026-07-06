@@ -115,7 +115,9 @@ def get_dashboard(
     cat_rows = db.execute(
         select(Donation.category, func.sum(Donation.amount)).group_by(Donation.category)
     ).all()
-    by_category: dict[str, float] = {r[0]: float(r[1] or 0) for r in cat_rows}
+    by_category: dict[str, float] = {
+        (r[0] or "Non classifié"): float(r[1] or 0) for r in cat_rows
+    }
 
     dons_by_month: list[MonthAmount] = []
     for y, m, label in _six_months():
