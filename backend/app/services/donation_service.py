@@ -13,6 +13,8 @@ def create_donation(
     member_id: int,
     donor_name: str,
     donor_email: str | None = None,
+    payment_intent_id: str | None = None,
+    payment_status: str = "manual",
 ) -> Donation:
     donation = Donation(
         receipt_number=_receipt_number(),
@@ -24,11 +26,17 @@ def create_donation(
         donor_name=donor_name,
         donor_email=donor_email,
         created_at=datetime.now(timezone.utc),
+        payment_intent_id=payment_intent_id,
+        payment_status=payment_status,
     )
     db.add(donation)
     db.commit()
     db.refresh(donation)
     return donation
+
+
+def get_by_payment_intent(db: Session, payment_intent_id: str) -> Donation | None:
+    return db.query(Donation).filter(Donation.payment_intent_id == payment_intent_id).first()
 
 
 def get_donation(db: Session, donation_id: int) -> Donation | None:

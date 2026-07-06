@@ -16,6 +16,9 @@ class Settings(BaseSettings):
 
     ai_service_url: str = "http://ai-service:8001"
 
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+
     admin_email: str = "admin@obnl.org"
     admin_password: str = "Admin1234!"
 

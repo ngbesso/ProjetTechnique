@@ -49,6 +49,10 @@ class Donation(Base):
     )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    payment_intent_id: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, unique=True, index=True
+    )
+    payment_status: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

@@ -359,6 +359,160 @@
   padding: 0.25rem 0.6rem;
 }
 
+/* ── Auth notice ────────────────────────────────────────────────────────────── */
+
+.authNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #fffbeb;
+  border: 1.5px solid #fcd34d;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.authNoticeIcon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.authNotice > div strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #92400e;
+  margin-bottom: 0.15rem;
+}
+
+.authNotice > div p {
+  font-size: 0.8rem;
+  color: #b45309;
+  margin: 0;
+}
+
+.authNoticeActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.authNoticeBtn {
+  padding: 0.4rem 0.9rem;
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.authNoticeBtn:hover {
+  opacity: 0.88;
+}
+
+.authNoticeBtnOutline {
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  color: var(--vivid-violet);
+  border: 1.5px solid var(--vivid-violet);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.authNoticeBtnOutline:hover {
+  background: rgba(83, 74, 183, 0.07);
+}
+
+/* ── Stripe payment step ────────────────────────────────────────────────────── */
+
+.paymentStep {
+  display: flex;
+  flex-direction: column;
+}
+
+.paymentSummary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  background: var(--neutral-bg);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.paymentSummaryLabel {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.paymentSummaryAmount {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+}
+
+.paymentSummaryChurch {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.cardWrapper {
+  margin-bottom: 0.25rem;
+}
+
+.cardElement {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.75rem;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 42px;
+}
+
+.cardElement:focus-within {
+  border-color: var(--vivid-violet);
+  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+.cardLoading {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+.btnBack {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.btnBack:hover:not(:disabled) {
+  color: var(--text-main);
+}
+
+.btnBack:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Success screen ─────────────────────────────────────────────────────── */
 
 .successWrap {
