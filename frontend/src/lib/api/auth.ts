@@ -21,3 +21,14 @@ export async function register(data: UserCreate): Promise<UserInfo> {
 export function logout(): void {
   setToken(null);
 }
+export function setPassword(token: string, password: string): Promise<Token> {
+  return http.post<Token>("/auth/set-password", { token, password });
+}
+
+export function forgotPassword(email: string): Promise<void> {
+  return http.post<void>("/auth/forgot-password", { email });
+}
+
+export function resetPassword(token: string, password: string): Promise<Token> {
+  return http.post<Token>("/auth/reset-password", { token, password });
+}

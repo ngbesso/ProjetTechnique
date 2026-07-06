@@ -3,29 +3,38 @@ import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
-import type { Role, Permission } from "../../types";
+import { usePendingCount } from "../../hooks/usePendingCount";
+import type { MemberStatus, Role, Permission } from "../../types";
+import { DashboardPanel } from "./DashboardPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { MembresPanel } from "./MembresPanel";
+import { ParametresPanel } from "./ParametresPanel";
+import { SermonsPanel } from "./SermonsPanel";
+import { UsersPanel } from "./UsersPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
 type Section =
+  | "dashboard"
   | "membres"
   | "eglises"
   | "dons"
   | "sermons"
   | "evenements"
   | "pages"
-  | "utilisateurs";
+  | "utilisateurs"
+  | "parametres";
 
-const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
+const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
+  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
-  { id: "eglises", label: "Églises", icon: "⛪" },
+  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "evenements", label: "Événements", icon: "📅" },
-  { id: "pages", label: "Pages & Menu", icon: "📄" },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑" },
+  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
+  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
+  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
 ];
 
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
@@ -206,7 +215,15 @@ export function AdminPage() {
   const { roles, permissions, loading, error, load, addRole, saveRolePermissions } =
     useRbac();
 
-  const [section, setSection] = useState<Section>("utilisateurs");
+  const { count: pendingCount, refresh: refreshPending } = usePendingCount();
+
+  const isGlobalAdmin = user?.is_global_admin ?? false;
+  const NAV_ITEMS = ALL_NAV_ITEMS.filter(
+    (item) => !item.globalOnly || isGlobalAdmin,
+  );
+
+  const [section, setSection] = useState<Section>("dashboard");
+  const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -287,12 +304,16 @@ export function AdminPage() {
               className={`${styles.navItem} ${section === item.id ? styles.navItemActive : ""}`}
               onClick={() => {
                 setSection(item.id);
+                setMembresInitialStatus(undefined);
                 setEditingRoleId(null);
                 setCreateError("");
               }}
             >
               <span className={styles.navIcon}>{item.icon}</span>
               {item.label}
+              {item.id === "membres" && pendingCount > 0 && (
+                <span className={styles.navBadge}>{pendingCount}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -310,6 +331,24 @@ export function AdminPage() {
         <header className={styles.topBar}>
           <h1 className={styles.topTitle}>{activeLabel}</h1>
           <div className={styles.topUser}>
+            <button
+              className={styles.notifBtn}
+              title={
+                pendingCount > 0
+                  ? `${pendingCount} demande${pendingCount > 1 ? "s" : ""} en attente`
+                  : "Aucune nouvelle demande"
+              }
+              onClick={() => {
+                setSection("membres");
+                setMembresInitialStatus("pending");
+                refreshPending();
+              }}
+            >
+              🔔
+              {pendingCount > 0 && (
+                <span className={styles.notifBadge}>{pendingCount}</span>
+              )}
+            </button>
             <div className={styles.userInfo}>
               <span className={styles.userEmail}>{user?.email}</span>
               <span className={styles.userRoles}>{user?.roles.join(", ")}</span>
@@ -322,7 +361,11 @@ export function AdminPage() {
 
         {/* Content */}
         <main className={styles.content}>
-          {section === "utilisateurs" ? (
+          {section === "dashboard" ? (
+              <DashboardPanel />
+          ) : section === "utilisateurs" ? (
+              <>
+              <UsersPanel />
               <RbacPanel
                   roles={roles}
                   permissions={permissions}
@@ -342,10 +385,18 @@ export function AdminPage() {
                   onSavePerms={savePerms}
                   onCancelEdit={() => setEditingRoleId(null)}
               />
+              </>
           ) : section === "eglises" ? (
               <EglisesPanel />
           ) : section === "membres" ? (
-              <MembresPanel />
+              <MembresPanel
+                initialStatus={membresInitialStatus}
+                key={membresInitialStatus ?? "all"}
+              />
+          ) : section === "sermons" ? (
+              <SermonsPanel />
+          ) : section === "parametres" ? (
+              <ParametresPanel />
           ) : (
               <PlaceholderPanel label={activeLabel} />
           )}

@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
 
     s3_endpoint_url: str = "http://minio:9000"
+    s3_public_url: str = "http://localhost:9000"
     s3_bucket: str = "sermons"
+    minio_root_user: str = "minioadmin"
+    minio_root_password: str = "minioadmin"
 
     ai_service_url: str = "http://ai-service:8001"
 
@@ -29,6 +32,15 @@ class Settings(BaseSettings):
         "http://localhost:5176",
         "http://localhost:5177",
     ]
+    frontend_url: str = "http://localhost:5173"
+
+    email_backend: str = "smtp"  # "console" | "smtp"
+    smtp_host: str = "mailpit"
+    smtp_port: int = 1025
+    smtp_use_tls: bool = False  # True for production SMTP (port 587)
+    smtp_username: str = ""
+    smtp_password: str = ""
+    email_from: str = "no-reply@mission.org"
 
 
 settings = Settings()

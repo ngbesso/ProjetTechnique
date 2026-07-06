@@ -9,12 +9,16 @@
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: var(--sidebar-w);
-  flex-shrink: 0;
+  height: 100vh;
   background: var(--deep-violet);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
 }
 
 .sidebarBrand {
@@ -128,10 +132,14 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  margin-left: var(--sidebar-w);
 }
 
 /* ── Top bar ────────────────────────────────────────────────── */
 .topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -187,6 +195,61 @@
 .logoutBtn:hover {
   border-color: #ef4444;
   color: #ef4444;
+}
+
+/* ── Notification bell ──────────────────────────────────────── */
+.notifBtn {
+  position: relative;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.7rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.notifBtn:hover {
+  border-color: var(--vivid-violet);
+  color: var(--vivid-violet);
+}
+
+.notifBadge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid var(--card-bg);
+  line-height: 1;
+}
+
+/* ── Nav badge (sidebar) ────────────────────────────────────── */
+.navBadge {
+  margin-left: auto;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
 }
 
 /* ── Content area ───────────────────────────────────────────── */
@@ -464,6 +527,7 @@
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { width: 56px; }
+  .main { margin-left: 56px; }
   .brandName, .brandSub, .navItem span:not(.navIcon), .backBtn { display: none; }
   .navItem { justify-content: center; padding: 0.75rem; }
   .sidebarBrand { padding: 1rem 0.5rem; justify-content: center; }
@@ -574,4 +638,117 @@
   white-space: nowrap;
 }
 .btnDanger:hover { border-color: #b91c1c; background: #fef2f2; }
+.btnDanger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnOutlineSm {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.12s, color 0.12s;
+}
+.btnOutlineSm:hover { border-color: var(--vivid-violet); color: var(--vivid-violet); }
+
 .rowEditing { background: rgba(83, 74, 183, 0.05); }
+
+/* ── Modale détail membre ────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalCard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalName {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 0 0 0.45rem;
+}
+
+.modalClose {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.modalClose:hover { color: var(--text-main); }
+
+.modalBody {
+  padding: 1.25rem 1.75rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.detailGrid { margin: 0; display: flex; flex-direction: column; }
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.detailRow:last-child { border-bottom: none; }
+
+.detailKey {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  align-self: center;
+}
+
+.detailVal {
+  font-size: 0.875rem;
+  color: var(--text-main);
+  margin: 0;
+  align-self: center;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1.25rem 1.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--neutral-bg);
+}
+
+.helpText { font-size: .78rem; color: var(--text-muted); margin: .75rem 0 0; }
+.chipX { background: none; border: none; color: inherit; cursor: pointer; margin-left: .35rem; font-weight: 700; }

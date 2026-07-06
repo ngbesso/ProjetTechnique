@@ -3,6 +3,8 @@ import styles from "./LoginPage.module.css";
 import { login } from "../../lib/api/auth";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
+import { SiteHeader } from "../../components/layout/SiteHeader";
+import { SiteFooter } from "../../components/layout/SiteFooter";
 
 export function LoginPage() {
   const { setUser } = useAuth();
@@ -33,21 +35,9 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      {/* Panneau de marque */}
-      <div className={styles.brandPanel}>
-        <div className={styles.brandTop}>
-          <div className={styles.brandLogo}>+</div>
-          <h1 className={styles.brandName}>Mission Évangélique</h1>
-          <p className={styles.brandTagline}>unis dans la foi</p>
-        </div>
-        <blockquote className={styles.brandQuote}>
-          « Allez, faites de toutes les nations des disciples. »
-        </blockquote>
-        <p className={styles.brandSecurity}>🔒 Connexion sécurisée SSL</p>
-      </div>
+      <SiteHeader />
 
-      {/* Panneau formulaire */}
-      <div className={styles.formPanel}>
+      <main className={styles.main}>
         <div className={styles.formCard}>
           <h2 className={styles.formTitle}>Connexion</h2>
           <p className={styles.formSubtitle}>
@@ -94,9 +84,13 @@ export function LoginPage() {
             )}
 
             <div className={styles.forgotRow}>
-              <a href="#" className={styles.link}>
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => navigate("mot-de-passe-oublie")}
+              >
                 Mot de passe oublié ?
-              </a>
+              </button>
             </div>
 
             <button
@@ -110,15 +104,14 @@ export function LoginPage() {
 
           <p className={styles.registerPrompt}>
             Pas encore membre ?{" "}
-            <button
-              className={styles.linkBtn}
-              onClick={() => navigate("register")}
-            >
+            <button className={styles.linkBtn} onClick={() => navigate("adhesion")}>
               Créer un compte
             </button>
           </p>
         </div>
-      </div>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }
