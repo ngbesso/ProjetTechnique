@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./BlogPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import { useRouteParams } from "../../context/RouterContext";
 import { usePosts } from "../../hooks/usePosts";
 import { fetchPost, fetchPostCategories } from "../../lib/api/posts";
 import type { Post } from "../../types";
@@ -67,7 +68,10 @@ function PostDetail({ postId, onBack }: { postId: number; onBack: () => void }) 
 
 export function BlogPage() {
   const { posts, total, loading, error, load } = usePosts();
-  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const params = useRouteParams();
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(
+    typeof params.postId === "number" ? params.postId : null,
+  );
   const [filterQ, setFilterQ] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
