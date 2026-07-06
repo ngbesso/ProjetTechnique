@@ -94,7 +94,7 @@ function AboutSection() {
             d'Églises autour d'une vision commune : faire des disciples dans chaque
             communauté et chaque nation.
           </p>
-          <a href="#qui-sommes-nous-detail" className={styles.textLink}>
+          <a href="#qui-sommes-nous" className={styles.textLink}>
             En savoir plus →
           </a>
         </div>
@@ -189,6 +189,7 @@ function EventsSection() {
 }
 
 function FormationSection() {
+  const navigate = useNavigate();
   return (
     <section id="formation" className={`${styles.section} ${styles.sectionAlt}`}>
       <div className={styles.formationLayout}>
@@ -202,7 +203,7 @@ function FormationSection() {
             Des programmes de formation théologique, des parcours de discipulat et
             des séminaires pratiques — ouverts à tous les membres, partout dans la mission.
           </p>
-          <button className={styles.btnPrimary}>S'inscrire en ligne</button>
+          <button className={styles.btnPrimary} onClick={() => navigate("adhesion")}>S'inscrire en ligne</button>
         </div>
       </div>
     </section>
@@ -217,7 +218,6 @@ function BlogSection() {
           <p className={styles.sectionEyebrow}>Lire</p>
           <h2 className={styles.sectionTitle}>Blog &amp; Articles</h2>
         </div>
-        <a href="#blog-all" className={styles.seeAllLink}>Tout lire →</a>
       </div>
       <div className={styles.blogGrid}>
         {ARTICLES.map((article) => (
@@ -277,9 +277,6 @@ export function HomePage() {
         <DonationBand />
       </main>
       <SiteFooter />
-      <button className={styles.assistantFab} aria-label="Ouvrir l'assistant IA">
-        ○ Assistant
-      </button>
     </div>
   );
 }
