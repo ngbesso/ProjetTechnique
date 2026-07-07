@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import styles from "./AdminPage.module.css";
+import adminStyles from "./AdminPage.module.css";
+import styles from "./EglisesPanel.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
@@ -64,6 +65,7 @@ export function EglisesPanel() {
         setForm(churchToForm(c));
         setFormError("");
         setFieldErrors({});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function cancelEdit() {
@@ -71,6 +73,10 @@ export function EglisesPanel() {
         setForm(EMPTY);
         setFormError("");
         setFieldErrors({});
+    }
+
+    function clearFieldError(key: keyof FieldErrors) {
+        setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -112,79 +118,177 @@ export function EglisesPanel() {
         }
     }
 
-    if (loading) return <p className={styles.stateMsg}>Chargement…</p>;
+    if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
     return (
-        <div className={styles.rbacWrapper}>
-            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        <div className={adminStyles.rbacWrapper}>
+            {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
 
             {canManage && (
-                <section className={styles.card}>
-                    <h3 className={styles.cardTitle}>
-                        {isEditing ? "Modifier l'église" : "Ajouter une église affiliée"}
-                    </h3>
-                    <form onSubmit={handleSubmit} className={styles.formGrid}>
-                        <input className={styles.input} placeholder="Nom officiel *" required
-                               value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                        <select className={styles.select} value={form.district ?? ""}
-                                onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}>
-                            <option value="">District…</option>
-                            {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
-                        </select>
-                        <input className={styles.input} placeholder="Pasteur / représentant"
-                               value={form.pastor_name ?? ""} onChange={(e) => setForm({ ...form, pastor_name: e.target.value })} />
-                        <div>
-                            <input className={styles.input} placeholder="Adresse"
-                                   value={form.address ?? ""}
-                                   onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors((fe) => ({ ...fe, address: undefined })); }} />
-                            {fieldErrors.address && <p className={styles.fieldError} role="alert">{fieldErrors.address}</p>}
+                <div className={styles.formCard}>
+                    {/* En-tête coloré */}
+                    <div className={styles.formHeader}>
+                        <div className={styles.formHeaderIcon}>
+                            {isEditing ? "✏️" : "🏛"}
                         </div>
                         <div>
-                            <input className={styles.input} placeholder="Téléphone (ex. : 514-123-4567)"
-                                   value={form.phone ?? ""}
-                                   onChange={(e) => { setForm({ ...form, phone: e.target.value }); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
-                            {fieldErrors.phone && <p className={styles.fieldError} role="alert">{fieldErrors.phone}</p>}
+                            <p className={styles.formHeaderTitle}>
+                                {isEditing ? "Modifier l'église" : "Ajouter une église affiliée"}
+                            </p>
+                            <p className={styles.formHeaderSub}>
+                                {isEditing
+                                    ? "Modifiez les informations ci-dessous puis enregistrez."
+                                    : "Remplissez les informations de la nouvelle église affiliée."}
+                            </p>
                         </div>
-                        <div>
-                            <input className={styles.input} type="email" placeholder="Courriel (ex. : eglise@exemple.com)"
-                                   value={form.email ?? ""}
-                                   onChange={(e) => { setForm({ ...form, email: e.target.value }); setFieldErrors((fe) => ({ ...fe, email: undefined })); }} />
-                            {fieldErrors.email && <p className={styles.fieldError} role="alert">{fieldErrors.email}</p>}
+                    </div>
+
+                    <form onSubmit={handleSubmit} className={styles.formBody}>
+                        <div className={styles.grid2}>
+
+                            {/* ── Identification ── */}
+                            <div className={styles.sectionDivider}>
+                                <p className={styles.sectionLabel}>Identification</p>
+                            </div>
+
+                            <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>
+                                    Nom officiel <span className={styles.required}>*</span>
+                                </label>
+                                <input
+                                    className={styles.input}
+                                    placeholder="ex. : Église Évangile Vivant"
+                                    required
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                />
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.label}>District</label>
+                                <select
+                                    className={styles.select}
+                                    value={form.district ?? ""}
+                                    onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}
+                                >
+                                    <option value="">Sélectionner un district…</option>
+                                    {districtValues.map((d) => (
+                                        <option key={d.id} value={d.label}>{d.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.label}>Pasteur / représentant</label>
+                                <input
+                                    className={styles.input}
+                                    placeholder="ex. : Pasteur Jean Dupont"
+                                    value={form.pastor_name ?? ""}
+                                    onChange={(e) => setForm({ ...form, pastor_name: e.target.value })}
+                                />
+                            </div>
+
+                            {/* ── Coordonnées ── */}
+                            <div className={styles.sectionDivider}>
+                                <p className={styles.sectionLabel}>Coordonnées</p>
+                            </div>
+
+                            <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>Adresse</label>
+                                <input
+                                    className={`${styles.input} ${fieldErrors.address ? styles.inputError : ""}`}
+                                    placeholder="ex. : 123 Rue principale, Montréal, QC"
+                                    value={form.address ?? ""}
+                                    onChange={(e) => { setForm({ ...form, address: e.target.value }); clearFieldError("address"); }}
+                                />
+                                {fieldErrors.address && (
+                                    <p className={styles.fieldError} role="alert">
+                                        <span>⚠</span> {fieldErrors.address}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.label}>Téléphone</label>
+                                <input
+                                    className={`${styles.input} ${fieldErrors.phone ? styles.inputError : ""}`}
+                                    placeholder="ex. : 514-123-4567"
+                                    type="tel"
+                                    value={form.phone ?? ""}
+                                    onChange={(e) => { setForm({ ...form, phone: e.target.value }); clearFieldError("phone"); }}
+                                />
+                                {fieldErrors.phone && (
+                                    <p className={styles.fieldError} role="alert">
+                                        <span>⚠</span> {fieldErrors.phone}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.label}>Courriel</label>
+                                <input
+                                    className={`${styles.input} ${fieldErrors.email ? styles.inputError : ""}`}
+                                    type="email"
+                                    placeholder="ex. : eglise@exemple.com"
+                                    value={form.email ?? ""}
+                                    onChange={(e) => { setForm({ ...form, email: e.target.value }); clearFieldError("email"); }}
+                                />
+                                {fieldErrors.email && (
+                                    <p className={styles.fieldError} role="alert">
+                                        <span>⚠</span> {fieldErrors.email}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <button type="submit" className={styles.btnPrimary} disabled={saving}>
-                            {saving ? "Enregistrement…" : isEditing ? "Enregistrer" : "+ Ajouter"}
-                        </button>
-                        {isEditing && (
-                            <button type="button" className={styles.btnGhost} onClick={cancelEdit} disabled={saving}>
-                                Annuler
-                            </button>
+
+                        {formError && (
+                            <div className={styles.errorBanner} role="alert">
+                                <span className={styles.errorBannerIcon}>⚠</span>
+                                <span>{formError}</span>
+                            </div>
                         )}
+
+                        <div className={styles.formActions}>
+                            {isEditing && (
+                                <button
+                                    type="button"
+                                    className={styles.btnGhost}
+                                    onClick={cancelEdit}
+                                    disabled={saving}
+                                >
+                                    Annuler
+                                </button>
+                            )}
+                            <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                                {saving
+                                    ? "Enregistrement…"
+                                    : isEditing
+                                    ? "✓ Enregistrer les modifications"
+                                    : "+ Ajouter l'église"}
+                            </button>
+                        </div>
                     </form>
-                    {formError && (
-                        <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
-                            {formError}
-                        </p>
-                    )}
-                </section>
+                </div>
             )}
 
-            <section className={styles.card}>
-                <h3 className={styles.cardTitle}>Églises ({filteredChurches.length})</h3>
+            {/* ── Liste ── */}
+            <section className={adminStyles.card}>
+                <h3 className={adminStyles.cardTitle}>Églises ({filteredChurches.length})</h3>
 
-                <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+                <div className={adminStyles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
                     <input
-                        className={styles.input}
+                        className={adminStyles.input}
                         placeholder="Rechercher (nom, pasteur, adresse)…"
                         value={filterQ}
                         style={{ flex: "1 1 180px" }}
                         onChange={(e) => setFilterQ(e.target.value)}
                     />
-                    <select className={styles.select} value={filterDistrict}
+                    <select className={adminStyles.select} value={filterDistrict}
                         onChange={(e) => setFilterDistrict(e.target.value)}>
                         <option value="">Tous les districts</option>
                         {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
                     </select>
-                    <select className={styles.select} value={filterType}
+                    <select className={adminStyles.select} value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}>
                         <option value="">Tous les types</option>
                         <option value="mere">Mère</option>
@@ -193,45 +297,45 @@ export function EglisesPanel() {
                 </div>
 
                 {filteredChurches.length === 0 ? (
-                    <p className={styles.empty}>Aucune église trouvée.</p>
+                    <p className={adminStyles.empty}>Aucune église trouvée.</p>
                 ) : (
-                    <table className={styles.table}>
+                    <table className={adminStyles.table}>
                         <thead>
-                        <tr>
-                            <th className={styles.th}>Nom</th>
-                            <th className={styles.th}>District</th>
-                            <th className={styles.th}>Type</th>
-                            <th className={styles.th}>Pasteur</th>
-                            {canManage && <th className={styles.th}></th>}
-                        </tr>
+                            <tr>
+                                <th className={adminStyles.th}>Nom</th>
+                                <th className={adminStyles.th}>District</th>
+                                <th className={adminStyles.th}>Type</th>
+                                <th className={adminStyles.th}>Pasteur</th>
+                                {canManage && <th className={adminStyles.th}></th>}
+                            </tr>
                         </thead>
                         <tbody>
-                        {filteredChurches.map((c) => (
-                            <tr key={c.id} className={editingId === c.id ? styles.rowEditing : undefined}>
-                                <td className={styles.td}><strong>{c.name}</strong></td>
-                                <td className={styles.td}>{c.district ?? "—"}</td>
-                                <td className={styles.td}>
-                                    {c.is_mother
-                                        ? <span className={`${styles.badge} ${styles.badgeMother}`}>Mère</span>
-                                        : <span className={styles.badge}>Affiliée</span>}
-                                </td>
-                                <td className={styles.td}>{c.pastor_name ?? "—"}</td>
-                                {canManage && (
-                                    <td className={styles.td}>
-                                        <div className={styles.actions}>
-                                            <button className={styles.btnOutline} onClick={() => startEdit(c)}>
-                                                Modifier
-                                            </button>
-                                            {!c.is_mother && (
-                                                <button className={styles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
-                                                    Supprimer
-                                                </button>
-                                            )}
-                                        </div>
+                            {filteredChurches.map((c) => (
+                                <tr key={c.id} className={editingId === c.id ? adminStyles.rowEditing : undefined}>
+                                    <td className={adminStyles.td}><strong>{c.name}</strong></td>
+                                    <td className={adminStyles.td}>{c.district ?? "—"}</td>
+                                    <td className={adminStyles.td}>
+                                        {c.is_mother
+                                            ? <span className={`${adminStyles.badge} ${adminStyles.badgeMother}`}>Mère</span>
+                                            : <span className={adminStyles.badge}>Affiliée</span>}
                                     </td>
-                                )}
-                            </tr>
-                        ))}
+                                    <td className={adminStyles.td}>{c.pastor_name ?? "—"}</td>
+                                    {canManage && (
+                                        <td className={adminStyles.td}>
+                                            <div className={adminStyles.actions}>
+                                                <button className={adminStyles.btnOutline} onClick={() => startEdit(c)}>
+                                                    Modifier
+                                                </button>
+                                                {!c.is_mother && (
+                                                    <button className={adminStyles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
+                                                        Supprimer
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 )}
