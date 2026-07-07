@@ -10,6 +10,23 @@ from app.models.church import Church
 from app.models.member import Member
 from app.schemas.church import ChurchCreate, ChurchRead, ChurchUpdate
 
+
+def _check_email_unique(
+    db: Session, email: str | None, exclude_id: int | None = None
+) -> None:
+    """Lève HTTP 409 si l'email est déjà utilisé par une autre église."""
+    if not email:
+        return
+    query = select(Church).where(Church.email == email)
+    if exclude_id is not None:
+        query = query.where(Church.id != exclude_id)
+    if db.scalar(query):
+        raise HTTPException(
+            409,
+            f"L'adresse courriel « {email} » est déjà utilisée par une autre église.",
+        )
+
+
 router = APIRouter(prefix="/churches", tags=["églises"])
 can_manage = Depends(require_global_permission("church:manage"))
 
@@ -46,6 +63,7 @@ def get_church(church_id: int, db: Annotated[Session, Depends(get_db)]):
 
 @router.post("", response_model=ChurchRead, status_code=201, dependencies=[can_manage])
 def create_church(data: ChurchCreate, db: Annotated[Session, Depends(get_db)]):
+    _check_email_unique(db, data.email)
     mother = get_mother(db)
     church = Church(**data.model_dump(), parent_id=mother.id)
     db.add(church)
@@ -61,7 +79,10 @@ def update_church(
     church = db.get(Church, church_id)
     if not church:
         raise HTTPException(404, "Église introuvable")
-    for k, v in data.model_dump(exclude_unset=True).items():
+    dump = data.model_dump(exclude_unset=True)
+    if "email" in dump:
+        _check_email_unique(db, dump["email"], exclude_id=church_id)
+    for k, v in dump.items():
         setattr(church, k, v)
     db.commit()
     db.refresh(church)

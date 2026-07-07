@@ -26,7 +26,7 @@ class Member(Base):
     )
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255), index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     address: Mapped[str | None] = mapped_column(String(255), default=None)
     birth_date: Mapped[date | None] = mapped_column(Date, default=None)
     sexe: Mapped[str | None] = mapped_column(String(20), default=None)
