@@ -46,20 +46,18 @@ def _ensure(user: User, member: Member, code: str) -> None:
         raise HTTPException(403, "Permission insuffisante sur cette église")
 
 
+_EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en choisir une autre ou contacter l'administrateur si vous pensez qu'il s'agit d'une erreur."
+
+
 def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
-    """Lève HTTP 409 si l'email est déjà utilisé par un membre ou un utilisateur."""
+    """Lève HTTP 409 avec un message générique si l'email est déjà pris."""
     query = select(Member).where(Member.email == email)
     if exclude_id is not None:
         query = query.where(Member.id != exclude_id)
     if db.scalar(query):
-        raise HTTPException(
-            409, f"L'adresse courriel « {email} » est déjà associée à un membre."
-        )
+        raise HTTPException(409, _EMAIL_TAKEN)
     if db.scalar(select(User).where(User.email == email)):
-        raise HTTPException(
-            409,
-            f"L'adresse courriel « {email} » est déjà utilisée par un compte existant.",
-        )
+        raise HTTPException(409, _EMAIL_TAKEN)
 
 
 def _generate_member_code(db: Session) -> str:
@@ -195,7 +193,7 @@ def update_my_profile(
                 select(Member).where(Member.email == new_email, Member.id != member.id)
             )
             if taken_user or taken_member:
-                raise HTTPException(409, "Cette adresse courriel est déjà utilisée.")
+                raise HTTPException(409, _EMAIL_TAKEN)
             member.email = new_email
             current_user.email = new_email
 
