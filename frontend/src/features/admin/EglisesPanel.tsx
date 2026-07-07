@@ -272,23 +272,27 @@ export function EglisesPanel() {
             )}
 
             {/* ── Liste ── */}
-            <section className={adminStyles.card}>
-                <h3 className={adminStyles.cardTitle}>Églises ({filteredChurches.length})</h3>
+            <div className={styles.listCard}>
+                <div className={styles.listHeader}>
+                    <p className={styles.listTitle}>
+                        Églises
+                        <span className={styles.listCount}>{filteredChurches.length}</span>
+                    </p>
+                </div>
 
-                <div className={adminStyles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+                <div className={styles.filterRow}>
                     <input
-                        className={adminStyles.input}
+                        className={styles.filterInput}
                         placeholder="Rechercher (nom, pasteur, adresse)…"
                         value={filterQ}
-                        style={{ flex: "1 1 180px" }}
                         onChange={(e) => setFilterQ(e.target.value)}
                     />
-                    <select className={adminStyles.select} value={filterDistrict}
+                    <select className={styles.filterSelect} value={filterDistrict}
                         onChange={(e) => setFilterDistrict(e.target.value)}>
                         <option value="">Tous les districts</option>
                         {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
                     </select>
-                    <select className={adminStyles.select} value={filterType}
+                    <select className={styles.filterSelect} value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}>
                         <option value="">Tous les types</option>
                         <option value="mere">Mère</option>
@@ -297,49 +301,75 @@ export function EglisesPanel() {
                 </div>
 
                 {filteredChurches.length === 0 ? (
-                    <p className={adminStyles.empty}>Aucune église trouvée.</p>
+                    <div className={styles.emptyState}>
+                        <p className={styles.emptyIcon}>🏛</p>
+                        <p className={styles.emptyText}>Aucune église trouvée.</p>
+                    </div>
                 ) : (
-                    <table className={adminStyles.table}>
-                        <thead>
-                            <tr>
-                                <th className={adminStyles.th}>Nom</th>
-                                <th className={adminStyles.th}>District</th>
-                                <th className={adminStyles.th}>Type</th>
-                                <th className={adminStyles.th}>Pasteur</th>
-                                {canManage && <th className={adminStyles.th}></th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredChurches.map((c) => (
-                                <tr key={c.id} className={editingId === c.id ? adminStyles.rowEditing : undefined}>
-                                    <td className={adminStyles.td}><strong>{c.name}</strong></td>
-                                    <td className={adminStyles.td}>{c.district ?? "—"}</td>
-                                    <td className={adminStyles.td}>
+                    <div className={styles.churchGrid}>
+                        {filteredChurches.map((c) => (
+                            <div
+                                key={c.id}
+                                className={`${styles.churchCard} ${editingId === c.id ? styles.churchCardEditing : ""}`}
+                            >
+                                <div className={`${styles.churchCardBand} ${c.is_mother ? styles.churchCardBandMother : ""}`} />
+                                <div className={styles.churchCardBody}>
+                                    <div className={styles.churchCardTop}>
+                                        <p className={styles.churchCardName}>{c.name}</p>
                                         {c.is_mother
-                                            ? <span className={`${adminStyles.badge} ${adminStyles.badgeMother}`}>Mère</span>
-                                            : <span className={adminStyles.badge}>Affiliée</span>}
-                                    </td>
-                                    <td className={adminStyles.td}>{c.pastor_name ?? "—"}</td>
-                                    {canManage && (
-                                        <td className={adminStyles.td}>
-                                            <div className={adminStyles.actions}>
-                                                <button className={adminStyles.btnOutline} onClick={() => startEdit(c)}>
-                                                    Modifier
-                                                </button>
-                                                {!c.is_mother && (
-                                                    <button className={adminStyles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
-                                                        Supprimer
-                                                    </button>
-                                                )}
+                                            ? <span className={styles.badgeMother}>Mère</span>
+                                            : <span className={styles.badgeAffiliated}>Affiliée</span>}
+                                    </div>
+                                    <div className={styles.churchMeta}>
+                                        {c.district && (
+                                            <div className={styles.churchMetaRow}>
+                                                <span className={styles.metaIcon}>📍</span>
+                                                <span className={styles.metaText}>{c.district}</span>
                                             </div>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        )}
+                                        {c.pastor_name && (
+                                            <div className={styles.churchMetaRow}>
+                                                <span className={styles.metaIcon}>👤</span>
+                                                <span className={styles.metaText}>{c.pastor_name}</span>
+                                            </div>
+                                        )}
+                                        {c.address && (
+                                            <div className={styles.churchMetaRow}>
+                                                <span className={styles.metaIcon}>🏠</span>
+                                                <span className={styles.metaText}>{c.address}</span>
+                                            </div>
+                                        )}
+                                        {c.phone && (
+                                            <div className={styles.churchMetaRow}>
+                                                <span className={styles.metaIcon}>📞</span>
+                                                <span className={styles.metaText}>{c.phone}</span>
+                                            </div>
+                                        )}
+                                        {c.email && (
+                                            <div className={styles.churchMetaRow}>
+                                                <span className={styles.metaIcon}>✉️</span>
+                                                <span className={styles.metaText}>{c.email}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {canManage && (
+                                    <div className={styles.churchCardFooter}>
+                                        <button className={styles.btnCardEdit} onClick={() => startEdit(c)}>
+                                            ✏ Modifier
+                                        </button>
+                                        {!c.is_mother && (
+                                            <button className={styles.btnCardDelete} onClick={() => handleDelete(c.id, c.name)}>
+                                                🗑 Supprimer
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 )}
-            </section>
+            </div>
         </div>
     );
 }
