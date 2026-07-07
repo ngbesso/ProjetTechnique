@@ -14,6 +14,18 @@ _client = boto3.client(
     region_name="us-east-1",
 )
 
+# Client dédié aux URLs présignées : utilise l'URL publique directement pour
+# que la signature HMAC inclue le bon hostname (le remplacement post-signature
+# invalide la signature car le host fait partie des headers signés).
+_public_client = boto3.client(
+    "s3",
+    endpoint_url=settings.s3_public_url,
+    aws_access_key_id=settings.minio_root_user,
+    aws_secret_access_key=settings.minio_root_password,
+    config=Config(signature_version="s3v4"),
+    region_name="us-east-1",
+)
+
 
 def ensure_bucket() -> None:
     """Crée le bucket de stockage des sermons s'il n'existe pas déjà."""
@@ -33,17 +45,12 @@ def delete_file(key: str) -> None:
 
 
 def presigned_url(key: str, expires: int = 300) -> str:
-    """Génère une URL présignée valide pendant `expires` secondes.
-
-    boto3 utilise s3_endpoint_url (hostname Docker interne) pour signer l'URL ;
-    on remplace ce hostname par s3_public_url pour que le navigateur puisse y accéder.
-    """
-    url = _client.generate_presigned_url(
+    """Génère une URL présignée valide pendant `expires` secondes."""
+    return _public_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.s3_bucket, "Key": key},
         ExpiresIn=expires,
     )
-    return url.replace(settings.s3_endpoint_url, settings.s3_public_url, 1)
 
 
 def get_object(key: str, range_header: str | None = None) -> dict:
