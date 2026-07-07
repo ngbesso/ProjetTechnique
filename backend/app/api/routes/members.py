@@ -46,6 +46,22 @@ def _ensure(user: User, member: Member, code: str) -> None:
         raise HTTPException(403, "Permission insuffisante sur cette église")
 
 
+def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
+    """Lève HTTP 409 si l'email est déjà utilisé par un membre ou un utilisateur."""
+    query = select(Member).where(Member.email == email)
+    if exclude_id is not None:
+        query = query.where(Member.id != exclude_id)
+    if db.scalar(query):
+        raise HTTPException(
+            409, f"L'adresse courriel « {email} » est déjà associée à un membre."
+        )
+    if db.scalar(select(User).where(User.email == email)):
+        raise HTTPException(
+            409,
+            f"L'adresse courriel « {email} » est déjà utilisée par un compte existant.",
+        )
+
+
 def _generate_member_code(db: Session) -> str:
     year = date.today().year
     prefix = f"MBR-{year}-"
@@ -128,6 +144,7 @@ def request_membership(
 ):
     if not db.get(Church, data.church_id):
         raise HTTPException(404, "Église introuvable")
+    _check_email_unique(db, data.email)
 
     member = Member(**data.model_dump(), status=MemberStatus.pending)
     db.add(member)
@@ -237,6 +254,7 @@ def create_member(
         raise HTTPException(403, "Permission insuffisante sur cette église")
     if not db.get(Church, data.church_id):
         raise HTTPException(404, "Église introuvable")
+    _check_email_unique(db, data.email)
     member = Member(**data.model_dump(), status=MemberStatus.active)
     db.add(member)
     db.commit()
