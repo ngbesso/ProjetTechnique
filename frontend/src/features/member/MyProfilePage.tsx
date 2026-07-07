@@ -3,9 +3,12 @@ import styles from "./MyProfilePage.module.css";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
 import { useNavigate } from "../../context/RouterContext";
 import { useParameters } from "../../hooks/useParameters";
+import { validatePhone, validateEmail, validateAddress } from "../../lib/validation";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import type { Member } from "../../types";
+
+type FieldErrors = { telephone?: string; email?: string; address?: string };
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -20,6 +23,7 @@ export function MyProfilePage() {
     const navigate = useNavigate();
     const [m, setM] = useState<Member | null>(null);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [saved, setSaved] = useState(false);
     const [busy, setBusy] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -42,6 +46,16 @@ export function MyProfilePage() {
             setError("La date de naissance ne peut pas être une date future.");
             return;
         }
+
+        const errs: FieldErrors = {
+            telephone: validatePhone(m.telephone ?? "") ?? undefined,
+            email:     validateEmail(m.email) ?? undefined,
+            address:   validateAddress(m.address ?? "") ?? undefined,
+        };
+        const hasErrors = Object.values(errs).some(Boolean);
+        setFieldErrors(errs);
+        if (hasErrors) return;
+
         setBusy(true);
         setSaved(false);
         setError("");
@@ -153,10 +167,12 @@ export function MyProfilePage() {
                                                 </label>
                                                 <input
                                                     id="address"
-                                                    className={styles.input}
+                                                    className={`${styles.input} ${fieldErrors.address ? styles.inputError : ""}`}
                                                     value={m.address ?? ""}
-                                                    onChange={(e) => setM({ ...m, address: e.target.value || null })}
+                                                    placeholder="ex. : 123 Rue principale, Montréal, QC"
+                                                    onChange={(e) => { setM({ ...m, address: e.target.value || null }); setFieldErrors((fe) => ({ ...fe, address: undefined })); }}
                                                 />
+                                                {fieldErrors.address && <p className={styles.fieldError} role="alert">{fieldErrors.address}</p>}
                                             </div>
 
                                             <div className={styles.fieldGroup}>
@@ -182,12 +198,13 @@ export function MyProfilePage() {
                                                 </label>
                                                 <input
                                                     id="telephone"
-                                                    className={styles.input}
+                                                    className={`${styles.input} ${fieldErrors.telephone ? styles.inputError : ""}`}
                                                     type="tel"
                                                     value={m.telephone ?? ""}
-                                                    placeholder="+1 (514) 000-0000"
-                                                    onChange={(e) => setM({ ...m, telephone: e.target.value || null })}
+                                                    placeholder="ex. : 514-123-4567 ou +1 514 123 4567"
+                                                    onChange={(e) => { setM({ ...m, telephone: e.target.value || null }); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }}
                                                 />
+                                                {fieldErrors.telephone && <p className={styles.fieldError} role="alert">{fieldErrors.telephone}</p>}
                                             </div>
 
                                             <div className={styles.fieldGroup}>
@@ -237,13 +254,14 @@ export function MyProfilePage() {
                                             </label>
                                             <input
                                                 id="email"
-                                                className={styles.input}
+                                                className={`${styles.input} ${fieldErrors.email ? styles.inputError : ""}`}
                                                 type="email"
                                                 value={m.email}
-                                                onChange={(e) => setM({ ...m, email: e.target.value })}
+                                                onChange={(e) => { setM({ ...m, email: e.target.value }); setFieldErrors((fe) => ({ ...fe, email: undefined })); }}
                                                 required
                                                 autoComplete="email"
                                             />
+                                            {fieldErrors.email && <p className={styles.fieldError} role="alert">{fieldErrors.email}</p>}
                                         </div>
                                         <p className={styles.emailNotice}>
                                             ⚠ Ce courriel sert également à la connexion. En le modifiant, vous devrez utiliser la nouvelle adresse pour vous connecter.
