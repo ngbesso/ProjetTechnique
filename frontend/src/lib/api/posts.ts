@@ -1,5 +1,12 @@
-import { http } from "./client";
+import { http, BASE_URL } from "./client";
 import type { Post, PostInput, PostListResult } from "../../types";
+
+/** Construit l'URL absolue d'une couverture stockée en MinIO via le proxy backend. */
+export function coverUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/")) return `${BASE_URL}${url}`;
+  return url;
+}
 
 export function fetchPosts(params?: {
   q?: string;
@@ -51,4 +58,14 @@ export function updatePost(id: number, data: Partial<PostInput>): Promise<Post> 
 
 export function deletePost(id: number): Promise<void> {
   return http.del(`/posts/${id}`);
+}
+
+export function uploadPostCover(id: number, file: File): Promise<Post> {
+  const fd = new FormData();
+  fd.append("file", file);
+  return http.postMultipart<Post>(`/posts/${id}/cover`, fd);
+}
+
+export function deletePostCover(id: number): Promise<void> {
+  return http.del(`/posts/${id}/cover`);
 }

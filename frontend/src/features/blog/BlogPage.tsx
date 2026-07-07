@@ -4,7 +4,7 @@ import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useRouteParams } from "../../context/RouterContext";
 import { usePosts } from "../../hooks/usePosts";
-import { fetchPost, fetchPostCategories } from "../../lib/api/posts";
+import { coverUrl, fetchPost, fetchPostCategories } from "../../lib/api/posts";
 import type { Post } from "../../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -48,10 +48,15 @@ function getCategoryColor(cat: string | null) {
 
 function PostCard({ post, onClick }: { post: Post; onClick: () => void }) {
   const color = getCategoryColor(post.category);
+  const cover = coverUrl(post.cover_image_url);
   return (
     <article className={styles.card} onClick={onClick} tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onClick()}>
-      <div className={styles.cardBanner} style={{ background: color.gradient }}>
+      <div
+        className={styles.cardBanner}
+        style={cover ? undefined : { background: color.gradient }}
+      >
+        {cover && <img src={cover} alt={post.title} className={styles.cardBannerImg} />}
         {post.category && (
           <span className={styles.cardCategoryBadge} style={{ color: color.text, background: color.bg }}>
             {post.category}
@@ -116,13 +121,17 @@ function PostDetail({ postId, onBack }: { postId: number; onBack: () => void }) 
   }
 
   const color = getCategoryColor(post.category);
+  const cover = coverUrl(post.cover_image_url);
 
   return (
     <div className={styles.page}>
       <SiteHeader activePage="blog" />
 
       {/* Hero banner */}
-      <div className={styles.detailHero} style={{ background: color.gradient }}>
+      <div
+        className={styles.detailHero}
+        style={cover ? { backgroundImage: `url(${cover})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: color.gradient }}
+      >
         <div className={styles.detailHeroOverlay} />
         <div className={styles.detailHeroInner}>
           <button className={styles.detailBackBtn} onClick={onBack}>
@@ -151,11 +160,6 @@ function PostDetail({ postId, onBack }: { postId: number; onBack: () => void }) 
             <p className={styles.authorStripDate}>{formatDate(post.created_at)}</p>
           </div>
         </div>
-
-        {/* Cover image (optional) */}
-        {post.cover_image_url && (
-          <img className={styles.detailCoverImg} src={post.cover_image_url} alt={post.title} />
-        )}
 
         {/* Content */}
         <div
