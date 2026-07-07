@@ -358,7 +358,7 @@ export function BlogPanel() {
               <button className={styles.modalClose} onClick={() => setEditingPost(null)} aria-label="Fermer">✕</button>
             </div>
 
-            <form onSubmit={handleEditSubmit}>
+            <form onSubmit={handleEditSubmit} className={styles.modalForm}>
               <div className={styles.modalBody}>
                 <div className={styles.formGrid}>
                   <input className={styles.input} placeholder="Titre *" required
