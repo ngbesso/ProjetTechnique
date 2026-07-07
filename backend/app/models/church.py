@@ -17,7 +17,7 @@ class Church(Base):
     district: Mapped[str | None] = mapped_column(String(50), default=None)
     address: Mapped[str | None] = mapped_column(String(255), default=None)
     phone: Mapped[str | None] = mapped_column(String(50), default=None)
-    email: Mapped[str | None] = mapped_column(String(255), default=None)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, default=None)
     pastor_name: Mapped[str | None] = mapped_column(String(150), default=None)
     representative: Mapped[str | None] = mapped_column(String(150), default=None)
     founded_on: Mapped[date | None] = mapped_column(Date, default=None)
