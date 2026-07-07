@@ -3,10 +3,14 @@ import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
+import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
 import type { Church, ChurchInput, District } from "../../types";
+
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
+
+type FieldErrors = { phone?: string; email?: string; address?: string };
 
 function churchToForm(c: Church): ChurchInput {
     return {
@@ -27,6 +31,7 @@ export function EglisesPanel() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     const canManage =
         user?.permissions.includes("*") || user?.permissions.includes("church:manage");
@@ -58,17 +63,29 @@ export function EglisesPanel() {
         setEditingId(c.id);
         setForm(churchToForm(c));
         setFormError("");
+        setFieldErrors({});
     }
 
     function cancelEdit() {
         setEditingId(null);
         setForm(EMPTY);
         setFormError("");
+        setFieldErrors({});
     }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!form.name.trim()) return;
+
+        const errs: FieldErrors = {
+            phone:   validatePhone(form.phone ?? "") ?? undefined,
+            email:   validateEmailOptional(form.email ?? "") ?? undefined,
+            address: validateAddress(form.address ?? "") ?? undefined,
+        };
+        const hasErrors = Object.values(errs).some(Boolean);
+        setFieldErrors(errs);
+        if (hasErrors) return;
+
         setSaving(true);
         setFormError("");
         try {
@@ -116,12 +133,24 @@ export function EglisesPanel() {
                         </select>
                         <input className={styles.input} placeholder="Pasteur / représentant"
                                value={form.pastor_name ?? ""} onChange={(e) => setForm({ ...form, pastor_name: e.target.value })} />
-                        <input className={styles.input} placeholder="Adresse"
-                               value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-                        <input className={styles.input} placeholder="Téléphone"
-                               value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                        <input className={styles.input} type="email" placeholder="Courriel"
-                               value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                        <div>
+                            <input className={styles.input} placeholder="Adresse"
+                                   value={form.address ?? ""}
+                                   onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors((fe) => ({ ...fe, address: undefined })); }} />
+                            {fieldErrors.address && <p className={styles.fieldError} role="alert">{fieldErrors.address}</p>}
+                        </div>
+                        <div>
+                            <input className={styles.input} placeholder="Téléphone (ex. : 514-123-4567)"
+                                   value={form.phone ?? ""}
+                                   onChange={(e) => { setForm({ ...form, phone: e.target.value }); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
+                            {fieldErrors.phone && <p className={styles.fieldError} role="alert">{fieldErrors.phone}</p>}
+                        </div>
+                        <div>
+                            <input className={styles.input} type="email" placeholder="Courriel (ex. : eglise@exemple.com)"
+                                   value={form.email ?? ""}
+                                   onChange={(e) => { setForm({ ...form, email: e.target.value }); setFieldErrors((fe) => ({ ...fe, email: undefined })); }} />
+                            {fieldErrors.email && <p className={styles.fieldError} role="alert">{fieldErrors.email}</p>}
+                        </div>
                         <button type="submit" className={styles.btnPrimary} disabled={saving}>
                             {saving ? "Enregistrement…" : isEditing ? "Enregistrer" : "+ Ajouter"}
                         </button>
