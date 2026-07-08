@@ -263,7 +263,7 @@ export function DashboardPanel() {
                             color="violet"
                             icon={<IconUsers />}
                             value={stats.membres.total}
-                            label="Membres totaux"
+                            label="Membres"
                             sub={`dont ${stats.membres.active} actifs`}
                         />
                         <KpiCard
