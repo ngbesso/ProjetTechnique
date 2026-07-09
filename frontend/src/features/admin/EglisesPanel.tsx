@@ -118,6 +118,17 @@ export function EglisesPanel() {
         }
     }
 
+    async function handleToggleActive(c: Church) {
+        const action = c.is_active ? "Désactiver" : "Réactiver";
+        if (!confirm(`${action} l'église « ${c.name} » ?`)) return;
+        try {
+            await edit(c.id, { is_active: !c.is_active });
+            if (c.is_active && editingId === c.id) cancelEdit();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Opération impossible");
+        }
+    }
+
     if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
     return (
@@ -310,7 +321,7 @@ export function EglisesPanel() {
                         {filteredChurches.map((c) => (
                             <div
                                 key={c.id}
-                                className={`${styles.churchCard} ${editingId === c.id ? styles.churchCardEditing : ""}`}
+                                className={`${styles.churchCard} ${editingId === c.id ? styles.churchCardEditing : ""} ${!c.is_active ? styles.churchCardInactive : ""}`}
                             >
                                 <div className={`${styles.churchCardBand} ${c.is_mother ? styles.churchCardBandMother : ""}`} />
                                 <div className={styles.churchCardBody}>
@@ -319,6 +330,9 @@ export function EglisesPanel() {
                                         {c.is_mother
                                             ? <span className={styles.badgeMother}>Mère</span>
                                             : <span className={styles.badgeAffiliated}>Affiliée</span>}
+                                        {!c.is_active && (
+                                            <span className={styles.badgeInactive}>Désactivée</span>
+                                        )}
                                     </div>
                                     <div className={styles.churchMeta}>
                                         {c.district && (
@@ -355,13 +369,23 @@ export function EglisesPanel() {
                                 </div>
                                 {canManage && (
                                     <div className={styles.churchCardFooter}>
-                                        <button className={styles.btnCardEdit} onClick={() => startEdit(c)}>
-                                            ✏ Modifier
-                                        </button>
-                                        {!c.is_mother && (
-                                            <button className={styles.btnCardDelete} onClick={() => handleDelete(c.id, c.name)}>
-                                                🗑 Supprimer
+                                        {c.is_active && (
+                                            <button className={styles.btnCardEdit} onClick={() => startEdit(c)}>
+                                                ✏ Modifier
                                             </button>
+                                        )}
+                                        {!c.is_mother && (
+                                            <>
+                                                <button
+                                                    className={c.is_active ? styles.btnCardDeactivate : styles.btnCardActivate}
+                                                    onClick={() => handleToggleActive(c)}
+                                                >
+                                                    {c.is_active ? "⏸ Désactiver" : "▶ Réactiver"}
+                                                </button>
+                                                <button className={styles.btnCardDelete} onClick={() => handleDelete(c.id, c.name)}>
+                                                    🗑 Supprimer
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 )}
