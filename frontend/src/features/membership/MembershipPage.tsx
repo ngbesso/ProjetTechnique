@@ -60,7 +60,7 @@ export function MembershipPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [done, setDone] = useState<{ church: string } | null>(null);
 
-  useEffect(() => { load(); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
+  useEffect(() => { load({ activeOnly: true }); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));

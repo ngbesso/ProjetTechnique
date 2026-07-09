@@ -436,6 +436,61 @@
   background: #fef2f2;
 }
 
+.btnCardDeactivate {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  border-radius: 7px;
+  border: 1.5px solid #fde68a;
+  background: #fff;
+  color: #b45309;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnCardDeactivate:hover {
+  background: #fffbeb;
+}
+
+.btnCardActivate {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  border-radius: 7px;
+  border: 1.5px solid #a7f3d0;
+  background: #fff;
+  color: #047857;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnCardActivate:hover {
+  background: #ecfdf5;
+}
+
+.badgeInactive {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.churchCardInactive {
+  opacity: 0.65;
+}
+
+.churchCardInactive:hover {
+  opacity: 1;
+}
+
 /* État vide */
 .emptyState {
   text-align: center;
