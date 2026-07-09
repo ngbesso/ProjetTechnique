@@ -18,7 +18,7 @@ export function DonationPage() {
   const [zeffyPath, setZeffyPath] = useState<string>("");
 
   useEffect(() => {
-    fetchChurches()
+    fetchChurches({ activeOnly: true })
       .then((list) => {
         setChurches(list);
         if (list.length === 1) setSelectedChurch(list[0]);

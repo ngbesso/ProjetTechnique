@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./MyProfilePage.module.css";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useParameters } from "../../hooks/useParameters";
 import { validatePhone, validateEmail, validateAddress } from "../../lib/validation";
@@ -21,6 +22,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function MyProfilePage() {
     const navigate = useNavigate();
+    const { setMember } = useAuth();
     const [m, setM] = useState<Member | null>(null);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -71,6 +73,7 @@ export function MyProfilePage() {
                 family_status: m.family_status,
             });
             setM(updated);
+            setMember(updated);
             setSaved(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur d'enregistrement.");

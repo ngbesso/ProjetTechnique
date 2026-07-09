@@ -43,6 +43,7 @@ def list_churches(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
     district: str | None = None,
+    active: bool | None = None,
 ):
     query = select(Church)
     if q:
@@ -50,6 +51,8 @@ def list_churches(
         query = query.where(Church.name.ilike(term) | Church.pastor_name.ilike(term))
     if district:
         query = query.where(Church.district == district)
+    if active is not None:
+        query = query.where(Church.is_active == active)
     return db.scalars(query.order_by(Church.name)).all()
 
 
@@ -80,8 +83,14 @@ def update_church(
     if not church:
         raise HTTPException(404, "Église introuvable")
     dump = data.model_dump(exclude_unset=True)
+    if not church.is_active and dump.get("is_active") is not True:
+        raise HTTPException(
+            409, "Église désactivée : réactivez-la avant de la modifier"
+        )
     if "email" in dump:
         _check_email_unique(db, dump["email"], exclude_id=church_id)
+    if dump.get("is_active") is False and church.parent_id is None:
+        raise HTTPException(409, "L'église mère ne peut pas être désactivée")
     for k, v in dump.items():
         setattr(church, k, v)
     db.commit()
