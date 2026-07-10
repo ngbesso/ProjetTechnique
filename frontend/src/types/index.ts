@@ -116,6 +116,18 @@ export interface MemberSelfInput {
   family_status?: string | null;
 }
 
+export interface MemberUpdateInput {
+  first_name?: string;
+  last_name?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
+  family_status?: string | null;
+  conversion_date?: string | null;
+  is_baptized?: boolean;
+}
+
 export interface AssignmentRead {
   role: string;
   role_id: number;
@@ -169,6 +181,17 @@ export interface MemberQuery {
   status?: MemberStatus;
   limit?: number;
   offset?: number;
+}
+
+export interface MemberImportRowError {
+  row: number;
+  email: string | null;
+  message: string;
+}
+
+export interface MemberImportResult {
+  created: number;
+  errors: MemberImportRowError[];
 }
 
 export interface MembershipInput {
