@@ -3,6 +3,8 @@ import styles from "./AdminPage.module.css";
 import coverStyles from "./BlogPanel.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../hooks/usePosts";
+import { useConfirm } from "../../hooks/useConfirm";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchPostCategories, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
 import type { Post, PostInput, PostStatus } from "../../types";
 
@@ -105,9 +107,12 @@ function CoverUpload({ currentUrl, onFileChange, onRemove, previewFile }: CoverU
 
 // ── Panel principal ───────────────────────────────────────────────────────────
 
+const col = createColumnHelper<Post>();
+
 export function BlogPanel() {
   const { user } = useAuth();
   const { posts, loading, error, loadAdmin, add, edit, remove } = usePosts();
+  const { confirm, dialog } = useConfirm();
 
   // Create form
   const [form, setForm] = useState<PostInput>(EMPTY);
@@ -224,10 +229,72 @@ export function BlogPanel() {
   }
 
   async function handleDelete(id: number, title: string) {
-    if (!confirm(`Supprimer l'article « ${title} » ?`)) return;
+    const ok = await confirm({
+      title: `Supprimer l'article « ${title} » ?`,
+      description: "Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
     try { await remove(id); }
     catch (err) { alert(err instanceof Error ? err.message : "Suppression impossible"); }
   }
+
+  const columns = [
+    col.display({
+      id: "cover",
+      header: "Couverture",
+      cell: (info) => {
+        const p = info.row.original;
+        const url = coverUrl(p.cover_image_url);
+        return url ? (
+          <img src={url} alt="" className={coverStyles.thumbImg} />
+        ) : (
+          <div className={coverStyles.thumbPlaceholder}>—</div>
+        );
+      },
+    }),
+    col.accessor("title", {
+      header: "Titre",
+      cell: (info) => <strong>{info.getValue()}</strong>,
+    }),
+    col.accessor("author", { header: "Auteur" }),
+    col.accessor("created_at", {
+      header: "Date",
+      cell: (info) => formatDate(info.getValue()),
+    }),
+    col.accessor("status", {
+      header: "Statut",
+      cell: (info) => {
+        const p = info.row.original;
+        return canManage ? (
+          <select className={styles.select} value={p.status}
+            onChange={(e) => handleStatusChange(p.id, e.target.value as PostStatus)}>
+            {(Object.keys(STATUS_LABELS) as PostStatus[]).map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        ) : STATUS_LABELS[p.status];
+      },
+    }),
+    ...(canManage
+      ? [
+          col.display({
+            id: "actions",
+            header: "",
+            cell: (info) => {
+              const p = info.row.original;
+              return (
+                <div className={styles.actions}>
+                  <button className={styles.btnOutlineSm} onClick={() => openEdit(p)}>Modifier</button>
+                  <button className={styles.btnDanger} onClick={() => handleDelete(p.id, p.title)}>Supprimer</button>
+                </div>
+              );
+            },
+          }),
+        ]
+      : []),
+  ];
 
   if (loading) return <p className={styles.stateMsg}>Chargement…</p>;
 
@@ -293,57 +360,12 @@ export function BlogPanel() {
           </select>
         </div>
 
-        {posts.length === 0 ? (
-          <p className={styles.empty}>Aucun article.</p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>Couverture</th>
-                <th className={styles.th}>Titre</th>
-                <th className={styles.th}>Auteur</th>
-                <th className={styles.th}>Date</th>
-                <th className={styles.th}>Statut</th>
-                {canManage && <th className={styles.th}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((p) => (
-                <tr key={p.id}>
-                  <td className={styles.td}>
-                    {coverUrl(p.cover_image_url) ? (
-                      <img src={coverUrl(p.cover_image_url)!} alt=""
-                        className={coverStyles.thumbImg} />
-                    ) : (
-                      <div className={coverStyles.thumbPlaceholder}>—</div>
-                    )}
-                  </td>
-                  <td className={styles.td}><strong>{p.title}</strong></td>
-                  <td className={styles.td}>{p.author}</td>
-                  <td className={styles.td}>{formatDate(p.created_at)}</td>
-                  <td className={styles.td}>
-                    {canManage ? (
-                      <select className={styles.select} value={p.status}
-                        onChange={(e) => handleStatusChange(p.id, e.target.value as PostStatus)}>
-                        {(Object.keys(STATUS_LABELS) as PostStatus[]).map((s) => (
-                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                        ))}
-                      </select>
-                    ) : STATUS_LABELS[p.status]}
-                  </td>
-                  {canManage && (
-                    <td className={styles.td}>
-                      <div className={styles.actions}>
-                        <button className={styles.btnOutlineSm} onClick={() => openEdit(p)}>Modifier</button>
-                        <button className={styles.btnDanger} onClick={() => handleDelete(p.id, p.title)}>Supprimer</button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          columns={columns}
+          data={posts}
+          getRowId={(p) => p.id}
+          emptyMessage="Aucun article."
+        />
       </section>
 
       {/* ── Modale édition ── */}
@@ -407,6 +429,8 @@ export function BlogPanel() {
           </div>
         </div>
       )}
+
+      {dialog}
     </div>
   );
 }
