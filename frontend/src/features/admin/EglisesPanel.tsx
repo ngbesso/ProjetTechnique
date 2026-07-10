@@ -4,6 +4,7 @@ import styles from "./EglisesPanel.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
+import { useConfirm } from "../../hooks/useConfirm";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
 import type { Church, ChurchInput, District } from "../../types";
 
@@ -28,6 +29,7 @@ export function EglisesPanel() {
     const { user } = useAuth();
     const { churches, loading, error, load, add, edit, remove } = useChurches();
     const { values: districtValues, load: loadDistricts } = useParameters("district");
+    const { confirm, dialog } = useConfirm();
     const [form, setForm] = useState<ChurchInput>(EMPTY);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
@@ -110,7 +112,13 @@ export function EglisesPanel() {
     }
 
     async function handleDelete(id: number, name: string) {
-        if (!confirm(`Supprimer l'église « ${name} » ?`)) return;
+        const ok = await confirm({
+            title: `Supprimer l'église « ${name} » ?`,
+            description: "Cette action est irréversible.",
+            confirmLabel: "Supprimer",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await remove(id);
         } catch (err) {
@@ -120,7 +128,12 @@ export function EglisesPanel() {
 
     async function handleToggleActive(c: Church) {
         const action = c.is_active ? "Désactiver" : "Réactiver";
-        if (!confirm(`${action} l'église « ${c.name} » ?`)) return;
+        const ok = await confirm({
+            title: `${action} l'église « ${c.name} » ?`,
+            variant: c.is_active ? "danger" : "default",
+            confirmLabel: action,
+        });
+        if (!ok) return;
         try {
             await edit(c.id, { is_active: !c.is_active });
             if (c.is_active && editingId === c.id) cancelEdit();
@@ -394,6 +407,8 @@ export function EglisesPanel() {
                     </div>
                 )}
             </div>
+
+            {dialog}
         </div>
     );
 }

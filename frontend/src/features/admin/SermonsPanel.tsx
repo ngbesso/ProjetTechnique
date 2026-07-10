@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
+import { useConfirm } from "../../hooks/useConfirm";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchSermonAdminMediaUrl, fetchSermonSeries } from "../../lib/api/sermons";
 import type { Sermon, SermonInput, SermonStatus } from "../../types";
 
@@ -20,9 +22,12 @@ const STATUS_LABELS: Record<SermonStatus, string> = {
   archived: "Archivé",
 };
 
+const col = createColumnHelper<Sermon>();
+
 export function SermonsPanel() {
   const { user } = useAuth();
   const { sermons, loading, error, loadAdmin, add, edit, replaceMedia, remove } = useSermons();
+  const { confirm, dialog } = useConfirm();
   const [form, setForm] = useState<SermonInput>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -95,7 +100,13 @@ export function SermonsPanel() {
   }
 
   async function handleDelete(id: number, title: string) {
-    if (!confirm(`Supprimer le sermon « ${title} » ?`)) return;
+    const ok = await confirm({
+      title: `Supprimer le sermon « ${title} » ?`,
+      description: "Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await remove(id);
     } catch (err) {
@@ -160,6 +171,54 @@ export function SermonsPanel() {
       setEditSaving(false);
     }
   }
+
+  const columns = [
+    col.accessor("title", {
+      header: "Titre",
+      cell: (info) => <strong>{info.getValue()}</strong>,
+    }),
+    col.accessor("preacher", { header: "Prédicateur" }),
+    col.accessor("sermon_date", { header: "Date" }),
+    col.accessor("format", {
+      header: "Format",
+      cell: (info) => (info.getValue() === "video" ? "Vidéo" : "Audio"),
+    }),
+    col.accessor("status", {
+      header: "Statut",
+      cell: (info) => {
+        const s = info.row.original;
+        return canManage ? (
+          <select
+            className={styles.select}
+            value={s.status}
+            onChange={(e) => handleStatusChange(s.id, e.target.value as SermonStatus)}
+          >
+            {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((st) => (
+              <option key={st} value={st}>{STATUS_LABELS[st]}</option>
+            ))}
+          </select>
+        ) : STATUS_LABELS[s.status];
+      },
+    }),
+    ...(canManage
+      ? [
+          col.display({
+            id: "actions",
+            header: "",
+            cell: (info) => {
+              const s = info.row.original;
+              return (
+                <div className={styles.actions}>
+                  <button className={styles.btnOutlineSm} onClick={() => openPlayer(s)}>Lire</button>
+                  <button className={styles.btnOutlineSm} onClick={() => openEdit(s)}>Modifier</button>
+                  <button className={styles.btnDanger} onClick={() => handleDelete(s.id, s.title)}>Supprimer</button>
+                </div>
+              );
+            },
+          }),
+        ]
+      : []),
+  ];
 
   if (loading) return <p className={styles.stateMsg}>Chargement…</p>;
 
@@ -283,77 +342,12 @@ export function SermonsPanel() {
           </select>
         </div>
 
-        {sermons.length === 0 ? (
-          <p className={styles.empty}>Aucun sermon enregistré.</p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>Titre</th>
-                <th className={styles.th}>Prédicateur</th>
-                <th className={styles.th}>Date</th>
-                <th className={styles.th}>Format</th>
-                <th className={styles.th}>Statut</th>
-                {canManage && <th className={styles.th}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {sermons.map((s) => (
-                <tr key={s.id}>
-                  <td className={styles.td}>
-                    <strong>{s.title}</strong>
-                  </td>
-                  <td className={styles.td}>{s.preacher}</td>
-                  <td className={styles.td}>{s.sermon_date}</td>
-                  <td className={styles.td}>{s.format === "video" ? "Vidéo" : "Audio"}</td>
-                  <td className={styles.td}>
-                    {canManage ? (
-                      <select
-                        className={styles.select}
-                        value={s.status}
-                        onChange={(e) =>
-                          handleStatusChange(s.id, e.target.value as SermonStatus)
-                        }
-                      >
-                        {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((st) => (
-                          <option key={st} value={st}>
-                            {STATUS_LABELS[st]}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      STATUS_LABELS[s.status]
-                    )}
-                  </td>
-                  {canManage && (
-                    <td className={styles.td}>
-                      <div className={styles.actions}>
-                        <button
-                          className={styles.btnOutlineSm}
-                          onClick={() => openPlayer(s)}
-                        >
-                          Lire
-                        </button>
-                        <button
-                          className={styles.btnOutlineSm}
-                          onClick={() => openEdit(s)}
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          className={styles.btnDanger}
-                          onClick={() => handleDelete(s.id, s.title)}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          columns={columns}
+          data={sermons}
+          getRowId={(s) => s.id}
+          emptyMessage="Aucun sermon enregistré."
+        />
       </section>
 
       {playingSermon && (
@@ -523,6 +517,8 @@ export function SermonsPanel() {
           </div>
         </div>
       )}
+
+      {dialog}
     </div>
   );
 }
