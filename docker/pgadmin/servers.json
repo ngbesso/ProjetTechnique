@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ProjetTechnique",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "obnl",
+      "Username": "obnl",
+      "SSLMode": "prefer"
+    }
+  }
+}

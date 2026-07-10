@@ -158,6 +158,19 @@
   background: rgba(83, 74, 183, 0.04);
 }
 
+.userName {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--deep-violet);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -171,6 +184,10 @@
   }
 
   .btnSecondary {
+    display: none;
+  }
+
+  .userName {
     display: none;
   }
 }

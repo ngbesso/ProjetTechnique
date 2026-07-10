@@ -17,8 +17,13 @@ const NAV_ITEMS = [
 ] as const;
 
 export function SiteHeader({ activePage }: SiteHeaderProps) {
-  const { user, logout } = useAuth();
+  const { user, member, logout } = useAuth();
   const navigate = useNavigate();
+
+  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const displayName = member
+    ? `${member.first_name} ${member.last_name}`
+    : user?.email;
 
   return (
     <header className={styles.header}>
@@ -54,18 +59,24 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
         <div className={styles.actions}>
           {user ? (
             <>
-              <button
-                className={styles.btnSecondary}
-                onClick={() =>
-                  navigate(
-                    user.is_global_admin || user.roles.includes("admin")
-                      ? "admin"
-                      : "mon-profil",
-                  )
-                }
-              >
-                <span aria-hidden>&#128100;</span> {user.email}
-              </button>
+              <span className={styles.userName} title={user.email}>
+                <span aria-hidden>&#128100;</span> {displayName}
+              </span>
+              {isAdmin ? (
+                <button
+                  className={styles.btnSecondary}
+                  onClick={() => navigate("admin")}
+                >
+                  Administration
+                </button>
+              ) : (
+                <button
+                  className={styles.btnSecondary}
+                  onClick={() => navigate("mon-profil")}
+                >
+                  ✏ Modifier mon profil
+                </button>
+              )}
               <button className={styles.btnPrimary} onClick={logout}>
                 Déconnexion
               </button>

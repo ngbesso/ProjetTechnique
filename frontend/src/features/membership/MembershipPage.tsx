@@ -4,9 +4,12 @@ import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { requestMembership } from "../../lib/api/members";
+import { validatePhone, validateEmail, validateAddress } from "../../lib/validation";
 import type { MembershipInput } from "../../types";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+
+type FieldErrors = { telephone?: string; email?: string; address?: string };
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -54,9 +57,10 @@ export function MembershipPage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [done, setDone] = useState<{ church: string } | null>(null);
 
-  useEffect(() => { load(); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
+  useEffect(() => { load({ activeOnly: true }); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -69,6 +73,16 @@ export function MembershipPage() {
       setError("La date de naissance ne peut pas être une date future.");
       return;
     }
+
+    const errs: FieldErrors = {
+      telephone: validatePhone(form.telephone) ?? undefined,
+      email:     validateEmail(form.email) ?? undefined,
+      address:   validateAddress(form.address) ?? undefined,
+    };
+    const hasErrors = Object.values(errs).some(Boolean);
+    setFieldErrors(errs);
+    if (hasErrors) return;
+
     setSubmitting(true);
     setError("");
     const payload: MembershipInput = {
@@ -215,13 +229,16 @@ export function MembershipPage() {
                   </div>
 
                   <label className={styles.label}>Courriel *</label>
-                  <input className={styles.input} type="email" required
-                    placeholder="vous@exemple.com" value={form.email}
-                    onChange={(e) => set("email", e.target.value)} />
+                  <input className={`${styles.input} ${fieldErrors.email ? styles.inputError : ""}`}
+                    type="email" required placeholder="vous@exemple.com" value={form.email}
+                    onChange={(e) => { set("email", e.target.value); setFieldErrors((fe) => ({ ...fe, email: undefined })); }} />
+                  {fieldErrors.email && <p className={styles.fieldError} role="alert">{fieldErrors.email}</p>}
 
                   <label className={styles.label}>Adresse</label>
-                  <input className={styles.input} value={form.address}
-                    onChange={(e) => set("address", e.target.value)} />
+                  <input className={`${styles.input} ${fieldErrors.address ? styles.inputError : ""}`}
+                    placeholder="ex. : 123 Rue principale, Montréal, QC" value={form.address}
+                    onChange={(e) => { set("address", e.target.value); setFieldErrors((fe) => ({ ...fe, address: undefined })); }} />
+                  {fieldErrors.address && <p className={styles.fieldError} role="alert">{fieldErrors.address}</p>}
 
                   <div className={styles.row}>
                     <div className={styles.col}>
@@ -234,9 +251,11 @@ export function MembershipPage() {
                     </div>
                     <div className={styles.col}>
                       <label className={styles.label}>Téléphone</label>
-                      <input className={styles.input} type="tel" value={form.telephone}
-                        placeholder="+1 (514) 000-0000"
-                        onChange={(e) => set("telephone", e.target.value)} />
+                      <input className={`${styles.input} ${fieldErrors.telephone ? styles.inputError : ""}`}
+                        type="tel" value={form.telephone}
+                        placeholder="ex. : 514-123-4567 ou +1 514 123 4567"
+                        onChange={(e) => { set("telephone", e.target.value); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }} />
+                      {fieldErrors.telephone && <p className={styles.fieldError} role="alert">{fieldErrors.telephone}</p>}
                     </div>
                   </div>
 

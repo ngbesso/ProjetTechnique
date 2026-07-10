@@ -761,3 +761,9 @@
 
 .helpText { font-size: .78rem; color: var(--text-muted); margin: .75rem 0 0; }
 .chipX { background: none; border: none; color: inherit; cursor: pointer; margin-left: .35rem; font-weight: 700; }
+
+.fieldError {
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin: 0.25rem 0 0;
+}

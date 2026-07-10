@@ -1,6 +1,6 @@
 // useChurches.ts
 import { useState, useCallback } from "react";
-import type { Church, ChurchInput } from "../types";
+import type { Church, ChurchInput, ChurchUpdateInput } from "../types";
 import {
     fetchChurches, createChurch, updateChurch, deleteChurch,
 } from "../lib/api/churches";
@@ -10,11 +10,11 @@ export function useChurches() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (opts?: { activeOnly?: boolean }) => {
         setLoading(true);
         setError("");
         try {
-            setChurches(await fetchChurches());
+            setChurches(await fetchChurches(opts));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Erreur de chargement");
         } finally {
@@ -29,7 +29,7 @@ export function useChurches() {
         );
     }, []);
 
-    const edit = useCallback(async (id: number, data: Partial<ChurchInput>) => {
+    const edit = useCallback(async (id: number, data: ChurchUpdateInput) => {
         const updated = await updateChurch(id, data);
         setChurches((prev) => prev.map((c) => (c.id === id ? updated : c)));
     }, []);
