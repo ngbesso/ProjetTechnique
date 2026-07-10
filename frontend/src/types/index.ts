@@ -81,6 +81,7 @@ export interface Church {
   name: string;
   parent_id: number | null;
   is_mother: boolean;
+  is_active: boolean;
   district: District | null;
   address: string | null;
   phone: string | null;
@@ -101,6 +102,8 @@ export interface ChurchInput {
   representative?: string | null;
   founded_on?: string | null;
 }
+
+export type ChurchUpdateInput = Partial<ChurchInput> & { is_active?: boolean };
 
 export interface MemberSelfInput {
   first_name?: string;

@@ -169,7 +169,11 @@ def _zeffy_payload(payment_id="zeffy-pay-1", amount=42.5, currency="CAD"):
             "id": payment_id,
             "amount": amount,
             "currency": currency,
-            "buyer": {"firstName": "Jean", "lastName": "Dupont", "email": "jean@ex.com"},
+            "buyer": {
+                "firstName": "Jean",
+                "lastName": "Dupont",
+                "email": "jean@ex.com",
+            },
         },
     }
 
@@ -183,9 +187,7 @@ def test_zeffy_webhook_wrong_secret(client):
     r = client.post(f"{BASE}/webhooks/zeffy", json=_zeffy_payload())
     assert r.status_code == 401
 
-    r = client.post(
-        f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload()
-    )
+    r = client.post(f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload())
     assert r.status_code == 401
 
 

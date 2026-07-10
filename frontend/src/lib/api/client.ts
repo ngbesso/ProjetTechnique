@@ -35,8 +35,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-    throw new ApiError(res.status, err.detail ?? `HTTP ${res.status}`);
+    const body = await res.json().catch(() => null);
+    let message = `HTTP ${res.status}`;
+    if (body?.detail) {
+      if (typeof body.detail === "string") {
+        message = body.detail;
+      } else if (Array.isArray(body.detail)) {
+        // Erreurs de validation Pydantic : [{loc, msg, type}, ...]
+        message = body.detail
+          .map((d: { msg?: string; loc?: string[] }) => {
+            const field = d.loc?.slice(1).join(" → ") ?? "";
+            return field ? `${field} : ${d.msg ?? "invalide"}` : (d.msg ?? "invalide");
+          })
+          .join(" ; ");
+      }
+    }
+    throw new ApiError(res.status, message);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
