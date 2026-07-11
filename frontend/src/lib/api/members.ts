@@ -1,6 +1,6 @@
 // members.ts
-import { http } from "./client";
-import type {Member, MemberListResult, MemberQuery, MemberSelfInput, MembershipInput} from "../../types";
+import { http, BASE_URL, getToken, ApiError } from "./client";
+import type {Member, MemberImportResult, MemberListResult, MemberQuery, MemberSelfInput, MemberUpdateInput, MembershipInput} from "../../types";
 
 export function fetchMembers(query: MemberQuery = {}): Promise<MemberListResult> {
     const params = new URLSearchParams();
@@ -27,8 +27,36 @@ export function deactivateMember(id: number): Promise<Member> {
 export function activateMember(id: number): Promise<Member> {
     return http.post<Member>(`/members/${id}/activate`, {});
 }
+
+export function updateMember(id: number, data: MemberUpdateInput): Promise<Member> {
+    return http.patch<Member>(`/members/${id}`, data);
+}
 export function requestMembership(data: MembershipInput): Promise<Member> {
     return http.post<Member>("/members/request", data);
+}
+
+export function importMembers(churchId: number, file: File): Promise<MemberImportResult> {
+    const fd = new FormData();
+    fd.append("church_id", String(churchId));
+    fd.append("file", file);
+    return http.postMultipart<MemberImportResult>("/members/import", fd);
+}
+
+export async function downloadImportTemplate(): Promise<void> {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/members/import/template`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new ApiError(res.status, "Impossible de télécharger le modèle.");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "modele-import-membres.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function fetchMyProfile(): Promise<Member> {

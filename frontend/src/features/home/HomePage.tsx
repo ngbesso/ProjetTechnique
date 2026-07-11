@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import styles from "./HomePage.module.css";
 import { useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
+import { usePosts } from "../../hooks/usePosts";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
@@ -27,6 +28,18 @@ function formatSermonDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
 }
 
+function formatPostDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+}
+
+const CATEGORY_GRADIENT: Record<string, string> = {
+  "Vie spirituelle": "linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%)",
+  "Témoignage":      "linear-gradient(135deg, #d97706 0%, #92400e 100%)",
+  "Méditation":      "linear-gradient(135deg, #0891b2 0%, #164e63 100%)",
+  "Actualité":       "linear-gradient(135deg, #059669 0%, #064e3b 100%)",
+  "Réflexion":       "linear-gradient(135deg, #db2777 0%, #831843 100%)",
+};
+
 const EVENT_TYPES = [
   { label: "Conférences & Congrès", subtype: "Rassemblements", icon: "🎤" },
   { label: "Colloque", subtype: "Échanges académiques", icon: "💬" },
@@ -34,10 +47,6 @@ const EVENT_TYPES = [
   { label: "Retraite", subtype: "Ressourcement spirituel", icon: "🌿" },
 ] as const;
 
-const ARTICLES = [
-  { id: 1, title: "Vivre la communion fraternelle", type: "Article", readTime: "5 min" },
-  { id: 2, title: "Retour sur le congrès 2026", type: "Actualité", readTime: "3 min" },
-] as const;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -211,6 +220,13 @@ function FormationSection() {
 }
 
 function BlogSection() {
+  const navigate = useNavigate();
+  const { posts, loading, load } = usePosts();
+
+  useEffect(() => {
+    load({ limit: 3 });
+  }, [load]);
+
   return (
     <section id="blog" className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -218,19 +234,55 @@ function BlogSection() {
           <p className={styles.sectionEyebrow}>Lire</p>
           <h2 className={styles.sectionTitle}>Blog &amp; Articles</h2>
         </div>
+        <button className={styles.seeAllLink} onClick={() => navigate("blog")}>
+          Voir tout →
+        </button>
       </div>
-      <div className={styles.blogGrid}>
-        {ARTICLES.map((article) => (
-          <article key={article.id} className={styles.blogCard}>
-            <div className={styles.blogThumb} />
-            <div className={styles.blogInfo}>
-              <span className={styles.blogTag}>{article.type}</span>
-              <p className={styles.blogTitle}>{article.title}</p>
-              <p className={styles.blogMeta}>{article.readTime} de lecture</p>
-            </div>
-          </article>
-        ))}
-      </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : posts.length === 0 ? (
+        <p>Aucun article publié pour le moment.</p>
+      ) : (
+        <div className={styles.blogGrid}>
+          {posts.map((post, idx) => {
+            const gradient =
+              (post.category && CATEGORY_GRADIENT[post.category]) ||
+              "linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)";
+            const isFeatured = idx === 0;
+            return (
+              <article
+                key={post.id}
+                className={`${styles.blogCard} ${isFeatured ? styles.blogCardFeatured : ""}`}
+                onClick={() => navigate("blog", { postId: post.id })}
+              >
+                <div
+                  className={`${styles.blogThumb} ${isFeatured ? styles.blogThumbFeatured : ""}`}
+                  style={{ background: gradient }}
+                >
+                  {post.category && (
+                    <span className={styles.blogTag}>{post.category}</span>
+                  )}
+                </div>
+                <div className={styles.blogInfo}>
+                  <p className={`${styles.blogTitle} ${isFeatured ? styles.blogTitleFeatured : ""}`}>
+                    {post.title}
+                  </p>
+                  {post.excerpt && (
+                    <p className={styles.blogExcerpt}>{post.excerpt}</p>
+                  )}
+                  <div className={styles.blogFooter}>
+                    <span className={styles.blogMeta}>
+                      {post.author} · {formatPostDate(post.created_at)}
+                    </span>
+                    <span className={styles.blogReadMore}>Lire →</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

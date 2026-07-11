@@ -3,6 +3,10 @@ import styles from "./AdminPage.module.css";
 import { useUsers } from "../../hooks/useUsers";
 import { useRbac } from "../../hooks/useRbac";
 import { useChurches } from "../../hooks/useChurches";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import type { UserAdmin } from "../../types";
+
+const col = createColumnHelper<UserAdmin>();
 
 export function UsersPanel() {
     const { users, loading, error, load, toggleActive, assign, revoke } = useUsers();
@@ -35,6 +39,49 @@ export function UsersPanel() {
             setAssignError(err instanceof Error ? err.message : "Erreur");
         }
     }
+
+    const columns = [
+        col.accessor("email", { header: "Courriel" }),
+        col.display({
+            id: "roles",
+            header: "Rôles (portée)",
+            cell: (info) => {
+                const u = info.row.original;
+                return (
+                    <div className={styles.actions}>
+                        {u.assignments.length === 0 && <span className={styles.empty}>—</span>}
+                        {u.assignments.map((a) => (
+                            <span key={`${a.role_id}-${a.church_id}`} className={styles.badge}>
+                                {a.role} @ {a.church_name}
+                                <button className={styles.chipX} title="Retirer"
+                                    onClick={() => revoke({ user_id: u.id, role_id: a.role_id, church_id: a.church_id })}>×</button>
+                            </span>
+                        ))}
+                    </div>
+                );
+            },
+        }),
+        col.accessor("is_active", {
+            header: "Statut",
+            cell: (info) => (
+                <span className={`${styles.badge} ${info.getValue() ? styles.badgeActive : styles.badgeInactive}`}>
+                    {info.getValue() ? "Actif" : "Désactivé"}
+                </span>
+            ),
+        }),
+        col.display({
+            id: "actions_toggle",
+            header: "Actions",
+            cell: (info) => {
+                const u = info.row.original;
+                return (
+                    <button className={styles.btnOutline} onClick={() => toggleActive(u.id, !u.is_active)}>
+                        {u.is_active ? "Désactiver" : "Réactiver"}
+                    </button>
+                );
+            },
+        }),
+    ];
 
     return (
         <>
@@ -83,45 +130,12 @@ export function UsersPanel() {
                 {loading ? <p className={styles.stateMsg}>Chargement…</p>
                     : error ? <p className={styles.errorMsg} role="alert">{error}</p>
                         : (
-                            <table className={styles.table}>
-                                <thead>
-                                <tr>
-                                    <th className={styles.th}>Courriel</th>
-                                    <th className={styles.th}>Rôles (portée)</th>
-                                    <th className={styles.th}>Statut</th>
-                                    <th className={styles.th}>Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {filteredUsers.map((u) => (
-                                    <tr key={u.id}>
-                                        <td className={styles.td}>{u.email}</td>
-                                        <td className={styles.td}>
-                                            <div className={styles.actions}>
-                                                {u.assignments.length === 0 && <span className={styles.empty}>—</span>}
-                                                {u.assignments.map((a) => (
-                                                    <span key={`${a.role_id}-${a.church_id}`} className={styles.badge}>
-                            {a.role} @ {a.church_name}
-                                                        <button className={styles.chipX} title="Retirer"
-                                                                onClick={() => revoke({ user_id: u.id, role_id: a.role_id, church_id: a.church_id })}>×</button>
-                          </span>
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className={styles.td}>
-                      <span className={`${styles.badge} ${u.is_active ? styles.badgeActive : styles.badgeInactive}`}>
-                        {u.is_active ? "Actif" : "Désactivé"}
-                      </span>
-                                        </td>
-                                        <td className={styles.td}>
-                                            <button className={styles.btnOutline} onClick={() => toggleActive(u.id, !u.is_active)}>
-                                                {u.is_active ? "Désactiver" : "Réactiver"}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
+                            <DataTable
+                                columns={columns}
+                                data={filteredUsers}
+                                getRowId={(u) => u.id}
+                                emptyMessage="Aucun utilisateur."
+                            />
                         )}
             </section>
         </>

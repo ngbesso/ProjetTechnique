@@ -14,6 +14,7 @@ PERMISSIONS: dict[str, str] = {
     "event:manage": "Gérer les événements",
     "sermon:read": "Consulter les sermons",
     "sermon:manage": "Gérer les sermons",
+    "post:manage": "Gérer les articles de blog",
     "content:manage": "Gérer les pages et le menu (CMS)",
 }
 

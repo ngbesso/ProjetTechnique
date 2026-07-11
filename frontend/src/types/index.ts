@@ -30,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -116,6 +116,18 @@ export interface MemberSelfInput {
   family_status?: string | null;
 }
 
+export interface MemberUpdateInput {
+  first_name?: string;
+  last_name?: string;
+  address?: string | null;
+  birth_date?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
+  family_status?: string | null;
+  conversion_date?: string | null;
+  is_baptized?: boolean;
+}
+
 export interface AssignmentRead {
   role: string;
   role_id: number;
@@ -171,6 +183,17 @@ export interface MemberQuery {
   offset?: number;
 }
 
+export interface MemberImportRowError {
+  row: number;
+  email: string | null;
+  message: string;
+}
+
+export interface MemberImportResult {
+  created: number;
+  errors: MemberImportRowError[];
+}
+
 export interface MembershipInput {
   church_id: number;
   first_name: string;
@@ -215,4 +238,37 @@ export interface SermonInput {
   description?: string;
   series?: string;
   status?: SermonStatus;
+}
+
+export type PostStatus = "draft" | "published" | "archived";
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  author: string;
+  status: PostStatus;
+  category: string | null;
+  cover_image_url: string | null;
+  views: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface PostListResult {
+  items: Post[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PostInput {
+  title: string;
+  content: string;
+  excerpt?: string;
+  author: string;
+  status?: PostStatus;
+  category?: string;
+  cover_image_url?: string;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
+import { useConfirm } from "../../hooks/useConfirm";
 import { fetchSettings, updateSetting } from "../../lib/api/settings";
 import type { AppSetting } from "../../types";
 
@@ -89,6 +90,7 @@ interface CategoryEditorProps {
 
 function CategoryEditor({ category, title }: CategoryEditorProps) {
     const { values, loading, error, load, add, rename, remove } = useParameters(category);
+    const { confirm, dialog } = useConfirm();
     const [newLabel, setNewLabel] = useState("");
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState("");
@@ -131,7 +133,12 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
     }
 
     async function handleDelete(id: number, label: string) {
-        if (!confirm(`Supprimer « ${label} » ?`)) return;
+        const ok = await confirm({
+            title: `Supprimer « ${label} » ?`,
+            confirmLabel: "Supprimer",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await remove(id);
         } catch (err) {
@@ -193,6 +200,8 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
                     ))}
                 </ul>
             )}
+
+            {dialog}
         </section>
     );
 }

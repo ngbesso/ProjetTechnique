@@ -1,8 +1,23 @@
+import csv
+import io
 import secrets
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+)
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+from pydantic import ValidationError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -24,12 +39,96 @@ from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.member import (
     MemberCreate,
+    MemberImportResult,
+    MemberImportRowError,
     MemberList,
     MemberRead,
     MemberSelfUpdate,
     MembershipRequest,
     MemberUpdate,
 )
+
+_IMPORT_REQUIRED_COLUMNS = {"first_name", "last_name", "email"}
+_IMPORT_COLUMNS = (
+    "first_name",
+    "last_name",
+    "email",
+    "address",
+    "birth_date",
+    "sexe",
+    "telephone",
+    "family_status",
+    "conversion_date",
+    "is_baptized",
+)
+_IMPORT_EXAMPLE_ROW = (
+    "Jean",
+    "Dupont",
+    "jean.dupont@exemple.com",
+    "123 Rue Principale",
+    "1985-06-14",
+    "Masculin",
+    "5145551234",
+    "Marie(e)",
+    "2010-09-01",
+    "oui",
+)
+
+
+def _parse_bool(value: str | None) -> bool:
+    return (value or "").strip().lower() in ("1", "true", "vrai", "oui", "yes", "y")
+
+
+def _cell_to_str(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "oui" if value else "non"
+    if isinstance(value, (datetime, date)):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
+
+
+def _rows_from_csv(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
+    text = content.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    return list(reader.fieldnames or []), [dict(row) for row in reader]
+
+
+def _rows_from_xlsx(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
+    wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+    ws = wb.active
+    rows_iter = ws.iter_rows(values_only=True)
+    header_row = next(rows_iter, ())
+    fieldnames = [str(h).strip() if h is not None else "" for h in header_row]
+    rows: list[dict[str, str]] = []
+    for values in rows_iter:
+        if all(v is None for v in values):
+            continue
+        rows.append(
+            {
+                fieldnames[i]: _cell_to_str(values[i])
+                for i in range(len(fieldnames))
+                if i < len(values)
+            }
+        )
+    return fieldnames, rows
+
+
+def _build_import_template() -> bytes:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Membres"
+    ws.append(_IMPORT_COLUMNS)
+    ws.append(_IMPORT_EXAMPLE_ROW)
+    for i, header in enumerate(_IMPORT_COLUMNS, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = max(len(header) + 2, 14)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
 
 router = APIRouter(prefix="/members", tags=["membres"])
 
@@ -258,6 +357,114 @@ def create_member(
     db.commit()
     db.refresh(member)
     return member
+
+
+@router.get("/import/template")
+def download_import_template(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Modèle Excel (colonnes attendues + exemple) pour l'import en masse de membres."""
+    scope = current_user.accessible_church_ids("member:create")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Permission insuffisante")
+    content = _build_import_template()
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=modele-import-membres.xlsx"
+        },
+    )
+
+
+@router.post("/import", response_model=MemberImportResult)
+def import_members(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    church_id: Annotated[int, Form()],
+    file: Annotated[UploadFile, File()],
+):
+    """Importe en masse des membres déjà connus d'une église (statut actif direct). Accepte .csv et .xlsx."""
+    if not current_user.has_permission("member:create", church_id):
+        raise HTTPException(403, "Permission insuffisante sur cette église")
+    if not db.get(Church, church_id):
+        raise HTTPException(404, "Église introuvable")
+
+    content = file.file.read()
+    if (file.filename or "").lower().endswith(".xlsx"):
+        fieldnames, rows = _rows_from_xlsx(content)
+    else:
+        fieldnames, rows = _rows_from_csv(content)
+
+    missing_columns = _IMPORT_REQUIRED_COLUMNS - set(fieldnames)
+    if missing_columns:
+        raise HTTPException(
+            422,
+            f"Colonnes manquantes dans le fichier : {', '.join(sorted(missing_columns))}",
+        )
+
+    errors: list[MemberImportRowError] = []
+    seen_emails: set[str] = set()
+    created = 0
+
+    for i, row in enumerate(rows, start=2):  # ligne 1 = en-têtes
+        email = (row.get("email") or "").strip().lower()
+        try:
+            data = MemberCreate.model_validate(
+                {
+                    "church_id": church_id,
+                    "first_name": (row.get("first_name") or "").strip(),
+                    "last_name": (row.get("last_name") or "").strip(),
+                    "email": email,
+                    "address": (row.get("address") or "").strip() or None,
+                    "birth_date": (row.get("birth_date") or "").strip() or None,
+                    "sexe": (row.get("sexe") or "").strip() or None,
+                    "telephone": (row.get("telephone") or "").strip() or None,
+                    "family_status": (row.get("family_status") or "").strip() or None,
+                    "conversion_date": (row.get("conversion_date") or "").strip()
+                    or None,
+                    "is_baptized": _parse_bool(row.get("is_baptized")),
+                }
+            )
+        except ValidationError as exc:
+            errors.append(
+                MemberImportRowError(
+                    row=i, email=email or None, message=exc.errors()[0]["msg"]
+                )
+            )
+            continue
+
+        if email in seen_emails:
+            errors.append(
+                MemberImportRowError(
+                    row=i, email=email, message="Email en double dans le fichier."
+                )
+            )
+            continue
+        try:
+            _check_email_unique(db, data.email)
+        except HTTPException:
+            errors.append(
+                MemberImportRowError(
+                    row=i,
+                    email=email,
+                    message="Cette adresse courriel est déjà utilisée.",
+                )
+            )
+            continue
+
+        member = Member(
+            **data.model_dump(),
+            status=MemberStatus.active,
+            member_code=_generate_member_code(db),
+        )
+        db.add(member)
+        db.flush()
+        seen_emails.add(email)
+        created += 1
+
+    db.commit()
+    return MemberImportResult(created=created, errors=errors)
 
 
 @router.get("/{member_id}", response_model=MemberRead)

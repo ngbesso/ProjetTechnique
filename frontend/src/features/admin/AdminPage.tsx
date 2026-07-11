@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
@@ -21,6 +22,7 @@ type Section =
   | "eglises"
   | "dons"
   | "sermons"
+  | "blog"
   | "evenements"
   | "pages"
   | "utilisateurs"
@@ -32,6 +34,7 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
+  { id: "blog", label: "Blog", icon: "✍️" },
   { id: "evenements", label: "Événements", icon: "📅" },
   { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
   { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
@@ -398,6 +401,8 @@ export function AdminPage() {
               <DonsPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
+          ) : section === "blog" ? (
+              <BlogPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : (
