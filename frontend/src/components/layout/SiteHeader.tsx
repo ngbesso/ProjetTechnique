@@ -7,14 +7,14 @@ interface SiteHeaderProps {
   activePage?: Page;
 }
 
-const NAV_ITEMS = [
-  { label: "Accueil", page: "home" as Page },
-  { label: "Sermons", page: "sermons" as Page },
-  { label: "Blog", page: "blog" as Page },
+const NAV_ITEMS: { label: string; page: Page | null; anchor?: string }[] = [
+  { label: "Accueil", page: "home" },
+  { label: "Sermons", page: "sermons" },
+  { label: "Blog", page: "blog" },
   { label: "Événements", page: null },
-  { label: "Formation", page: null },
-  { label: "Faire un don", page: "donation" as Page },
-] as const;
+  { label: "Formation", page: null, anchor: "formation" },
+  { label: "Faire un don", page: "donation" },
+];
 
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
@@ -24,6 +24,18 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
   const displayName = member
     ? `${member.first_name} ${member.last_name}`
     : user?.email;
+
+  function goToSection(anchor: string) {
+    if (activePage === "home") {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // Depuis une autre page : revenir à l'accueil puis défiler vers la section
+      navigate("home");
+      setTimeout(() => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    }
+  }
 
   return (
     <header className={styles.header}>
@@ -47,8 +59,11 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
                   ? `${styles.navLink} ${styles.navLinkActive}`
                   : styles.navLink
               }
-              onClick={() => item.page && navigate(item.page)}
-              disabled={item.page === null}
+              onClick={() => {
+                if (item.anchor) goToSection(item.anchor);
+                else if (item.page) navigate(item.page);
+              }}
+              disabled={item.page === null && !item.anchor}
             >
               {item.label}
             </button>
