@@ -307,6 +307,14 @@
   padding: 1.25rem 1.75rem 1.75rem;
 }
 
+.fieldLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
 /* ── Inline create form ─────────────────────────────────────── */
 .inlineForm {
   display: flex;

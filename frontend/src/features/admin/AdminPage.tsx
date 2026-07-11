@@ -9,6 +9,7 @@ import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
+import { FormationsPanel } from "./FormationsPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { SermonsPanel } from "./SermonsPanel";
@@ -24,6 +25,7 @@ type Section =
   | "sermons"
   | "blog"
   | "evenements"
+  | "formations"
   | "pages"
   | "utilisateurs"
   | "parametres";
@@ -36,6 +38,7 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "blog", label: "Blog", icon: "✍️" },
   { id: "evenements", label: "Événements", icon: "📅" },
+  { id: "formations", label: "Formations", icon: "🎓" },
   { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
   { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
   { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
@@ -403,6 +406,8 @@ export function AdminPage() {
               <SermonsPanel />
           ) : section === "blog" ? (
               <BlogPanel />
+          ) : section === "formations" ? (
+              <FormationsPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : (
