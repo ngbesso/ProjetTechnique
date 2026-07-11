@@ -7,6 +7,7 @@ import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
 import { SermonsPage } from "./features/sermons/SermonsPage";
+import { BlogPage } from "./features/blog/BlogPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
@@ -32,6 +33,7 @@ export default function App() {
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;
   if (page === "sermons") return <SermonsPage />;
+  if (page === "blog") return <BlogPage />;
 
   if (page === "mon-profil") return user ? <MyProfilePage /> : <LoginPage />;
   if (page === "admin") {
