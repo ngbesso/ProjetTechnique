@@ -36,6 +36,8 @@ jobs:
       - name: Tests (pytest)
         working-directory: backend
         env:
+          # L'app (seed au démarrage) et les tests pointent tous deux sur la base du service CI
+          DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
           TEST_DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
         run: pytest -q
 
