@@ -108,6 +108,17 @@ class MemberList(BaseModel):
     offset: int
 
 
+class MemberImportRowError(BaseModel):
+    row: int
+    email: str | None = None
+    message: str
+
+
+class MemberImportResult(BaseModel):
+    created: int
+    errors: list[MemberImportRowError]
+
+
 class MemberSelfUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None

@@ -1,8 +1,8 @@
 // useMembers.ts
 import { useState, useCallback } from "react";
-import type { Member, MemberQuery } from "../types";
+import type { Member, MemberQuery, MemberUpdateInput } from "../types";
 import {
-    fetchMembers, approveMember, rejectMember, deactivateMember, activateMember,
+    fetchMembers, approveMember, rejectMember, deactivateMember, activateMember, updateMember,
 } from "../lib/api/members";
 
 export function useMembers() {
@@ -45,5 +45,11 @@ export function useMembers() {
         setMembers((prev) => prev.map((m) => (m.id === u.id ? u : m)));
     }, []);
 
-    return { members, total, loading, error, load, approve, reject, deactivate, activate };
+    const edit = useCallback(async (id: number, data: MemberUpdateInput) => {
+        const u = await updateMember(id, data);
+        setMembers((prev) => prev.map((m) => (m.id === u.id ? u : m)));
+        return u;
+    }, []);
+
+    return { members, total, loading, error, load, approve, reject, deactivate, activate, edit };
 }

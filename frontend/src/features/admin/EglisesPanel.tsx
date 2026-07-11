@@ -4,6 +4,7 @@ import styles from "./EglisesPanel.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
+import { useConfirm } from "../../hooks/useConfirm";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
 import type { Church, ChurchInput, District } from "../../types";
 
@@ -28,8 +29,10 @@ export function EglisesPanel() {
     const { user } = useAuth();
     const { churches, loading, error, load, add, edit, remove } = useChurches();
     const { values: districtValues, load: loadDistricts } = useParameters("district");
+    const { confirm, dialog } = useConfirm();
     const [form, setForm] = useState<ChurchInput>(EMPTY);
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -60,12 +63,20 @@ export function EglisesPanel() {
         return true;
     });
 
+    function openCreate() {
+        setEditingId(null);
+        setForm(EMPTY);
+        setFormError("");
+        setFieldErrors({});
+        setShowModal(true);
+    }
+
     function startEdit(c: Church) {
         setEditingId(c.id);
         setForm(churchToForm(c));
         setFormError("");
         setFieldErrors({});
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setShowModal(true);
     }
 
     function cancelEdit() {
@@ -73,6 +84,7 @@ export function EglisesPanel() {
         setForm(EMPTY);
         setFormError("");
         setFieldErrors({});
+        setShowModal(false);
     }
 
     function clearFieldError(key: keyof FieldErrors) {
@@ -110,7 +122,13 @@ export function EglisesPanel() {
     }
 
     async function handleDelete(id: number, name: string) {
-        if (!confirm(`Supprimer l'église « ${name} » ?`)) return;
+        const ok = await confirm({
+            title: `Supprimer l'église « ${name} » ?`,
+            description: "Cette action est irréversible.",
+            confirmLabel: "Supprimer",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await remove(id);
         } catch (err) {
@@ -120,7 +138,12 @@ export function EglisesPanel() {
 
     async function handleToggleActive(c: Church) {
         const action = c.is_active ? "Désactiver" : "Réactiver";
-        if (!confirm(`${action} l'église « ${c.name} » ?`)) return;
+        const ok = await confirm({
+            title: `${action} l'église « ${c.name} » ?`,
+            variant: c.is_active ? "danger" : "default",
+            confirmLabel: action,
+        });
+        if (!ok) return;
         try {
             await edit(c.id, { is_active: !c.is_active });
             if (c.is_active && editingId === c.id) cancelEdit();
@@ -135,8 +158,9 @@ export function EglisesPanel() {
         <div className={adminStyles.rbacWrapper}>
             {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
 
-            {canManage && (
-                <div className={styles.formCard}>
+            {canManage && showModal && (
+            <div className={styles.modalOverlay} onClick={cancelEdit}>
+                <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
                     {/* En-tête coloré */}
                     <div className={styles.formHeader}>
                         <div className={styles.formHeaderIcon}>
@@ -152,6 +176,9 @@ export function EglisesPanel() {
                                     : "Remplissez les informations de la nouvelle église affiliée."}
                             </p>
                         </div>
+                        <button type="button" className={styles.formHeaderClose} onClick={cancelEdit} aria-label="Fermer">
+                            ✕
+                        </button>
                     </div>
 
                     <form onSubmit={handleSubmit} className={styles.formBody}>
@@ -260,16 +287,14 @@ export function EglisesPanel() {
                         )}
 
                         <div className={styles.formActions}>
-                            {isEditing && (
-                                <button
-                                    type="button"
-                                    className={styles.btnGhost}
-                                    onClick={cancelEdit}
-                                    disabled={saving}
-                                >
-                                    Annuler
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className={styles.btnGhost}
+                                onClick={cancelEdit}
+                                disabled={saving}
+                            >
+                                Annuler
+                            </button>
                             <button type="submit" className={styles.btnPrimary} disabled={saving}>
                                 {saving
                                     ? "Enregistrement…"
@@ -280,11 +305,17 @@ export function EglisesPanel() {
                         </div>
                     </form>
                 </div>
+            </div>
             )}
 
             {/* ── Liste ── */}
             <div className={styles.listCard}>
                 <div className={styles.listHeader}>
+                    {canManage && (
+                        <button type="button" className={styles.btnPrimary} onClick={openCreate}>
+                            + Ajouter une église
+                        </button>
+                    )}
                     <p className={styles.listTitle}>
                         Églises
                         <span className={styles.listCount}>{filteredChurches.length}</span>
@@ -394,6 +425,8 @@ export function EglisesPanel() {
                     </div>
                 )}
             </div>
+
+            {dialog}
         </div>
     );
 }
