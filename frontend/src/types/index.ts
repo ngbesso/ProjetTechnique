@@ -240,6 +240,53 @@ export interface SermonInput {
   status?: SermonStatus;
 }
 
+export type FormationStatus = "draft" | "published" | "archived";
+
+export interface Formation {
+  id: number;
+  title: string;
+  description: string | null;
+  instructor: string;
+  formation_date: string;
+  price: number;
+  capacity: number;
+  status: FormationStatus;
+  registered_count: number;
+  created_at: string;
+}
+
+export interface FormationRegistrationInput {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export interface FormationRegistration {
+  id: number;
+  formation_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  created_at: string;
+}
+
+export interface FormationListResult {
+  items: Formation[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface FormationInput {
+  title: string;
+  instructor: string;
+  formation_date: string;
+  price: number;
+  capacity: number;
+  description?: string;
+  status?: FormationStatus;
+}
+
 export type PostStatus = "draft" | "published" | "archived";
 
 export interface Post {
