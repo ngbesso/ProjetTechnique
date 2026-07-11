@@ -1,9 +1,7 @@
 import styles from "./SiteFooter.module.css";
-import { useNavigate } from "../../context/RouterContext";
+import { Link } from "../../context/RouterContext";
 
 export function SiteFooter() {
-  const navigate = useNavigate();
-
   return (
     <footer className={styles.footer}>
       <div className={styles.inner}>
@@ -21,25 +19,25 @@ export function SiteFooter() {
           <div className={styles.col}>
             <p className={styles.colTitle}>Découvrir</p>
             <ul className={styles.links}>
-              <li><button onClick={() => navigate("home")}>Qui sommes-nous</button></li>
-              <li><button onClick={() => navigate("sermons")}>Sermons</button></li>
-              <li><button onClick={() => navigate("blog")}>Blog</button></li>
+              <li><Link page="home">Qui sommes-nous</Link></li>
+              <li><Link page="sermons">Sermons</Link></li>
+              <li><Link page="blog">Blog</Link></li>
             </ul>
           </div>
 
           <div className={styles.col}>
             <p className={styles.colTitle}>Participer</p>
             <ul className={styles.links}>
-              <li><button onClick={() => navigate("donation")}>Faire un don</button></li>
-              <li><button onClick={() => navigate("adhesion")}>Devenir membre</button></li>
+              <li><Link page="donation">Faire un don</Link></li>
+              <li><Link page="adhesion">Devenir membre</Link></li>
             </ul>
           </div>
 
           <div className={styles.col}>
             <p className={styles.colTitle}>Compte</p>
             <ul className={styles.links}>
-              <li><button onClick={() => navigate("adhesion")}>Devenir membre</button></li>
-              <li><button onClick={() => navigate("login")}>Se connecter</button></li>
+              <li><Link page="adhesion">Devenir membre</Link></li>
+              <li><Link page="login">Se connecter</Link></li>
             </ul>
           </div>
         </div>

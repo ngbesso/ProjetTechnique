@@ -88,6 +88,12 @@
   border-radius: 6px;
   transition: color 0.15s, background 0.15s;
   white-space: nowrap;
+  text-decoration: none;
+}
+
+a.navLink:hover {
+  color: var(--vivid-violet);
+  background: rgba(83, 74, 183, 0.06);
 }
 
 .navLink:hover:not(:disabled) {

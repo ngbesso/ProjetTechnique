@@ -8,6 +8,20 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: obnl
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: obnl_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U obnl"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,7 +35,11 @@ jobs:
         run: ruff check .
       - name: Tests (pytest)
         working-directory: backend
-        run: pytest -q || echo "Aucun test pour l'instant"
+        env:
+          # L'app (seed au démarrage) et les tests pointent tous deux sur la base du service CI
+          DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+          TEST_DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+        run: pytest -q
 
   ai-service:
     runs-on: ubuntu-latest
