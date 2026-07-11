@@ -1,6 +1,45 @@
-from fastapi import FastAPI
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Service IA Plateforme OBNL", version="0.1.0")
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from app.core.config import settings
+from app.services import rag
+
+logger = logging.getLogger(__name__)
+
+
+async def _periodic_refresh() -> None:
+    while True:
+        await asyncio.sleep(settings.sync_interval_seconds)
+        try:
+            await rag.refresh_index()
+        except Exception:
+            logger.exception("Échec du rafraîchissement périodique de l'index RAG")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await rag.refresh_index()
+    except Exception:
+        logger.exception("Échec de la construction initiale de l'index RAG")
+    task = asyncio.create_task(_periodic_refresh())
+    yield
+    task.cancel()
+
+
+app = FastAPI(title="Service IA Plateforme OBNL", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -13,8 +52,26 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/chat")
-def chat(payload: dict):
-    # Point d'entrée du chatbot — à implémenter (appel LLM, RAG, etc.)
-    question = payload.get("question", "")
-    return {"answer": f"(réponse IA à implémenter) — reçu : {question!r}"}
+class ChatRequest(BaseModel):
+    question: str
+
+
+class Source(BaseModel):
+    title: str
+    type: str
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    sources: list[Source]
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(payload: ChatRequest):
+    return await rag.answer(payload.question)
+
+
+@app.post("/refresh")
+async def refresh():
+    count = await rag.refresh_index()
+    return {"documents_indexed": count}
