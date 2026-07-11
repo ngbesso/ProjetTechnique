@@ -77,7 +77,8 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
             <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
 
                 <div className={styles.modalHeader}>
-                    <div>
+                    <div className={styles.modalHeaderIcon}>👤</div>
+                    <div className={styles.modalHeaderText}>
                         <h2 className={styles.modalName}>
                             {member.first_name} {member.last_name}
                         </h2>
@@ -192,11 +193,12 @@ function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
-            <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "640px" }}>
+            <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.modalHeader}>
-                    <div>
+                    <div className={styles.modalHeaderIcon}>✏️</div>
+                    <div className={styles.modalHeaderText}>
                         <h2 className={styles.modalName}>Modifier le membre</h2>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{member.email}</span>
+                        <span className={styles.modalSubtitle}>{member.email}</span>
                     </div>
                     <button className={styles.modalClose} onClick={onClose} aria-label="Fermer">✕</button>
                 </div>
