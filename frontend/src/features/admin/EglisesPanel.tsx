@@ -32,6 +32,7 @@ export function EglisesPanel() {
     const { confirm, dialog } = useConfirm();
     const [form, setForm] = useState<ChurchInput>(EMPTY);
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -62,12 +63,20 @@ export function EglisesPanel() {
         return true;
     });
 
+    function openCreate() {
+        setEditingId(null);
+        setForm(EMPTY);
+        setFormError("");
+        setFieldErrors({});
+        setShowModal(true);
+    }
+
     function startEdit(c: Church) {
         setEditingId(c.id);
         setForm(churchToForm(c));
         setFormError("");
         setFieldErrors({});
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setShowModal(true);
     }
 
     function cancelEdit() {
@@ -75,6 +84,7 @@ export function EglisesPanel() {
         setForm(EMPTY);
         setFormError("");
         setFieldErrors({});
+        setShowModal(false);
     }
 
     function clearFieldError(key: keyof FieldErrors) {
@@ -148,8 +158,9 @@ export function EglisesPanel() {
         <div className={adminStyles.rbacWrapper}>
             {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
 
-            {canManage && (
-                <div className={styles.formCard}>
+            {canManage && showModal && (
+            <div className={styles.modalOverlay} onClick={cancelEdit}>
+                <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
                     {/* En-tête coloré */}
                     <div className={styles.formHeader}>
                         <div className={styles.formHeaderIcon}>
@@ -165,6 +176,9 @@ export function EglisesPanel() {
                                     : "Remplissez les informations de la nouvelle église affiliée."}
                             </p>
                         </div>
+                        <button type="button" className={styles.formHeaderClose} onClick={cancelEdit} aria-label="Fermer">
+                            ✕
+                        </button>
                     </div>
 
                     <form onSubmit={handleSubmit} className={styles.formBody}>
@@ -273,16 +287,14 @@ export function EglisesPanel() {
                         )}
 
                         <div className={styles.formActions}>
-                            {isEditing && (
-                                <button
-                                    type="button"
-                                    className={styles.btnGhost}
-                                    onClick={cancelEdit}
-                                    disabled={saving}
-                                >
-                                    Annuler
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className={styles.btnGhost}
+                                onClick={cancelEdit}
+                                disabled={saving}
+                            >
+                                Annuler
+                            </button>
                             <button type="submit" className={styles.btnPrimary} disabled={saving}>
                                 {saving
                                     ? "Enregistrement…"
@@ -293,11 +305,17 @@ export function EglisesPanel() {
                         </div>
                     </form>
                 </div>
+            </div>
             )}
 
             {/* ── Liste ── */}
             <div className={styles.listCard}>
                 <div className={styles.listHeader}>
+                    {canManage && (
+                        <button type="button" className={styles.btnPrimary} onClick={openCreate}>
+                            + Ajouter une église
+                        </button>
+                    )}
                     <p className={styles.listTitle}>
                         Églises
                         <span className={styles.listCount}>{filteredChurches.length}</span>

@@ -115,6 +115,7 @@ export function BlogPanel() {
   const { confirm, dialog } = useConfirm();
 
   // Create form
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState<PostInput>(EMPTY);
   const [createCover, setCreateCover] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -149,6 +150,13 @@ export function BlogPanel() {
     loadAdmin({ q: q.trim() || undefined, status: status || undefined, category: category || undefined });
   }
 
+  function openCreateModal() {
+    setForm(EMPTY);
+    setCreateCover(null);
+    setFormError("");
+    setShowCreateModal(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim() || !form.content.trim() || !form.author.trim()) {
@@ -168,6 +176,7 @@ export function BlogPanel() {
       }
       setForm(EMPTY);
       setCreateCover(null);
+      setShowCreateModal(false);
       loadAdmin();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de la création");
@@ -302,47 +311,16 @@ export function BlogPanel() {
     <div className={styles.rbacWrapper}>
       {error && <p className={styles.errorMsg} role="alert">{error}</p>}
 
-      {canManage && (
-        <section className={styles.card}>
-          <h3 className={styles.cardTitle}>Nouvel article</h3>
-          <form onSubmit={handleSubmit} className={styles.formGrid}>
-            <input className={styles.input} placeholder="Titre *" required
-              value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            <input className={styles.input} placeholder="Auteur *" required
-              value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
-            <input className={styles.input} placeholder="Catégorie (optionnel)"
-              value={form.category ?? ""}
-              onChange={(e) => setForm({ ...form, category: e.target.value })} />
-            <select className={styles.select} value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as PostStatus })}>
-              {(Object.keys(STATUS_LABELS) as PostStatus[]).map((s) => (
-                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-              ))}
-            </select>
-            <textarea className={styles.input} placeholder="Résumé / extrait (optionnel)"
-              rows={2} value={form.excerpt ?? ""}
-              onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
-            <textarea className={styles.input} placeholder="Contenu complet *"
-              rows={6} required value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              style={{ gridColumn: "1 / -1" }} />
-            <CoverUpload
-              previewFile={createCover}
-              onFileChange={setCreateCover}
-            />
-            <button type="submit" className={styles.btnPrimary} disabled={saving}>
-              {saving ? "Enregistrement…" : "+ Publier"}
+      <section className={styles.listCard}>
+        <div className={styles.listHeader}>
+          {canManage && (
+            <button type="button" className={styles.btnPrimary} onClick={openCreateModal}>
+              + Nouvel article
             </button>
-          </form>
-          {formError && (
-            <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{formError}</p>
           )}
-        </section>
-      )}
-
-      <section className={styles.card}>
-        <h3 className={styles.cardTitle}>Articles ({posts.length})</h3>
-        <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+          <h3 className={styles.cardTitle} style={{ margin: 0 }}>Articles ({posts.length})</h3>
+        </div>
+        <div className={styles.filterBar}>
           <input className={styles.input} placeholder="Rechercher…" value={filterQ}
             style={{ flex: "1 1 160px" }}
             onChange={(e) => { setFilterQ(e.target.value); applyFilters({ q: e.target.value }); }} />
@@ -360,22 +338,84 @@ export function BlogPanel() {
           </select>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={posts}
-          getRowId={(p) => p.id}
-          emptyMessage="Aucun article."
-        />
+        <div className={styles.listBody}>
+          <DataTable
+            columns={columns}
+            data={posts}
+            getRowId={(p) => p.id}
+            emptyMessage="Aucun article."
+          />
+        </div>
       </section>
+
+      {/* ── Modale création ── */}
+      {showCreateModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderIcon}>📝</div>
+              <div className={styles.modalHeaderText}>
+                <h2 className={styles.modalName}>Nouvel article</h2>
+                <span className={styles.modalSubtitle}>Remplissez les informations du nouvel article.</span>
+              </div>
+              <button className={styles.modalClose} onClick={() => setShowCreateModal(false)} aria-label="Fermer">✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className={styles.modalForm}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <input className={styles.input} placeholder="Titre *" required
+                    value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                  <input className={styles.input} placeholder="Auteur *" required
+                    value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
+                  <input className={styles.input} placeholder="Catégorie (optionnel)"
+                    value={form.category ?? ""}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                  <select className={styles.select} value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as PostStatus })}>
+                    {(Object.keys(STATUS_LABELS) as PostStatus[]).map((s) => (
+                      <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+                  <textarea className={styles.input} placeholder="Résumé / extrait (optionnel)"
+                    rows={2} value={form.excerpt ?? ""}
+                    onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
+                  <textarea className={styles.input} placeholder="Contenu complet *"
+                    rows={6} required value={form.content}
+                    onChange={(e) => setForm({ ...form, content: e.target.value })}
+                    style={{ gridColumn: "1 / -1" }} />
+                  <CoverUpload
+                    previewFile={createCover}
+                    onFileChange={setCreateCover}
+                  />
+                </div>
+                {formError && (
+                  <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{formError}</p>
+                )}
+              </div>
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.btnGhost}
+                  onClick={() => setShowCreateModal(false)} disabled={saving}>
+                  Annuler
+                </button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                  {saving ? "Enregistrement…" : "+ Publier"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Modale édition ── */}
       {editingPost && (
         <div className={styles.modalOverlay} onClick={() => setEditingPost(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "720px" }}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
             <div className={styles.modalHeader}>
-              <div>
+              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier l'article</h2>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{editingPost.title}</span>
+                <span className={styles.modalSubtitle}>{editingPost.title}</span>
               </div>
               <button className={styles.modalClose} onClick={() => setEditingPost(null)} aria-label="Fermer">✕</button>
             </div>

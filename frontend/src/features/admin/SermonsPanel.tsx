@@ -28,6 +28,7 @@ export function SermonsPanel() {
   const { user } = useAuth();
   const { sermons, loading, error, loadAdmin, add, edit, replaceMedia, remove } = useSermons();
   const { confirm, dialog } = useConfirm();
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState<SermonInput>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -71,6 +72,14 @@ export function SermonsPanel() {
     });
   }
 
+  function openCreateModal() {
+    setForm(EMPTY);
+    setFile(null);
+    setFormError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setShowCreateModal(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim() || !form.preacher.trim() || !form.sermon_date || !file) {
@@ -84,6 +93,7 @@ export function SermonsPanel() {
       setForm(EMPTY);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setShowCreateModal(false);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
     } finally {
@@ -230,80 +240,17 @@ export function SermonsPanel() {
         </p>
       )}
 
-      {canManage && (
-        <section className={styles.card}>
-          <h3 className={styles.cardTitle}>Ajouter un sermon</h3>
-          <form onSubmit={handleSubmit} className={styles.formGrid}>
-            <input
-              className={styles.input}
-              placeholder="Titre *"
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-            <input
-              className={styles.input}
-              placeholder="Prédicateur *"
-              required
-              value={form.preacher}
-              onChange={(e) => setForm({ ...form, preacher: e.target.value })}
-            />
-            <input
-              className={styles.input}
-              type="date"
-              required
-              value={form.sermon_date}
-              onChange={(e) => setForm({ ...form, sermon_date: e.target.value })}
-            />
-            <input
-              className={styles.input}
-              placeholder="Série (optionnel)"
-              value={form.series ?? ""}
-              onChange={(e) => setForm({ ...form, series: e.target.value })}
-            />
-            <select
-              className={styles.select}
-              value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value as SermonStatus })
-              }
-            >
-              {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABELS[s]}
-                </option>
-              ))}
-            </select>
-            <input
-              ref={fileInputRef}
-              className={styles.input}
-              type="file"
-              accept="audio/*,video/*"
-              required
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            <textarea
-              className={styles.input}
-              placeholder="Description (optionnel)"
-              value={form.description ?? ""}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-            <button type="submit" className={styles.btnPrimary} disabled={saving}>
-              {saving ? "Envoi en cours…" : "+ Ajouter"}
+      <section className={styles.listCard}>
+        <div className={styles.listHeader}>
+          {canManage && (
+            <button type="button" className={styles.btnPrimary} onClick={openCreateModal}>
+              + Ajouter un sermon
             </button>
-          </form>
-          {formError && (
-            <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
-              {formError}
-            </p>
           )}
-        </section>
-      )}
+          <h3 className={styles.cardTitle} style={{ margin: 0 }}>Sermons ({sermons.length})</h3>
+        </div>
 
-      <section className={styles.card}>
-        <h3 className={styles.cardTitle}>Sermons ({sermons.length})</h3>
-
-        <div className={styles.inlineForm} style={{ flexWrap: "wrap", marginBottom: "1rem", gap: "0.5rem" }}>
+        <div className={styles.filterBar}>
           <input
             className={styles.input}
             placeholder="Rechercher…"
@@ -342,21 +289,124 @@ export function SermonsPanel() {
           </select>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={sermons}
-          getRowId={(s) => s.id}
-          emptyMessage="Aucun sermon enregistré."
-        />
+        <div className={styles.listBody}>
+          <DataTable
+            columns={columns}
+            data={sermons}
+            getRowId={(s) => s.id}
+            emptyMessage="Aucun sermon enregistré."
+          />
+        </div>
       </section>
+
+      {showCreateModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderIcon}>🎙</div>
+              <div className={styles.modalHeaderText}>
+                <h2 className={styles.modalName}>Ajouter un sermon</h2>
+                <span className={styles.modalSubtitle}>Remplissez les informations du nouveau sermon.</span>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowCreateModal(false)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <input
+                    className={styles.input}
+                    placeholder="Titre *"
+                    required
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Prédicateur *"
+                    required
+                    value={form.preacher}
+                    onChange={(e) => setForm({ ...form, preacher: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    type="date"
+                    required
+                    value={form.sermon_date}
+                    onChange={(e) => setForm({ ...form, sermon_date: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    placeholder="Série (optionnel)"
+                    value={form.series ?? ""}
+                    onChange={(e) => setForm({ ...form, series: e.target.value })}
+                  />
+                  <select
+                    className={styles.select}
+                    value={form.status}
+                    onChange={(e) =>
+                      setForm({ ...form, status: e.target.value as SermonStatus })
+                    }
+                  >
+                    {(Object.keys(STATUS_LABELS) as SermonStatus[]).map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    ref={fileInputRef}
+                    className={styles.input}
+                    type="file"
+                    accept="audio/*,video/*"
+                    required
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                  <textarea
+                    className={styles.input}
+                    placeholder="Description (optionnel)"
+                    value={form.description ?? ""}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+                {formError && (
+                  <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>
+                    {formError}
+                  </p>
+                )}
+              </div>
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={saving}
+                >
+                  Annuler
+                </button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                  {saving ? "Envoi en cours…" : "+ Ajouter"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {playingSermon && (
         <div className={styles.modalOverlay} onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "640px" }}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div>
+              <div className={styles.modalHeaderIcon}>{playingSermon.format === "video" ? "🎬" : "🎧"}</div>
+              <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>{playingSermon.title}</h2>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                <span className={styles.modalSubtitle}>
                   {playingSermon.preacher} · {playingSermon.sermon_date}
                 </span>
               </div>
@@ -408,9 +458,10 @@ export function SermonsPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditingSermon(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div>
+              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier le sermon</h2>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                <span className={styles.modalSubtitle}>
                   {editingSermon.format === "video" ? "Vidéo" : "Audio"} · {editingSermon.sermon_date}
                 </span>
               </div>
