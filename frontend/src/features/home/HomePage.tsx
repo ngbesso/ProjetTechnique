@@ -1,9 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "./HomePage.module.css";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
+import { useFormations } from "../../hooks/useFormations";
+import { usePosts } from "../../hooks/usePosts";
+import { registerToFormation } from "../../lib/api/formations";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import type { Formation, FormationRegistrationInput } from "../../types";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -27,6 +32,38 @@ function formatSermonDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
 }
 
+function formatFormationDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("fr-CA", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatFormationPrice(price: number): string {
+  return price === 0
+    ? "Gratuit"
+    : price.toLocaleString("fr-CA", {
+        style: "currency",
+        currency: "CAD",
+        maximumFractionDigits: 2,
+      });
+}
+
+function formatPostDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+}
+
+const CATEGORY_GRADIENT: Record<string, string> = {
+  "Vie spirituelle": "linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%)",
+  "Témoignage":      "linear-gradient(135deg, #d97706 0%, #92400e 100%)",
+  "Méditation":      "linear-gradient(135deg, #0891b2 0%, #164e63 100%)",
+  "Actualité":       "linear-gradient(135deg, #059669 0%, #064e3b 100%)",
+  "Réflexion":       "linear-gradient(135deg, #db2777 0%, #831843 100%)",
+};
+
 const EVENT_TYPES = [
   { label: "Conférences & Congrès", subtype: "Rassemblements", icon: "🎤" },
   { label: "Colloque", subtype: "Échanges académiques", icon: "💬" },
@@ -34,10 +71,6 @@ const EVENT_TYPES = [
   { label: "Retraite", subtype: "Ressourcement spirituel", icon: "🌿" },
 ] as const;
 
-const ARTICLES = [
-  { id: 1, title: "Vivre la communion fraternelle", type: "Article", readTime: "5 min" },
-  { id: 2, title: "Retour sur le congrès 2026", type: "Actualité", readTime: "3 min" },
-] as const;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -188,29 +221,209 @@ function EventsSection() {
   );
 }
 
+const EMPTY_REGISTRATION: FormationRegistrationInput = {
+  first_name: "",
+  last_name: "",
+  email: "",
+};
+
 function FormationSection() {
-  const navigate = useNavigate();
+  const { member } = useAuth();
+  const { formations, loading, load } = useFormations();
+
+  const [registering, setRegistering] = useState<Formation | null>(null);
+  const [regForm, setRegForm] = useState<FormationRegistrationInput>(EMPTY_REGISTRATION);
+  const [regSaving, setRegSaving] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [regSuccess, setRegSuccess] = useState(false);
+
+  useEffect(() => {
+    load({ upcoming: true, available: true, limit: 6 });
+  }, [load]);
+
+  function openRegistration(f: Formation) {
+    if (f.capacity - f.registered_count <= 0) return;
+    setRegistering(f);
+    setRegForm(
+      member
+        ? { first_name: member.first_name, last_name: member.last_name, email: member.email }
+        : EMPTY_REGISTRATION,
+    );
+    setRegError("");
+    setRegSuccess(false);
+  }
+
+  function closeRegistration() {
+    setRegistering(null);
+    setRegForm(EMPTY_REGISTRATION);
+    setRegError("");
+    setRegSuccess(false);
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    if (!registering) return;
+    if (!regForm.first_name.trim() || !regForm.last_name.trim() || !regForm.email.trim()) {
+      setRegError("Tous les champs sont requis.");
+      return;
+    }
+    setRegSaving(true);
+    setRegError("");
+    try {
+      await registerToFormation(registering.id, {
+        first_name: regForm.first_name.trim(),
+        last_name: regForm.last_name.trim(),
+        email: regForm.email.trim(),
+      });
+      setRegSuccess(true);
+      load({ upcoming: true, available: true, limit: 6 });
+    } catch (err) {
+      setRegError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
+    } finally {
+      setRegSaving(false);
+    }
+  }
+
   return (
     <section id="formation" className={`${styles.section} ${styles.sectionAlt}`}>
-      <div className={styles.formationLayout}>
-        <div className={styles.formationImg} aria-hidden="true" />
-        <div className={styles.formationContent}>
+      <div className={styles.sectionHeader}>
+        <div>
           <p className={styles.sectionEyebrow}>Grandir</p>
-          <h2 className={styles.formationTitle}>
-            Formation biblique<br />& spirituelle
-          </h2>
-          <p className={styles.formationDesc}>
-            Des programmes de formation théologique, des parcours de discipulat et
-            des séminaires pratiques — ouverts à tous les membres, partout dans la mission.
-          </p>
-          <button className={styles.btnPrimary} onClick={() => navigate("adhesion")}>S'inscrire en ligne</button>
+          <h2 className={styles.sectionTitle}>Formations à venir</h2>
         </div>
       </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : formations.length === 0 ? (
+        <p>Aucune formation programmée pour le moment.</p>
+      ) : (
+        <div className={styles.formationsGrid}>
+          {formations.map((f) => {
+            const placesLeft = f.capacity - f.registered_count;
+            const isFull = placesLeft <= 0;
+            return (
+              <article key={f.id} className={styles.formationCard}>
+                <div className={styles.formationCardTop}>
+                  <span className={styles.formationPrice}>{formatFormationPrice(f.price)}</span>
+                  <span className={isFull ? styles.formationPlacesFull : styles.formationPlaces}>
+                    {isFull ? "Complet" : `${placesLeft} place${placesLeft > 1 ? "s" : ""} restante${placesLeft > 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                <p className={styles.formationCardTitle}>{f.title}</p>
+                <p className={styles.formationCardMeta}>
+                  👤 {f.instructor}
+                </p>
+                <p className={styles.formationCardMeta}>
+                  📅 {formatFormationDate(f.formation_date)}
+                </p>
+                {f.description && (
+                  <p className={styles.formationCardDesc}>{f.description}</p>
+                )}
+                <button
+                  className={styles.btnPrimary}
+                  disabled={isFull}
+                  style={{ marginTop: "auto", opacity: isFull ? 0.5 : 1 }}
+                  onClick={() => openRegistration(f)}
+                >
+                  {isFull ? "Complet" : "S'inscrire"}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {registering && (
+        <div className={styles.formationModalOverlay} onClick={closeRegistration}>
+          <div className={styles.formationModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.formationModalHeader}>
+              <div>
+                <p className={styles.formationModalTitle}>{registering.title}</p>
+                <p className={styles.formationModalSub}>
+                  {registering.instructor} · {formatFormationDate(registering.formation_date)} · {formatFormationPrice(registering.price)}
+                </p>
+              </div>
+              <button
+                className={styles.formationModalClose}
+                onClick={closeRegistration}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {regSuccess ? (
+              <div className={styles.formationModalBody}>
+                <p className={styles.formationSuccess}>
+                  ✓ Inscription confirmée ! Nous vous attendons le{" "}
+                  {formatFormationDate(registering.formation_date)}.
+                </p>
+                <div className={styles.formationModalActions}>
+                  <button className={styles.btnPrimary} onClick={closeRegistration}>
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form className={styles.formationModalBody} onSubmit={handleRegister}>
+                <div className={styles.formationFormGrid}>
+                  <input
+                    className={styles.formationInput}
+                    placeholder="Prénom *"
+                    required
+                    value={regForm.first_name}
+                    onChange={(e) => setRegForm({ ...regForm, first_name: e.target.value })}
+                  />
+                  <input
+                    className={styles.formationInput}
+                    placeholder="Nom *"
+                    required
+                    value={regForm.last_name}
+                    onChange={(e) => setRegForm({ ...regForm, last_name: e.target.value })}
+                  />
+                  <input
+                    className={styles.formationInput}
+                    type="email"
+                    placeholder="Courriel *"
+                    required
+                    value={regForm.email}
+                    onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+                  />
+                </div>
+                {regError && (
+                  <p className={styles.formationError} role="alert">⚠ {regError}</p>
+                )}
+                <div className={styles.formationModalActions}>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={closeRegistration}
+                    disabled={regSaving}
+                  >
+                    Annuler
+                  </button>
+                  <button type="submit" className={styles.btnPrimary} disabled={regSaving}>
+                    {regSaving ? "Inscription…" : "Confirmer mon inscription"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
 function BlogSection() {
+  const navigate = useNavigate();
+  const { posts, loading, load } = usePosts();
+
+  useEffect(() => {
+    load({ limit: 3 });
+  }, [load]);
+
   return (
     <section id="blog" className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -218,19 +431,55 @@ function BlogSection() {
           <p className={styles.sectionEyebrow}>Lire</p>
           <h2 className={styles.sectionTitle}>Blog &amp; Articles</h2>
         </div>
+        <button className={styles.seeAllLink} onClick={() => navigate("blog")}>
+          Voir tout →
+        </button>
       </div>
-      <div className={styles.blogGrid}>
-        {ARTICLES.map((article) => (
-          <article key={article.id} className={styles.blogCard}>
-            <div className={styles.blogThumb} />
-            <div className={styles.blogInfo}>
-              <span className={styles.blogTag}>{article.type}</span>
-              <p className={styles.blogTitle}>{article.title}</p>
-              <p className={styles.blogMeta}>{article.readTime} de lecture</p>
-            </div>
-          </article>
-        ))}
-      </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : posts.length === 0 ? (
+        <p>Aucun article publié pour le moment.</p>
+      ) : (
+        <div className={styles.blogGrid}>
+          {posts.map((post, idx) => {
+            const gradient =
+              (post.category && CATEGORY_GRADIENT[post.category]) ||
+              "linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)";
+            const isFeatured = idx === 0;
+            return (
+              <article
+                key={post.id}
+                className={`${styles.blogCard} ${isFeatured ? styles.blogCardFeatured : ""}`}
+                onClick={() => navigate("blog", { postId: post.id })}
+              >
+                <div
+                  className={`${styles.blogThumb} ${isFeatured ? styles.blogThumbFeatured : ""}`}
+                  style={{ background: gradient }}
+                >
+                  {post.category && (
+                    <span className={styles.blogTag}>{post.category}</span>
+                  )}
+                </div>
+                <div className={styles.blogInfo}>
+                  <p className={`${styles.blogTitle} ${isFeatured ? styles.blogTitleFeatured : ""}`}>
+                    {post.title}
+                  </p>
+                  {post.excerpt && (
+                    <p className={styles.blogExcerpt}>{post.excerpt}</p>
+                  )}
+                  <div className={styles.blogFooter}>
+                    <span className={styles.blogMeta}>
+                      {post.author} · {formatPostDate(post.created_at)}
+                    </span>
+                    <span className={styles.blogReadMore}>Lire →</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

@@ -8,10 +8,12 @@ from app.api.routes import (
     churches,
     dashboard,
     donations,
+    formations,
     health,
     members,
     admin_users,
     parameters,
+    posts,
     sermons,
     settings as settings_routes,
 )
@@ -47,6 +49,8 @@ app.include_router(churches.router)
 app.include_router(members.router)
 app.include_router(donations.router)
 app.include_router(sermons.router)
+app.include_router(formations.router)
+app.include_router(posts.router)
 app.include_router(admin_users.router)
 app.include_router(parameters.router)
 app.include_router(settings_routes.router)
