@@ -263,19 +263,15 @@ def test_approve_creates_user_and_sends_invite(
     assert fake_email.sent
 
 
-def test_approve_existing_user_sends_approval(
-    client, fake_email, make_user, auth_header, db_session
+def test_request_with_existing_user_email_rejected(
+    client, fake_email, make_user, db_session
 ):
-    make_user("admin@b.com", roles=["admin"])
+    """L'email d'un compte User existant ne peut pas servir à une nouvelle demande
+    (contrôle anti-doublon avec message générique anti-énumération)."""
     make_user("existing@b.com")
-    h = auth_header("admin@b.com")
-    member_id = _request(
-        client, _mother_id(db_session), "existing@b.com", "Ex", "Isting"
-    ).json()["id"]
-    r = client.post(f"/members/{member_id}/approve", headers=h)
-    assert r.status_code == 200
-    assert r.json()["status"] == "active"
-    assert fake_email.sent
+    r = _request(client, _mother_id(db_session), "existing@b.com", "Ex", "Isting")
+    assert r.status_code == 409
+    assert not fake_email.sent
 
 
 def test_approve_assigns_member_code(

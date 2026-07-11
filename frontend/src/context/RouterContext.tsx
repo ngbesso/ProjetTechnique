@@ -1,7 +1,9 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
+  type AnchorHTMLAttributes,
   type ReactNode,
 } from "react";
 import type { Page } from "../types";
@@ -14,13 +16,65 @@ interface RouterContextValue {
 
 const RouterContext = createContext<RouterContextValue | null>(null);
 
+// ── Correspondance page ↔ URL ─────────────────────────────────────────────────
+
+const PAGE_PATHS: Record<Page, string> = {
+  home: "/",
+  login: "/connexion",
+  register: "/inscription",
+  admin: "/admin",
+  adhesion: "/adhesion",
+  donation: "/donation",
+  sermons: "/sermons",
+  blog: "/blog",
+  "mon-profil": "/mon-profil",
+  "mot-de-passe-oublie": "/mot-de-passe-oublie",
+};
+
+function pathFor(page: Page, params?: Record<string, unknown>): string {
+  if (page === "blog" && typeof params?.postId === "number") {
+    return `/blog/${params.postId}`;
+  }
+  return PAGE_PATHS[page];
+}
+
+function parsePath(pathname: string): { page: Page; params: Record<string, unknown> } {
+  const blogPost = pathname.match(/^\/blog\/(\d+)$/);
+  if (blogPost) {
+    return { page: "blog", params: { postId: Number(blogPost[1]) } };
+  }
+  const entry = (Object.entries(PAGE_PATHS) as [Page, string][]).find(
+    ([, path]) => path === pathname,
+  );
+  return { page: entry?.[0] ?? "home", params: {} };
+}
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [page, setPage] = useState<Page>("home");
-  const [params, setParams] = useState<Record<string, unknown>>({});
+  const initial = parsePath(window.location.pathname);
+  const [page, setPage] = useState<Page>(initial.page);
+  const [params, setParams] = useState<Record<string, unknown>>(initial.params);
+
+  // Boutons précédent / suivant du navigateur
+  useEffect(() => {
+    function onPopState() {
+      const route = parsePath(window.location.pathname);
+      setPage(route.page);
+      setParams(route.params);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   function navigate(nextPage: Page, nextParams?: Record<string, unknown>) {
+    const path = pathFor(nextPage, nextParams);
+    if (path !== window.location.pathname || window.location.search) {
+      window.history.pushState(null, "", path);
+    }
     setPage(nextPage);
     setParams(nextParams ?? {});
+    window.scrollTo(0, 0);
   }
 
   return (
@@ -46,4 +100,35 @@ export function useRouteParams(): Record<string, unknown> {
   const ctx = useContext(RouterContext);
   if (!ctx) throw new Error("useRouteParams must be used inside <RouterProvider>");
   return ctx.params;
+}
+
+// ── Lien SPA ──────────────────────────────────────────────────────────────────
+// Un vrai <a href> : clic-molette / Ctrl+clic ouvrent un onglet, le clic simple
+// navigue sans recharger la page.
+
+interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  page: Page;
+  params?: Record<string, unknown>;
+  children: ReactNode;
+}
+
+export function Link({ page, params, children, onClick, ...anchorProps }: LinkProps) {
+  const navigate = useNavigate();
+  return (
+    <a
+      href={pathFor(page, params)}
+      {...anchorProps}
+      onClick={(e) => {
+        onClick?.(e);
+        // Laisse le navigateur gérer nouvel onglet / fenêtre / téléchargement
+        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+          return;
+        }
+        e.preventDefault();
+        navigate(page, params);
+      }}
+    >
+      {children}
+    </a>
+  );
 }

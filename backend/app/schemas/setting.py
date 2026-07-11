@@ -7,7 +7,7 @@ SETTING_META: dict[str, str] = {
 }
 
 # Clés retournées sans authentification
-PUBLIC_SETTINGS: set[str] = {"zeffy_embed_path"}
+PUBLIC_SETTINGS: set[str] = {"zeffy_embed_path", "auto_approve_members"}
 
 
 class AppSettingRead(BaseModel):

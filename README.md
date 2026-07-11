@@ -1,7 +1,9 @@
 # Plateforme OBNL / Mission évangélique
 
 Plateforme numérique modulaire pour la gestion d'une OBNL : membres, Églises
-affiliées, dons, événements, sermons, avec un module d'intelligence artificielle.
+affiliées, dons, sermons, blog et formations. Un module d'intelligence
+artificielle (chatbot) est prévu — le microservice est en place mais pas encore
+implémenté.
 
 Projet technique MGL8707 — UQAM.
 
@@ -13,7 +15,7 @@ Monorepo regroupant trois services et l'infrastructure partagée :
 |----------------|-----------------------------------|-------------------------------|
 | `frontend/`    | Application web (SPA)             | React + TypeScript (Vite)     |
 | `backend/`     | API métier REST, auth JWT         | Python · FastAPI              |
-| `ai-service/`  | Microservice IA (LLM, RAG)        | Python · FastAPI              |
+| `ai-service/`  | Microservice IA — squelette (LLM/RAG à venir, `/chat` renvoie un stub) | Python · FastAPI |
 | infra          | PostgreSQL, Redis, MinIO          | Docker Compose                |
 
 ## Prérequis
@@ -32,7 +34,7 @@ Services exposés :
 
 - Frontend : http://localhost:5173
 - API backend : http://localhost:8000  (docs : http://localhost:8000/docs)
-- Service IA : http://localhost:8001  (docs : http://localhost:8001/docs)
+- Service IA : http://localhost:8001  (docs : http://localhost:8001/docs — endpoint `/chat` : stub, implémentation prévue)
 - Console MinIO : http://localhost:9001
 - PostgreSQL : localhost:5432
 - Redis : localhost:6379
