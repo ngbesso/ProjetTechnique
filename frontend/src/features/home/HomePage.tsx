@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./HomePage.module.css";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "../../context/RouterContext";
+import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { useFormations } from "../../hooks/useFormations";
 import { usePosts } from "../../hooks/usePosts";
@@ -160,9 +160,9 @@ function SermonsSection() {
           <p className={styles.sectionEyebrow}>Écouter</p>
           <h2 className={styles.sectionTitle}>Derniers sermons</h2>
         </div>
-        <button className={styles.seeAllLink} onClick={() => navigate("sermons")}>
+        <Link page="sermons" className={styles.seeAllLink}>
           Voir tout →
-        </button>
+        </Link>
       </div>
       {loading ? (
         <p>Chargement…</p>
@@ -431,9 +431,9 @@ function BlogSection() {
           <p className={styles.sectionEyebrow}>Lire</p>
           <h2 className={styles.sectionTitle}>Blog &amp; Articles</h2>
         </div>
-        <button className={styles.seeAllLink} onClick={() => navigate("blog")}>
+        <Link page="blog" className={styles.seeAllLink}>
           Voir tout →
-        </button>
+        </Link>
       </div>
 
       {loading ? (

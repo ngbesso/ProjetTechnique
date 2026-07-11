@@ -1,6 +1,6 @@
 import styles from "./SiteHeader.module.css";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "../../context/RouterContext";
+import { Link, useNavigate } from "../../context/RouterContext";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
@@ -41,33 +41,40 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
     <header className={styles.header}>
       <div className={styles.inner}>
         {/* Logo */}
-        <button className={styles.logo} onClick={() => navigate("home")}>
+        <Link page="home" className={styles.logo}>
           <div className={styles.logoIcon}>+</div>
           <div className={styles.logoText}>
             <span className={styles.logoTitle}>Mission Évangélique</span>
             <span className={styles.logoSubtitle}>unis dans la foi</span>
           </div>
-        </button>
+        </Link>
 
         {/* Nav */}
         <nav className={styles.nav} aria-label="Navigation principale">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className={
-                activePage === item.page && item.page !== null
-                  ? `${styles.navLink} ${styles.navLinkActive}`
-                  : styles.navLink
-              }
-              onClick={() => {
-                if (item.anchor) goToSection(item.anchor);
-                else if (item.page) navigate(item.page);
-              }}
-              disabled={item.page === null && !item.anchor}
-            >
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.page !== null ? (
+              <Link
+                key={item.label}
+                page={item.page}
+                className={
+                  activePage === item.page
+                    ? `${styles.navLink} ${styles.navLinkActive}`
+                    : styles.navLink
+                }
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                className={styles.navLink}
+                onClick={() => item.anchor && goToSection(item.anchor)}
+                disabled={!item.anchor}
+              >
+                {item.label}
+              </button>
+            ),
+          )}
         </nav>
 
         {/* Actions */}

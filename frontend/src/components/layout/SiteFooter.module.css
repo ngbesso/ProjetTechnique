@@ -82,7 +82,8 @@
   gap: 0.45rem;
 }
 
-.links button {
+.links button,
+.links a {
   background: none;
   border: none;
   padding: 0;
@@ -90,10 +91,12 @@
   color: rgba(255, 255, 255, 0.65);
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
   transition: color 0.15s;
 }
 
-.links button:hover {
+.links button:hover,
+.links a:hover {
   color: #fff;
 }
 
