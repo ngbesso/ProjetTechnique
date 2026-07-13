@@ -1,6 +1,6 @@
 import logging
 
-import anthropic
+import httpx
 
 from app.core.config import settings
 from app.services.content_sync import fetch_documents
@@ -47,34 +47,33 @@ async def answer(question: str) -> dict:
     scored_docs = vector_store.search(query_embedding, top_k=4)
     context = _build_context(scored_docs)
 
-    if not settings.llm_api_key:
-        return {
-            "answer": "Le service IA n'est pas configuré (clé API manquante).",
-            "sources": [],
-        }
-
-    client = anthropic.AsyncAnthropic(api_key=settings.llm_api_key)
     try:
-        message = await client.messages.create(
-            model=settings.llm_model,
-            max_tokens=500,
-            system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Contexte :\n\n{context}\n\n---\n\nQuestion : {question}",
-                }
-            ],
-        )
-    except anthropic.APIError:
-        logger.exception("Échec de l'appel à l'API Anthropic")
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_url, timeout=60.0
+        ) as client:
+            response = await client.post(
+                "/api/chat",
+                json={
+                    "model": settings.ollama_model,
+                    "stream": False,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": f"Contexte :\n\n{context}\n\n---\n\nQuestion : {question}",
+                        },
+                    ],
+                },
+            )
+            response.raise_for_status()
+    except httpx.HTTPError:
+        logger.exception("Échec de l'appel au service Ollama")
         return {
             "answer": "Le service IA est temporairement indisponible. Réessaie plus tard.",
             "sources": [],
         }
-    answer_text = "".join(
-        block.text for block in message.content if block.type == "text"
-    )
+
+    answer_text = response.json()["message"]["content"]
 
     return {
         "answer": answer_text,

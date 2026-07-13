@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    llm_api_key: str = ""
-    llm_model: str = "claude-haiku-4-5-20251001"
+    ollama_url: str = "http://ollama:11434"
+    ollama_model: str = "llama3.2:3b"
     backend_url: str = "http://backend:8000"
     sync_interval_seconds: int = 300
 

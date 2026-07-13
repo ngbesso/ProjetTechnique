@@ -48,13 +48,21 @@ public) qui répond aux questions des visiteurs à partir du contenu déjà publ
 2. Indexation vectorielle en mémoire (embeddings `sentence-transformers`, similarité
    cosinus).
 3. Recherche des extraits les plus pertinents pour la question posée, puis génération
-   de la réponse par Claude (Anthropic) à partir de ces seuls extraits.
+   de la réponse par un LLM auto-hébergé (Ollama) à partir de ces seuls extraits.
 
-Configuration requise (dans `.env`, voir `.env.example`) :
+Le LLM tourne dans un conteneur `ollama` du docker-compose (pas de clé API, pas de
+coût par requête). Après le premier `docker compose up`, télécharger le modèle une
+fois :
 
-- `LLM_API_KEY` — clé API Anthropic (https://platform.claude.com/settings/keys),
-  avec du crédit disponible sur le compte. Sans clé (ou sans crédit), le service
-  répond avec un message dégradé plutôt que d'échouer.
+```bash
+docker compose exec ollama ollama pull llama3.2:3b
+```
+
+Configuration (dans `.env`, voir `.env.example`) :
+
+- `OLLAMA_URL` / `OLLAMA_MODEL` — service et modèle Ollama utilisés. Si Ollama est
+  injoignable ou le modèle absent, le service répond avec un message dégradé plutôt
+  que d'échouer.
 - `BACKEND_URL` — URL interne du backend, utilisée par `ai-service` pour récupérer
   le contenu à indexer.
 
