@@ -25,15 +25,24 @@ class VectorStore:
         return len(self._documents)
 
     def search(
-        self, query_embedding: np.ndarray, top_k: int = 4
+        self,
+        query_embedding: np.ndarray,
+        top_k: int = 4,
+        doc_type: str | None = None,
     ) -> list[ScoredDocument]:
         if self._embeddings is None or len(self._documents) == 0:
             return []
-        scores = self._embeddings @ query_embedding
-        top_indices = np.argsort(-scores)[:top_k]
+        if doc_type is None:
+            indices = list(range(len(self._documents)))
+        else:
+            indices = [i for i, d in enumerate(self._documents) if d.type == doc_type]
+        if not indices:
+            return []
+        scores = self._embeddings[indices] @ query_embedding
+        top_local = np.argsort(-scores)[:top_k]
         return [
-            ScoredDocument(document=self._documents[i], score=float(scores[i]))
-            for i in top_indices
+            ScoredDocument(document=self._documents[indices[i]], score=float(scores[i]))
+            for i in top_local
         ]
 
 
