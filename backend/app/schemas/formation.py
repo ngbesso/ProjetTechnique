@@ -90,3 +90,19 @@ class FormationList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class FormationSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    formation_date: date
+    price: float
+    instructor: str
+
+
+class RegistrationWithFormation(BaseModel):
+    id: int
+    formation_id: int
+    created_at: datetime
+    formation: FormationSummary

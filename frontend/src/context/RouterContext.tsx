@@ -28,7 +28,9 @@ const PAGE_PATHS: Record<Page, string> = {
   sermons: "/sermons",
   blog: "/blog",
   "mon-profil": "/mon-profil",
+  espace: "/espace",
   "mot-de-passe-oublie": "/mot-de-passe-oublie",
+  confidentialite: "/confidentialite",
 };
 
 function pathFor(page: Page, params?: Record<string, unknown>): string {
@@ -100,6 +102,26 @@ export function useRouteParams(): Record<string, unknown> {
   const ctx = useContext(RouterContext);
   if (!ctx) throw new Error("useRouteParams must be used inside <RouterProvider>");
   return ctx.params;
+}
+
+// ── Défilement vers une section de l'accueil ─────────────────────────────────
+// Depuis l'accueil : défile directement. Depuis une autre page : y revient
+// d'abord, puis défile une fois le contenu monté. Partagé par le header et le
+// footer pour garantir un comportement identique.
+
+export function useGoToSection(): (anchor: string) => void {
+  const page = usePage();
+  const navigate = useNavigate();
+  return (anchor: string) => {
+    if (page === "home") {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("home");
+      setTimeout(() => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    }
+  };
 }
 
 // ── Lien SPA ──────────────────────────────────────────────────────────────────

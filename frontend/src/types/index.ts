@@ -30,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog" | "mon-profil" | "mot-de-passe-oublie";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -106,11 +106,7 @@ export interface ChurchInput {
 export type ChurchUpdateInput = Partial<ChurchInput> & { is_active?: boolean };
 
 export interface MemberSelfInput {
-  first_name?: string;
-  last_name?: string;
-  email?: string;
   address?: string | null;
-  birth_date?: string | null;
   sexe?: string | null;
   telephone?: string | null;
   family_status?: string | null;
@@ -285,6 +281,21 @@ export interface FormationInput {
   capacity: number;
   description?: string;
   status?: FormationStatus;
+}
+
+export interface FormationRegistrationSummary {
+  id: number;
+  title: string;
+  formation_date: string;
+  price: number;
+  instructor: string;
+}
+
+export interface MyFormationRegistration {
+  id: number;
+  formation_id: number;
+  created_at: string;
+  formation: FormationRegistrationSummary;
 }
 
 export type PostStatus = "draft" | "published" | "archived";
