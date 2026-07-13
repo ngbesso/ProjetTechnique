@@ -44,7 +44,9 @@ async def answer(question: str) -> dict:
         }
 
     query_embedding = embed([question])[0]
-    scored_docs = vector_store.search(query_embedding, top_k=4)
+    posts = vector_store.search(query_embedding, top_k=2, doc_type="post")
+    sermons = vector_store.search(query_embedding, top_k=2, doc_type="sermon")
+    scored_docs = sorted(posts + sermons, key=lambda sd: sd.score, reverse=True)
     context = _build_context(scored_docs)
 
     try:
