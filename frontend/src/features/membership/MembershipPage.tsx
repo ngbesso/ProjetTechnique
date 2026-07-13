@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./MembershipPage.module.css";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
@@ -52,6 +53,7 @@ const EMPTY: FormState = {
 
 export function MembershipPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { churches, load } = useChurches();
   const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
   const { values: familyOptions, load: loadFamily } = useParameters("family_status");
@@ -118,6 +120,58 @@ export function MembershipPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Session en cours de vérification : on n'affiche ni le formulaire ni le
+  // message "déjà membre" pour éviter qu'un visiteur connecté voie le
+  // formulaire clignoter avant d'être remplacé.
+  if (authLoading) {
+    return (
+      <div className={styles.page}>
+        <SiteHeader />
+        <main>
+          <div className={styles.authCheck}>Chargement…</div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className={styles.page}>
+        <SiteHeader />
+        <main>
+          <section className={styles.formSection}>
+            <div className={styles.formInner}>
+              <div className={styles.card}>
+                <div className={styles.brandBar}>
+                  <div className={styles.brandIcon}>+</div>
+                  <div>
+                    <p className={styles.brandName}>Mission Évangélique</p>
+                    <p className={styles.brandSub}>Devenir membre</p>
+                  </div>
+                </div>
+                <div className={styles.body}>
+                  <div className={styles.successBox}>
+                    <p className={styles.successIcon}>✓</p>
+                    <h2 className={styles.successTitle}>Vous êtes déjà membre ✓</h2>
+                    <p className={styles.successText}>
+                      Votre compte est déjà actif. Retrouvez vos informations
+                      et gérez votre profil dans votre espace membre.
+                    </p>
+                    <button className={styles.submit} onClick={() => navigate("espace")}>
+                      Accéder à mon espace
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <SiteFooter />
+      </div>
+    );
   }
 
   return (

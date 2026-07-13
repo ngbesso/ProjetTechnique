@@ -6,6 +6,7 @@ import type {
   FormationListResult,
   FormationRegistration,
   FormationRegistrationInput,
+  MyFormationRegistration,
 } from "../../types";
 
 export function fetchFormations(params?: {
@@ -36,6 +37,10 @@ export function fetchFormationRegistrations(
   id: number,
 ): Promise<FormationRegistration[]> {
   return http.get<FormationRegistration[]>(`/formations/${id}/registrations`);
+}
+
+export function fetchMyFormationRegistrations(): Promise<MyFormationRegistration[]> {
+  return http.get<MyFormationRegistration[]>("/formations/registrations/me");
 }
 
 export function fetchFormationsAdmin(params?: {
