@@ -1,6 +1,6 @@
 import styles from "./SiteHeader.module.css";
 import { useAuth } from "../../context/AuthContext";
-import { Link, useNavigate } from "../../context/RouterContext";
+import { Link, useGoToSection, useNavigate } from "../../context/RouterContext";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
@@ -11,7 +11,7 @@ const NAV_ITEMS: { label: string; page: Page | null; anchor?: string }[] = [
   { label: "Accueil", page: "home" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
-  { label: "Événements", page: null },
+  { label: "Événements", page: null, anchor: "evenements" },
   { label: "Formation", page: null, anchor: "formation" },
   { label: "Faire un don", page: "donation" },
 ];
@@ -19,23 +19,12 @@ const NAV_ITEMS: { label: string; page: Page | null; anchor?: string }[] = [
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
   const navigate = useNavigate();
+  const goToSection = useGoToSection();
 
   const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
   const displayName = member
     ? `${member.first_name} ${member.last_name}`
     : user?.email;
-
-  function goToSection(anchor: string) {
-    if (activePage === "home") {
-      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      // Depuis une autre page : revenir à l'accueil puis défiler vers la section
-      navigate("home");
-      setTimeout(() => {
-        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
-      }, 200);
-    }
-  }
 
   return (
     <header className={styles.header}>
@@ -84,23 +73,14 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               <span className={styles.userName} title={user.email}>
                 <span aria-hidden>&#128100;</span> {displayName}
               </span>
-              {isAdmin ? (
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => navigate("admin")}
-                >
-                  Administration
-                </button>
-              ) : (
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => navigate("mon-profil")}
-                >
-                  ✏ Modifier mon profil
-                </button>
-              )}
-              <button className={styles.btnPrimary} onClick={logout}>
-                Déconnexion
+              <button
+                className={styles.btnPrimary}
+                onClick={() => navigate(isAdmin ? "admin" : "espace")}
+              >
+                {isAdmin ? "Administration" : "Mon espace"}
+              </button>
+              <button className={styles.linkMuted} onClick={logout}>
+                Se déconnecter
               </button>
             </>
           ) : (

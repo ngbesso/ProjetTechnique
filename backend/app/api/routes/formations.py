@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_global_permission
+from app.api.deps import get_current_member, get_current_user, require_global_permission
 from app.core.email import (
     EmailSender,
     formation_registration_received,
@@ -13,14 +13,17 @@ from app.core.email import (
 )
 from app.db.session import get_db
 from app.models.formation import Formation, FormationRegistration, FormationStatus
+from app.models.member import Member
 from app.models.user import User
 from app.schemas.formation import (
     FormationCreate,
     FormationList,
     FormationRead,
+    FormationSummary,
     FormationUpdate,
     RegistrationCreate,
     RegistrationRead,
+    RegistrationWithFormation,
 )
 
 MONTHS_FR = [
@@ -121,6 +124,29 @@ def list_formations_admin(
     ).all()
     items = _attach_counts(db, list(rows))
     return FormationList(items=items, total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/registrations/me", response_model=list[RegistrationWithFormation])
+def list_my_registrations(
+    db: Annotated[Session, Depends(get_db)],
+    current_member: Annotated[Member, Depends(get_current_member)],
+):
+    """Inscriptions aux formations du membre connecté (appariées par courriel)."""
+    rows = db.execute(
+        select(FormationRegistration, Formation)
+        .join(Formation, Formation.id == FormationRegistration.formation_id)
+        .where(func.lower(FormationRegistration.email) == current_member.email.lower())
+        .order_by(Formation.formation_date.desc())
+    ).all()
+    return [
+        RegistrationWithFormation(
+            id=reg.id,
+            formation_id=reg.formation_id,
+            created_at=reg.created_at,
+            formation=FormationSummary.model_validate(formation),
+        )
+        for reg, formation in rows
+    ]
 
 
 @router.get("/{formation_id}", response_model=FormationRead)

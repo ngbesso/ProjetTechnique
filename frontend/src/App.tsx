@@ -11,7 +11,8 @@ import { BlogPage } from "./features/blog/BlogPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
-import {MyProfilePage} from "./features/member/MyProfilePage";
+import {EspacePage} from "./features/espace/EspacePage";
+import {PrivacyPage} from "./features/legal/PrivacyPage";
 
 export default function App() {
   const page = usePage();
@@ -34,8 +35,12 @@ export default function App() {
   if (page === "donation") return <DonationPage />;
   if (page === "sermons") return <SermonsPage />;
   if (page === "blog") return <BlogPage />;
+  if (page === "confidentialite") return <PrivacyPage />;
 
-  if (page === "mon-profil") return user ? <MyProfilePage /> : <LoginPage />;
+  // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"
+  if (page === "mon-profil" || page === "espace") {
+    return user ? <EspacePage /> : <LoginPage />;
+  }
   if (page === "admin") {
     if (!user) return <LoginPage />;
     return <AdminPage />;

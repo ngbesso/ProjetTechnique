@@ -120,19 +120,16 @@ class MemberImportResult(BaseModel):
 
 
 class MemberSelfUpdate(BaseModel):
-    first_name: str | None = None
-    last_name: str | None = None
-    email: EmailStr | None = None
+    """Auto-service : un membre ne peut modifier que ses coordonnées.
+
+    Identité (nom, prénom, date de naissance) et courriel de connexion
+    restent réservés à la gestion administrative (contact avec l'église).
+    """
+
     address: str | None = None
-    birth_date: date | None = None
     sexe: str | None = None
     telephone: str | None = None
     family_status: str | None = None
-
-    @field_validator("birth_date")
-    @classmethod
-    def birth_date_not_future(cls, v: date | None) -> date | None:
-        return _no_future_date(v, "date de naissance")
 
     @field_validator("telephone")
     @classmethod
