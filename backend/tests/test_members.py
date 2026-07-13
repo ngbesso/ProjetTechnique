@@ -410,17 +410,34 @@ def test_patch_me_telephone_too_short_rejected(
     assert r.status_code == 422
 
 
-def test_patch_me_birth_date_future_rejected(
+def test_patch_me_ignores_restricted_fields(
     client, make_member, auth_header, db_session
 ):
+    """first_name, last_name, email et birth_date sont réservés à la gestion
+    administrative : envoyés dans le PATCH libre-service, ils sont
+    silencieusement ignorés (schéma restreint), pas rejetés en erreur."""
     from datetime import timedelta
 
     church_id = _mother_id(db_session)
-    make_member("futurebd@b.com", church_id)
+    member = make_member("restricted@b.com", church_id)
+    original_first_name = member.first_name
+    original_email = member.email
     future = (date.today() + timedelta(days=1)).isoformat()
+
     r = client.patch(
         "/members/me",
-        json={"birth_date": future},
-        headers=auth_header("futurebd@b.com"),
+        json={
+            "first_name": "Usurped",
+            "last_name": "Name",
+            "email": "hijack@b.com",
+            "birth_date": future,
+            "address": "1 Rue Test",
+        },
+        headers=auth_header("restricted@b.com"),
     )
-    assert r.status_code == 422
+    assert r.status_code == 200
+    body = r.json()
+    assert body["first_name"] == original_first_name
+    assert body["email"] == original_email
+    assert body["birth_date"] is None
+    assert body["address"] == "1 Rue Test"

@@ -15,10 +15,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
   height: 64px;
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
 /* ── Logo ───────────────────────────────────────────────────────────────── */
@@ -177,7 +175,44 @@ a.navLink:hover {
   text-overflow: ellipsis;
 }
 
+.linkMuted {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.43rem 0.25rem;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.linkMuted:hover {
+  color: var(--deep-violet);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
+
+/* Écrans intermédiaires (ex. ~1024px) : la nav pleine largeur ne tient plus
+   sur une ligne avec le logo et les actions — on resserre avant de casser. */
+@media (max-width: 1220px) {
+  .inner {
+    gap: 0.5rem;
+    padding: 0 1rem;
+  }
+
+  .nav {
+    gap: 0;
+  }
+
+  .navLink {
+    padding: 0.45rem 0.55rem;
+    font-size: 0.82rem;
+  }
+
+  .actions {
+    gap: 0.4rem;
+  }
+}
 
 @media (max-width: 768px) {
   .inner {
@@ -194,6 +229,10 @@ a.navLink:hover {
   }
 
   .userName {
+    display: none;
+  }
+
+  .linkMuted {
     display: none;
   }
 }

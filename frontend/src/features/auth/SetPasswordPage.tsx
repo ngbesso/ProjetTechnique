@@ -34,7 +34,7 @@ export function SetPasswordPage({ token }: { token: string }) {
             setToken(access_token);
             setUser(await fetchMe());
             window.history.replaceState({}, "", "/");
-            navigate("mon-profil");
+            navigate("espace");
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ce lien est invalide ou a déjà été utilisé.");
         } finally {

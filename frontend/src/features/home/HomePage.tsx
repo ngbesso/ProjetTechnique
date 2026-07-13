@@ -78,6 +78,7 @@ const EVENT_TYPES = [
 
 function Hero() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
@@ -90,9 +91,15 @@ function Hero() {
           servir, former et rayonner ensemble.
         </p>
         <div className={styles.heroActions}>
-          <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
-            Devenir membre
-          </button>
+          {user ? (
+            <button className={styles.btnHeroPrimary} onClick={() => navigate("espace")}>
+              Accéder à mon espace
+            </button>
+          ) : (
+            <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
+              Devenir membre
+            </button>
+          )}
           <button className={styles.btnOutlineWhite} onClick={() => navigate("donation")}>
             <span>♥</span> Faire un don
           </button>

@@ -280,23 +280,7 @@ def update_my_profile(
     if not member:
         raise HTTPException(404, "Aucune fiche membre liée à ce compte")
 
-    dump = data.model_dump(exclude_unset=True)
-
-    if "email" in dump:
-        new_email = str(dump.pop("email"))
-        if new_email != member.email:
-            taken_user = db.scalar(
-                select(User).where(User.email == new_email, User.id != current_user.id)
-            )
-            taken_member = db.scalar(
-                select(Member).where(Member.email == new_email, Member.id != member.id)
-            )
-            if taken_user or taken_member:
-                raise HTTPException(409, _EMAIL_TAKEN)
-            member.email = new_email
-            current_user.email = new_email
-
-    for k, v in dump.items():
+    for k, v in data.model_dump(exclude_unset=True).items():
         setattr(member, k, v)
     db.commit()
     db.refresh(member)
