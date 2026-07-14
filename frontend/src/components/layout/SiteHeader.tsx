@@ -1,6 +1,6 @@
 import styles from "./SiteHeader.module.css";
 import { useAuth } from "../../context/AuthContext";
-import { Link, usePage, useNavigate } from "../../context/RouterContext";
+import { Link, useNavigate } from "../../context/RouterContext";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
@@ -12,12 +12,17 @@ const NAV_ITEMS: { label: string; page: Page }[] = [
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
   { label: "Événements", page: "evenements" },
+  { label: "Formation", page: "formations" },
+  { label: "Faire un don", page: "donation" },
 ];
+
+function navClass(active: boolean): string {
+  return active ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
+}
 
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
   const navigate = useNavigate();
-  const page = usePage();
 
   const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
   const displayName = member
@@ -39,47 +44,18 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
         {/* Nav */}
         <nav className={styles.nav} aria-label="Navigation principale">
           {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.label}
-              page={item.page}
-              className={
-                activePage === item.page
-                  ? `${styles.navLink} ${styles.navLinkActive}`
-                  : styles.navLink
-              }
-            >
+            <Link key={item.label} page={item.page} className={navClass(activePage === item.page)}>
               {item.label}
             </Link>
           ))}
 
-          {/* Sur l'accueil : défile vers la section. Ailleurs : ouvre la page dédiée. */}
-          <button
-            className={
-              activePage === "formations"
-                ? `${styles.navLink} ${styles.navLinkActive}`
-                : styles.navLink
-            }
-            onClick={() => {
-              if (page === "home") {
-                document.getElementById("formation")?.scrollIntoView({ behavior: "smooth" });
-              } else {
-                navigate("formations");
-              }
-            }}
-          >
-            Formation
-          </button>
-
-          <Link
-            page="donation"
-            className={
-              activePage === "donation"
-                ? `${styles.navLink} ${styles.navLinkActive}`
-                : styles.navLink
-            }
-          >
-            Faire un don
-          </Link>
+          {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
+              hors composant, sans accès à la session) — rendu conditionnel ici. */}
+          {isAdmin && (
+            <Link page="admin" className={navClass(activePage === "admin")}>
+              Administration
+            </Link>
+          )}
         </nav>
 
         {/* Actions */}
@@ -87,14 +63,13 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
           {user ? (
             <>
               <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {displayName}
+                <span aria-hidden>&#128100;</span> {isAdmin ? "Admin" : displayName}
               </span>
-              <button
-                className={styles.btnPrimary}
-                onClick={() => navigate(isAdmin ? "admin" : "espace")}
-              >
-                {isAdmin ? "Administration" : "Mon espace"}
-              </button>
+              {!isAdmin && (
+                <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
+                  Mon espace
+                </button>
+              )}
               <button className={styles.linkMuted} onClick={logout}>
                 Se déconnecter
               </button>

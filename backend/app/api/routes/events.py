@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_member, require_global_permission
@@ -12,7 +13,9 @@ from app.schemas.event import (
     EventCreate,
     EventList,
     EventRead,
+    EventSummary,
     EventUpdate,
+    MyEventRegistration,
     RegistrationCreate,
     RegistrationRead,
 )
@@ -140,6 +143,32 @@ def list_events_admin(
     return EventList(
         items=[_to_read(db, e) for e in events], total=total, limit=limit, offset=offset
     )
+
+
+@router.get("/registrations/me", response_model=list[MyEventRegistration])
+def list_my_registrations(
+    db: Annotated[Session, Depends(get_db)],
+    current_member: Annotated[Member, Depends(get_current_member)],
+):
+    """Inscriptions confirmées du membre connecté, événement joint."""
+    rows = db.execute(
+        select(EventRegistration, Event)
+        .join(Event, Event.id == EventRegistration.event_id)
+        .where(
+            EventRegistration.member_id == current_member.id,
+            EventRegistration.status == RegistrationStatus.confirmed,
+        )
+        .order_by(Event.date_start.desc())
+    ).all()
+    return [
+        MyEventRegistration(
+            id=reg.id,
+            event_id=reg.event_id,
+            registered_at=reg.registered_at,
+            event=EventSummary.model_validate(event),
+        )
+        for reg, event in rows
+    ]
 
 
 @router.get("/{event_id}", response_model=EventRead)

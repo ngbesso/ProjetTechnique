@@ -6,9 +6,10 @@ import { useSermons } from "../../hooks/useSermons";
 import { useFormations } from "../../hooks/useFormations";
 import { usePosts } from "../../hooks/usePosts";
 import { registerToFormation } from "../../lib/api/formations";
+import { getEvents } from "../../lib/api/events";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
-import type { Formation, FormationRegistrationInput } from "../../types";
+import type { EventItem, Formation, FormationRegistrationInput } from "../../types";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -64,13 +65,13 @@ const CATEGORY_GRADIENT: Record<string, string> = {
   "Réflexion":       "linear-gradient(135deg, #db2777 0%, #831843 100%)",
 };
 
-const EVENT_TYPES = [
-  { label: "Conférences & Congrès", subtype: "Rassemblements", icon: "🎤" },
-  { label: "Colloque", subtype: "Échanges académiques", icon: "💬" },
-  { label: "Croisade", subtype: "Évangélisation", icon: "✝" },
-  { label: "Retraite", subtype: "Ressourcement spirituel", icon: "🌿" },
-] as const;
+function formatEventDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric" });
+}
 
+function formatEventMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { month: "short" }).replace(".", "");
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -207,6 +208,24 @@ function SermonsSection() {
 }
 
 function EventsSection() {
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getEvents({ upcoming_only: true, limit: 5 })
+      .then((res) => {
+        const sorted = [...res.items].sort(
+          (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
+        );
+        setEvents(sorted.slice(0, 5));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (!loading && events.length === 0) return null;
+
   return (
     <section id="evenements" className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -214,20 +233,35 @@ function EventsSection() {
           <p className={styles.sectionEyebrow}>Calendrier</p>
           <h2 className={styles.sectionTitle}>Événements</h2>
         </div>
+        <Link page="evenements" className={styles.seeAllLink}>
+          Voir tout →
+        </Link>
       </div>
-      <div className={styles.eventsGrid}>
-        {EVENT_TYPES.map((evt) => (
-          <div key={evt.label} className={styles.eventCard}>
-            <div className={styles.eventTop}>
-              <span className={styles.eventIcon}>{evt.icon}</span>
-            </div>
-            <div className={styles.eventBody}>
-              <p className={styles.eventType}>{evt.label}</p>
-              <p className={styles.eventSubtype}>{evt.subtype}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : (
+        <div className={styles.eventsGrid}>
+          {events.map((evt) => (
+            <button
+              key={evt.id}
+              className={styles.eventCard}
+              onClick={() => navigate("evenements")}
+            >
+              <div className={styles.eventTop}>
+                <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
+                <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
+              </div>
+              <div className={styles.eventBody}>
+                <p className={styles.eventCardTitle}>{evt.title}</p>
+                {evt.location && (
+                  <p className={styles.eventCardMeta}>📍 {evt.location}</p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -498,27 +532,6 @@ function BlogSection() {
   );
 }
 
-function DonationBand() {
-  const navigate = useNavigate();
-  return (
-    <section className={styles.donationBand}>
-      <div className={styles.donationContent}>
-        <h2 className={styles.donationTitle}>Soutenir la mission</h2>
-        <p className={styles.donationDesc}>
-          Votre don soutient les Églises locales, les programmes de formation et les
-          actions d'évangélisation
-        </p>
-      </div>
-      <button
-        className={styles.btnOutlineWhite}
-        onClick={() => navigate("donation")}
-      >
-        ♥ Faire un don
-      </button>
-    </section>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
@@ -532,7 +545,6 @@ export function HomePage() {
         <EventsSection />
         <FormationSection />
         <BlogSection />
-        <DonationBand />
       </main>
       <SiteFooter />
     </div>
