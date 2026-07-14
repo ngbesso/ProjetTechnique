@@ -169,7 +169,7 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
             onChange={(e) => onChange("dateNaissance", e.target.value)}
           />
         </Field>
-        <Field label="Statut familial" error={errors.statutFamilial}>
+        <Field label="Statut matrimonial" error={errors.statutFamilial}>
           <select
             className={`${styles.select} ${errors.statutFamilial ? styles.inputError : ""}`}
             value={data.statutFamilial}
@@ -299,7 +299,7 @@ function Step2({ data, onBack, onConfirm, submitting }: Step2Props) {
     { key: "Prénom", value: data.prenom },
     { key: "Nom", value: data.nom },
     { key: "Date de naissance", value: data.dateNaissance },
-    { key: "Statut familial", value: data.statutFamilial },
+    { key: "Statut matrimonial", value: data.statutFamilial },
     { key: "Courriel", value: data.courriel },
     { key: "District", value: data.district },
     { key: "Église affiliée", value: data.eglise },

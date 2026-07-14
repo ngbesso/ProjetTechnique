@@ -346,7 +346,7 @@ export function MembershipPage() {
                         onChange={(e) => set("birth_date", e.target.value)} />
                     </div>
                     <div className={styles.col}>
-                      <label className={styles.label}>Statut familial</label>
+                      <label className={styles.label}>Statut matrimonial</label>
                       <select className={styles.select} value={form.family_status}
                         onChange={(e) => set("family_status", e.target.value)}>
                         <option value="">—</option>

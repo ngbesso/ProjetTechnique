@@ -73,6 +73,7 @@ export function SiteFooter() {
   const { user, logout } = useAuth();
   const goToSection = useGoToSection();
   const [motherChurch, setMotherChurch] = useState<Church | null>(null);
+  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
 
   useEffect(() => {
     fetchChurches()
@@ -124,7 +125,13 @@ export function SiteFooter() {
             <ul className={styles.links}>
               {user ? (
                 <>
-                  <li><Link page="espace">Mon espace</Link></li>
+                  <li>
+                    {isAdmin ? (
+                      <Link page="admin">Administration</Link>
+                    ) : (
+                      <Link page="espace">Mon espace</Link>
+                    )}
+                  </li>
                   <li><button onClick={logout}>Déconnexion</button></li>
                 </>
               ) : (

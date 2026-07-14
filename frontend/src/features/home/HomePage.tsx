@@ -79,6 +79,7 @@ const EVENT_TYPES = [
 function Hero() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
@@ -92,8 +93,11 @@ function Hero() {
         </p>
         <div className={styles.heroActions}>
           {user ? (
-            <button className={styles.btnHeroPrimary} onClick={() => navigate("espace")}>
-              Accéder à mon espace
+            <button
+              className={styles.btnHeroPrimary}
+              onClick={() => navigate(isAdmin ? "admin" : "espace")}
+            >
+              {isAdmin ? "Administration" : "Accéder à mon espace"}
             </button>
           ) : (
             <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
@@ -245,7 +249,7 @@ function FormationSection() {
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
-    load({ upcoming: true, available: true, limit: 6 });
+    load({ upcoming: true, available: true, limit: 5 });
   }, [load]);
 
   function openRegistration(f: Formation) {
@@ -283,13 +287,15 @@ function FormationSection() {
         email: regForm.email.trim(),
       });
       setRegSuccess(true);
-      load({ upcoming: true, available: true, limit: 6 });
+      load({ upcoming: true, available: true, limit: 5 });
     } catch (err) {
       setRegError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
     } finally {
       setRegSaving(false);
     }
   }
+
+  if (!loading && formations.length === 0) return null;
 
   return (
     <section id="formation" className={`${styles.section} ${styles.sectionAlt}`}>
@@ -298,12 +304,13 @@ function FormationSection() {
           <p className={styles.sectionEyebrow}>Grandir</p>
           <h2 className={styles.sectionTitle}>Formations à venir</h2>
         </div>
+        <Link page="formations" className={styles.seeAllLink}>
+          Voir tout →
+        </Link>
       </div>
 
       {loading ? (
         <p>Chargement…</p>
-      ) : formations.length === 0 ? (
-        <p>Aucune formation programmée pour le moment.</p>
       ) : (
         <div className={styles.formationsGrid}>
           {formations.map((f) => {

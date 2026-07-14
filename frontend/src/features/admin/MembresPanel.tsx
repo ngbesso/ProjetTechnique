@@ -61,7 +61,7 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
         { label: "Adresse", value: member.address ?? "—" },
         { label: "Sexe", value: member.sexe ?? "—" },
         { label: "Date de naissance", value: formatDate(member.birth_date) },
-        { label: "Statut familial", value: member.family_status ?? "—" },
+        { label: "Statut matrimonial", value: member.family_status ?? "—" },
         { label: "Baptême", value: member.is_baptized ? "Baptisé(e)" : "Non baptisé(e)" },
         { label: "Inscrit le", value: formatDate(member.created_at) },
     ];
@@ -228,7 +228,7 @@ function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                                 onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })} />
                             <select className={styles.select} value={form.family_status ?? ""}
                                 onChange={(e) => setForm({ ...form, family_status: e.target.value || null })}>
-                                <option value="">Statut familial…</option>
+                                <option value="">Statut matrimonial…</option>
                                 {familyOptions.map((f) => <option key={f.id} value={f.label}>{f.label}</option>)}
                             </select>
                             <input className={styles.input} type="date" placeholder="Date de conversion" max={TODAY}
