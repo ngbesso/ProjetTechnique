@@ -11,7 +11,7 @@ const NAV_ITEMS: { label: string; page: Page | null; anchor?: string }[] = [
   { label: "Accueil", page: "home" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
-  { label: "Événements", page: null, anchor: "evenements" },
+  { label: "Événements", page: "evenements" },
   { label: "Formation", page: null, anchor: "formation" },
   { label: "Faire un don", page: "donation" },
 ];

@@ -149,7 +149,8 @@ _EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en 
 
 
 def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
-    """Lève HTTP 409 avec un message générique si l'email est déjà pris."""
+    """Lève HTTP 409 (message générique anti-énumération) si l'email est déjà pris,
+    que ce soit par une fiche Membre ou par un compte User existant."""
     query = select(Member).where(Member.email == email)
     if exclude_id is not None:
         query = query.where(Member.id != exclude_id)

@@ -1,4 +1,4 @@
-import { usePage } from "./context/RouterContext";
+import { usePage, useRouteParams } from "./context/RouterContext";
 import { useAuth } from "./context/AuthContext";
 import { HomePage } from "./features/home/HomePage";
 import { LoginPage } from "./features/auth/LoginPage";
@@ -7,6 +7,8 @@ import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
 import { SermonsPage } from "./features/sermons/SermonsPage";
+import { EventsPage } from "./features/events/EventsPage";
+import { EventDetailPage } from "./features/events/EventDetailPage";
 import { BlogPage } from "./features/blog/BlogPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
@@ -16,6 +18,7 @@ import {PrivacyPage} from "./features/legal/PrivacyPage";
 
 export default function App() {
   const page = usePage();
+  const routeParams = useRouteParams();
   const { user, loading } = useAuth();
 
   const params = new URLSearchParams(window.location.search);
@@ -34,6 +37,10 @@ export default function App() {
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;
   if (page === "sermons") return <SermonsPage />;
+  if (page === "evenements") {
+    const eventId = routeParams.event;
+    return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
+  }
   if (page === "blog") return <BlogPage />;
   if (page === "confidentialite") return <PrivacyPage />;
 

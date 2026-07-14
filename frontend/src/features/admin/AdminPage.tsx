@@ -9,6 +9,7 @@ import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
+import { EvenementsPanel } from "./EvenementsPanel";
 import { FormationsPanel } from "./FormationsPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
@@ -404,6 +405,8 @@ export function AdminPage() {
               <DonsPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
+          ) : section === "evenements" ? (
+              <EvenementsPanel />
           ) : section === "blog" ? (
               <BlogPanel />
           ) : section === "formations" ? (
