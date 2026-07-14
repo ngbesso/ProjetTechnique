@@ -10,13 +10,8 @@ import type { Page } from "../types";
 
 interface RouterContextValue {
   page: Page;
-<<<<<<< HEAD
-  params: Record<string, string>;
-  navigate: (page: Page, params?: Record<string, string>) => void;
-=======
   params: Record<string, unknown>;
   navigate: (page: Page, params?: Record<string, unknown>) => void;
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 }
 
 const RouterContext = createContext<RouterContextValue | null>(null);
@@ -32,6 +27,7 @@ const PAGE_PATHS: Record<Page, string> = {
   donation: "/donation",
   sermons: "/sermons",
   blog: "/blog",
+  evenements: "/evenements",
   "mon-profil": "/mon-profil",
   espace: "/espace",
   "mot-de-passe-oublie": "/mot-de-passe-oublie",
@@ -42,6 +38,9 @@ function pathFor(page: Page, params?: Record<string, unknown>): string {
   if (page === "blog" && typeof params?.postId === "number") {
     return `/blog/${params.postId}`;
   }
+  if (page === "evenements" && (typeof params?.event === "number" || typeof params?.event === "string")) {
+    return `/evenements/${params.event}`;
+  }
   return PAGE_PATHS[page];
 }
 
@@ -49,6 +48,10 @@ function parsePath(pathname: string): { page: Page; params: Record<string, unkno
   const blogPost = pathname.match(/^\/blog\/(\d+)$/);
   if (blogPost) {
     return { page: "blog", params: { postId: Number(blogPost[1]) } };
+  }
+  const eventDetail = pathname.match(/^\/evenements\/(\d+)$/);
+  if (eventDetail) {
+    return { page: "evenements", params: { event: Number(eventDetail[1]) } };
   }
   const entry = (Object.entries(PAGE_PATHS) as [Page, string][]).find(
     ([, path]) => path === pathname,
@@ -59,14 +62,6 @@ function parsePath(pathname: string): { page: Page; params: Record<string, unkno
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-<<<<<<< HEAD
-  const [page, setPage] = useState<Page>("home");
-  const [params, setParams] = useState<Record<string, string>>({});
-
-  function navigate(nextPage: Page, nextParams: Record<string, string> = {}) {
-    setPage(nextPage);
-    setParams(nextParams);
-=======
   const initial = parsePath(window.location.pathname);
   const [page, setPage] = useState<Page>(initial.page);
   const [params, setParams] = useState<Record<string, unknown>>(initial.params);
@@ -90,7 +85,6 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     setPage(nextPage);
     setParams(nextParams ?? {});
     window.scrollTo(0, 0);
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
   }
 
   return (
@@ -100,11 +94,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   );
 }
 
-<<<<<<< HEAD
-export function useNavigate(): (page: Page, params?: Record<string, string>) => void {
-=======
 export function useNavigate(): (page: Page, params?: Record<string, unknown>) => void {
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
   const ctx = useContext(RouterContext);
   if (!ctx) throw new Error("useNavigate must be used inside <RouterProvider>");
   return ctx.navigate;
@@ -116,17 +106,11 @@ export function usePage(): Page {
   return ctx.page;
 }
 
-<<<<<<< HEAD
-export function useRouteParams(): Record<string, string> {
-=======
 export function useRouteParams(): Record<string, unknown> {
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
   const ctx = useContext(RouterContext);
   if (!ctx) throw new Error("useRouteParams must be used inside <RouterProvider>");
   return ctx.params;
 }
-<<<<<<< HEAD
-=======
 
 // ── Défilement vers une section de l'accueil ─────────────────────────────────
 // Depuis l'accueil : défile directement. Depuis une autre page : y revient
@@ -178,4 +162,3 @@ export function Link({ page, params, children, onClick, ...anchorProps }: LinkPr
     </a>
   );
 }
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541

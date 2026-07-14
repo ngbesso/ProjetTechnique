@@ -7,24 +7,14 @@ interface SiteHeaderProps {
   activePage?: Page;
 }
 
-<<<<<<< HEAD
-const NAV_ITEMS = [
-  { label: "Accueil", page: "home" as Page },
-  { label: "Sermons", page: "sermons" as Page },
-  { label: "Événements", page: "evenements" as Page },
-  { label: "Formation", page: null },
-  { label: "Faire un don", page: "donation" as Page },
-] as const;
-=======
 const NAV_ITEMS: { label: string; page: Page | null; anchor?: string }[] = [
   { label: "Accueil", page: "home" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
-  { label: "Événements", page: null, anchor: "evenements" },
+  { label: "Événements", page: "evenements" },
   { label: "Formation", page: null, anchor: "formation" },
   { label: "Faire un don", page: "donation" },
 ];
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();

@@ -7,12 +7,9 @@ import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
 import { SermonsPage } from "./features/sermons/SermonsPage";
-<<<<<<< HEAD
 import { EventsPage } from "./features/events/EventsPage";
 import { EventDetailPage } from "./features/events/EventDetailPage";
-=======
 import { BlogPage } from "./features/blog/BlogPage";
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
@@ -40,15 +37,12 @@ export default function App() {
   if (page === "adhesion") return <MembershipPage />;
   if (page === "donation") return <DonationPage />;
   if (page === "sermons") return <SermonsPage />;
-<<<<<<< HEAD
   if (page === "evenements") {
     const eventId = routeParams.event;
     return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
   }
-=======
   if (page === "blog") return <BlogPage />;
   if (page === "confidentialite") return <PrivacyPage />;
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 
   // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"
   if (page === "mon-profil" || page === "espace") {
