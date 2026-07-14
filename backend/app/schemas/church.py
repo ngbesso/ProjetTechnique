@@ -27,6 +27,7 @@ class ChurchUpdate(BaseModel):
     pastor_name: str | None = None
     representative: str | None = None
     founded_on: date | None = None
+    is_active: bool | None = None
 
 
 class ChurchRead(ChurchBase):
@@ -34,4 +35,5 @@ class ChurchRead(ChurchBase):
     id: int
     parent_id: int | None
     is_mother: bool
+    is_active: bool
     created_at: datetime

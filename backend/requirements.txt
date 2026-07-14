@@ -10,6 +10,7 @@ boto3==1.*
 alembic==1.*
 email-validator==2.*
 python-multipart
+openpyxl==3.*
 # Dev / tests
 pytest==8.*
 httpx==0.28.*

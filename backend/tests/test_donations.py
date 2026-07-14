@@ -82,6 +82,21 @@ def test_list_my_donations_requires_auth(client):
     assert client.get(f"{BASE}/me").status_code == 401
 
 
+def test_list_my_donations_isolated_between_members(
+    client, make_member, auth_header, db_session
+):
+    """Un membre ne doit jamais voir les dons d'un autre membre via /me."""
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donorA@b.com", church_id)
+    make_member("donorB@b.com", church_id)
+    client.post(f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com"))
+
+    r_a = client.get(f"{BASE}/me", headers=auth_header("donorA@b.com"))
+    r_b = client.get(f"{BASE}/me", headers=auth_header("donorB@b.com"))
+    assert len(r_a.json()) == 1
+    assert len(r_b.json()) == 0
+
+
 # ── GET /api/donations/{id} ───────────────────────────────────────────────────
 
 
@@ -169,7 +184,11 @@ def _zeffy_payload(payment_id="zeffy-pay-1", amount=42.5, currency="CAD"):
             "id": payment_id,
             "amount": amount,
             "currency": currency,
-            "buyer": {"firstName": "Jean", "lastName": "Dupont", "email": "jean@ex.com"},
+            "buyer": {
+                "firstName": "Jean",
+                "lastName": "Dupont",
+                "email": "jean@ex.com",
+            },
         },
     }
 
@@ -183,9 +202,7 @@ def test_zeffy_webhook_wrong_secret(client):
     r = client.post(f"{BASE}/webhooks/zeffy", json=_zeffy_payload())
     assert r.status_code == 401
 
-    r = client.post(
-        f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload()
-    )
+    r = client.post(f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload())
     assert r.status_code == 401
 
 

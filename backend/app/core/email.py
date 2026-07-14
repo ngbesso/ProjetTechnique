@@ -95,6 +95,30 @@ def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
     )
 
 
+def formation_registration_received(
+    sender: EmailSender,
+    to: str,
+    name: str,
+    formation_title: str,
+    formation_date: str,
+    instructor: str,
+    price_label: str,
+) -> None:
+    sender.send(
+        to,
+        f"Inscription reçue — {formation_title}",
+        f"Bonjour {name},\n\n"
+        f"Nous avons bien reçu votre inscription à la formation suivante :\n\n"
+        f"  Formation : {formation_title}\n"
+        f"  Date      : {formation_date}\n"
+        f"  Formateur : {instructor}\n"
+        f"  Prix      : {price_label}\n\n"
+        f"Nous avons hâte de vous y retrouver. Si vous avez des questions, "
+        f"répondez simplement à ce courriel.\n\n"
+        f"Fraternellement,\nMission Évangélique",
+    )
+
+
 def password_reset_email(sender: EmailSender, to: str, link: str) -> None:
     sender.send(
         to,

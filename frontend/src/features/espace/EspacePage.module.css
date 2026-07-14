@@ -1,0 +1,267 @@
+/* ── Sidebar : logo cliquable ───────────────────────────────── */
+.sidebarBrandBtn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sidebarBrandBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Sidebar : déconnexion (dernière entrée du menu) ──────────── */
+.logoutNavItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.6rem 0.875rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+  margin-top: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logoutNavItem:hover {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+}
+
+/* ── Hero (profil) ──────────────────────────────────────────── */
+.hero {
+  background: var(--deep-violet);
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: #fff;
+  margin-bottom: 1.25rem;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.heroInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroName {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.statusBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 3px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusBadge.active { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+.statusBadge.pending { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.statusBadge.inactive { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.statusBadge.rejected { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+.memberCode {
+  font-size: 0.78rem;
+  color: #a78bfa;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.churchTag {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── Champs ─────────────────────────────────────────────────── */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.lockIcon {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.readOnlyValue {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.875rem;
+  background: var(--neutral-bg);
+  color: var(--text-muted);
+}
+
+.lockNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--neutral-bg);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* ── Feedback ───────────────────────────────────────────────── */
+.successMsg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Dons ───────────────────────────────────────────────────── */
+.totalsRow {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.totalBadge {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  font-weight: 700;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin: 0;
+}
+
+/* ── Inscriptions ───────────────────────────────────────────── */
+.subGroupTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 1.25rem 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.subGroupTitle:first-of-type {
+  margin-top: 0.5rem;
+}
+
+.regCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.6rem;
+  background: #fff;
+}
+
+.regTitle {
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.regMeta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0.2rem 0 0;
+}
+
+.regPrice {
+  font-weight: 700;
+  color: var(--vivid-violet);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.pastReg {
+  opacity: 0.6;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .hero { flex-wrap: wrap; }
+}

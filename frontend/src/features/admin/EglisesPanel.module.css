@@ -1,12 +1,59 @@
+/* ── Modale formulaire ────────────────────────────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 46, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: modalFadeIn 0.15s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.formHeaderClose {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.formHeaderClose:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* ── Formulaire église ────────────────────────────────────────────────────── */
 
 .formCard {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #e8e4f8;
-  box-shadow: 0 2px 16px rgba(59, 47, 138, 0.07);
+  box-shadow: 0 25px 70px rgba(20, 14, 46, 0.35);
   overflow: hidden;
   margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalScaleIn 0.18s ease-out;
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .formHeader {
@@ -434,6 +481,61 @@
 
 .btnCardDelete:hover {
   background: #fef2f2;
+}
+
+.btnCardDeactivate {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  border-radius: 7px;
+  border: 1.5px solid #fde68a;
+  background: #fff;
+  color: #b45309;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnCardDeactivate:hover {
+  background: #fffbeb;
+}
+
+.btnCardActivate {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  border-radius: 7px;
+  border: 1.5px solid #a7f3d0;
+  background: #fff;
+  color: #047857;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnCardActivate:hover {
+  background: #ecfdf5;
+}
+
+.badgeInactive {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.churchCardInactive {
+  opacity: 0.65;
+}
+
+.churchCardInactive:hover {
+  opacity: 1;
 }
 
 /* État vide */
