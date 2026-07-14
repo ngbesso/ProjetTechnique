@@ -5,6 +5,7 @@ import type {
   EventItem,
   EventListResult,
   EventRegistration,
+  MyEventRegistration,
 } from "../../types";
 
 export interface EventQuery {
@@ -46,6 +47,10 @@ export function registerToEvent(id: number): Promise<EventRegistration> {
 
 export function cancelRegistration(id: number): Promise<void> {
   return http.del(`/api/events/${id}/register`);
+}
+
+export function fetchMyEventRegistrations(): Promise<MyEventRegistration[]> {
+  return http.get<MyEventRegistration[]>("/api/events/registrations/me");
 }
 
 // ── Administration ─────────────────────────────────────────────────────────
