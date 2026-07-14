@@ -30,7 +30,8 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "evenements" | "mon-profil" | "mot-de-passe-oublie";
+
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog"| "evenements"| "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -81,6 +82,7 @@ export interface Church {
   name: string;
   parent_id: number | null;
   is_mother: boolean;
+  is_active: boolean;
   district: District | null;
   address: string | null;
   phone: string | null;
@@ -102,15 +104,25 @@ export interface ChurchInput {
   founded_on?: string | null;
 }
 
+export type ChurchUpdateInput = Partial<ChurchInput> & { is_active?: boolean };
+
 export interface MemberSelfInput {
+  address?: string | null;
+  sexe?: string | null;
+  telephone?: string | null;
+  family_status?: string | null;
+}
+
+export interface MemberUpdateInput {
   first_name?: string;
   last_name?: string;
-  email?: string;
   address?: string | null;
   birth_date?: string | null;
   sexe?: string | null;
   telephone?: string | null;
   family_status?: string | null;
+  conversion_date?: string | null;
+  is_baptized?: boolean;
 }
 
 export interface AssignmentRead {
@@ -168,6 +180,17 @@ export interface MemberQuery {
   offset?: number;
 }
 
+export interface MemberImportRowError {
+  row: number;
+  email: string | null;
+  message: string;
+}
+
+export interface MemberImportResult {
+  created: number;
+  errors: MemberImportRowError[];
+}
+
 export interface MembershipInput {
   church_id: number;
   first_name: string;
@@ -214,6 +237,7 @@ export interface SermonInput {
   status?: SermonStatus;
 }
 
+<<<<<<< HEAD
 // ── Événements ─────────────────────────────────────────────────────────────
 
 export type EventRegistrationStatus = "confirmed" | "cancelled";
@@ -237,11 +261,46 @@ export interface EventItem {
 
 export interface EventListResult {
   items: EventItem[];
+=======
+export type FormationStatus = "draft" | "published" | "archived";
+
+export interface Formation {
+  id: number;
+  title: string;
+  description: string | null;
+  instructor: string;
+  formation_date: string;
+  price: number;
+  capacity: number;
+  status: FormationStatus;
+  registered_count: number;
+  created_at: string;
+}
+
+export interface FormationRegistrationInput {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export interface FormationRegistration {
+  id: number;
+  formation_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  created_at: string;
+}
+
+export interface FormationListResult {
+  items: Formation[];
+>>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
   total: number;
   limit: number;
   offset: number;
 }
 
+<<<<<<< HEAD
 export interface EventInput {
   title: string;
   description?: string | null;
@@ -262,4 +321,62 @@ export interface EventRegistration {
   status: EventRegistrationStatus;
   member_name: string | null;
   member_email: string | null;
+=======
+export interface FormationInput {
+  title: string;
+  instructor: string;
+  formation_date: string;
+  price: number;
+  capacity: number;
+  description?: string;
+  status?: FormationStatus;
+}
+
+export interface FormationRegistrationSummary {
+  id: number;
+  title: string;
+  formation_date: string;
+  price: number;
+  instructor: string;
+}
+
+export interface MyFormationRegistration {
+  id: number;
+  formation_id: number;
+  created_at: string;
+  formation: FormationRegistrationSummary;
+}
+
+export type PostStatus = "draft" | "published" | "archived";
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  author: string;
+  status: PostStatus;
+  category: string | null;
+  cover_image_url: string | null;
+  views: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface PostListResult {
+  items: Post[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PostInput {
+  title: string;
+  content: string;
+  excerpt?: string;
+  author: string;
+  status?: PostStatus;
+  category?: string;
+  cover_image_url?: string;
+>>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 }

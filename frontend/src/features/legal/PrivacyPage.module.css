@@ -1,0 +1,115 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--text-main);
+  background: #fff;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+
+.hero {
+  background: var(--deep-violet);
+  padding: 3.5rem 2rem;
+}
+
+.heroInner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  color: #fff;
+}
+
+.heroEyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.heroTitle {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  margin: 0.6rem 0 0.75rem;
+}
+
+.heroSubtitle {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
+/* ── Contenu ──────────────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  padding: 3rem 1.5rem 4rem;
+  background: var(--neutral-bg);
+}
+
+.card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 6px 24px rgba(83, 74, 183, 0.08);
+  padding: 2rem 2.25rem 2.5rem;
+}
+
+.notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 2rem 0 0.75rem;
+}
+
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+.card p {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  margin: 0 0 0.75rem;
+}
+
+.card ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card li {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 2.5rem 1.25rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.5rem 2rem;
+  }
+}

@@ -275,6 +275,46 @@
   margin: 0 0 1.1rem;
 }
 
+/* ── Carte liste (en-tête / filtres / corps) ──────────────────── */
+.listCard {
+  background: var(--card-bg);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(42, 38, 96, 0.07);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.filterBar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.75rem;
+  background: var(--neutral-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.listBody {
+  padding: 1.25rem 1.75rem 1.75rem;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
 /* ── Inline create form ─────────────────────────────────────── */
 .inlineForm {
   display: flex;
@@ -429,19 +469,22 @@
 
 /* ── Buttons ────────────────────────────────────────────────── */
 .btnPrimary {
-  background: var(--vivid-violet);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #3b2f8a 0%, #7c3aed 100%);
   color: #fff;
   border: none;
-  border-radius: var(--radius);
-  padding: 0.55rem 1.25rem;
+  border-radius: 9px;
+  padding: 0.6rem 1.4rem;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: opacity 0.15s, transform 0.1s;
   white-space: nowrap;
 }
 
-.btnPrimary:hover { background: var(--vivid-violet-hover); }
+.btnPrimary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
 .btnPrimary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btnOutline {
@@ -655,61 +698,102 @@
 
 .rowEditing { background: rgba(83, 74, 183, 0.05); }
 
-/* ── Modale détail membre ────────────────────────────────────── */
+/* ── Modales (détail, création, édition) ──────────────────────── */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(20, 14, 46, 0.55);
+  backdrop-filter: blur(2px);
   z-index: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.5rem;
+  animation: modalFadeIn 0.15s ease-out;
 }
 
 .modalCard {
   background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 25px 70px rgba(20, 14, 46, 0.35);
   width: 100%;
-  max-width: 520px;
+  max-width: 680px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: modalScaleIn 0.18s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .modalHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.5rem 1.75rem 1.25rem;
-  border-bottom: 1px solid var(--border);
+  gap: 0.9rem;
+  padding: 1.25rem 1.75rem;
+  background: linear-gradient(135deg, #1e1458 0%, #3b2f8a 100%);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.modalHeaderIcon {
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.modalHeaderText {
+  flex: 1;
+  min-width: 0;
 }
 
 .modalName {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: var(--deep-violet);
-  margin: 0 0 0.45rem;
+  color: #fff;
+  margin: 0 0 0.3rem;
+}
+
+.modalSubtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .modalClose {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.15);
   border: none;
-  font-size: 1.1rem;
-  color: var(--text-muted);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
   flex-shrink: 0;
-  margin-top: 2px;
+  transition: background 0.15s;
 }
-.modalClose:hover { color: var(--text-main); }
+.modalClose:hover { background: rgba(255, 255, 255, 0.28); color: #fff; }
 
 .modalBody {
-  padding: 1.25rem 1.75rem;
+  padding: 1.75rem 2rem;
   overflow-y: auto;
   flex: 1;
 }
@@ -741,13 +825,22 @@
   align-self: center;
 }
 
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .modalFooter {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  padding: 1.25rem 1.75rem;
+  padding: 1.25rem 2rem;
   border-top: 1px solid var(--border);
   background: var(--neutral-bg);
+  flex-shrink: 0;
 }
 
 .helpText { font-size: .78rem; color: var(--text-muted); margin: .75rem 0 0; }

@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import styles from "./AdminPage.module.css";
 import { fetchAllDonations } from "../../lib/api/donations";
 import { useState } from "react";
 import type { Donation } from "../../types";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 
 const CATEGORY_LABELS: Record<string, string> = {
   soutien_spirituel: "Soutien spirituel",
@@ -16,6 +17,8 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   failed: "Échoué",
 };
+
+const col = createColumnHelper<Donation>();
 
 export function DonsPanel() {
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -43,6 +46,74 @@ export function DonsPanel() {
   useEffect(() => { fetchDonations(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = donations.reduce((sum, d) => sum + d.amount, 0);
+
+  const columns = useMemo(
+    () => [
+      col.accessor("created_at", {
+        header: "Date",
+        cell: (info) => new Date(info.getValue()).toLocaleDateString("fr-CA"),
+      }),
+      col.accessor((d) => d.donor_name ?? d.donor_email ?? "", {
+        id: "donor",
+        header: "Donateur",
+        cell: (info) => {
+          const d = info.row.original;
+          return (
+            <>
+              <div>{d.donor_name ?? <em style={{ color: "var(--text-muted)" }}>Anonyme</em>}</div>
+              {d.donor_email && (
+                <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{d.donor_email}</div>
+              )}
+            </>
+          );
+        },
+      }),
+      col.accessor("amount", {
+        header: "Montant",
+        cell: (info) => (
+          <>
+            <strong>{info.getValue().toFixed(2)}</strong> {info.row.original.currency}
+          </>
+        ),
+      }),
+      col.accessor("category", {
+        header: "Catégorie",
+        cell: (info) => {
+          const value = info.getValue();
+          return value ? CATEGORY_LABELS[value] ?? value : <em style={{ color: "var(--text-muted)" }}>—</em>;
+        },
+      }),
+      col.accessor("payment_status", {
+        header: "Statut",
+        cell: (info) => {
+          const value = info.getValue();
+          const badgeClass =
+            value === "succeeded"
+              ? styles.badgeActive
+              : value === "failed"
+              ? styles.badgeRejected
+              : value === "pending"
+              ? styles.badgePending
+              : styles.badgeInactive;
+          return (
+            <span
+              className={badgeClass}
+              style={{ padding: "0.2rem 0.55rem", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 600 }}
+            >
+              {STATUS_LABELS[value] ?? value}
+            </span>
+          );
+        },
+      }),
+      col.accessor("receipt_number", {
+        header: "Reçu",
+        cell: (info) => (
+          <span style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>{info.getValue()}</span>
+        ),
+      }),
+    ],
+    []
+  );
 
   if (loading) return <p className={styles.stateMsg}>Chargement…</p>;
 
@@ -90,62 +161,13 @@ export function DonsPanel() {
           </select>
         </div>
 
-        {donations.length === 0 ? (
-          <p className={styles.empty}>Aucun don enregistré.</p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>Date</th>
-                <th className={styles.th}>Donateur</th>
-                <th className={styles.th}>Montant</th>
-                <th className={styles.th}>Catégorie</th>
-                <th className={styles.th}>Statut</th>
-                <th className={styles.th}>Reçu</th>
-              </tr>
-            </thead>
-            <tbody>
-              {donations.map((d) => (
-                <tr key={d.id}>
-                  <td className={styles.td}>
-                    {new Date(d.created_at).toLocaleDateString("fr-CA")}
-                  </td>
-                  <td className={styles.td}>
-                    <div>{d.donor_name ?? <em style={{ color: "var(--text-muted)" }}>Anonyme</em>}</div>
-                    {d.donor_email && (
-                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{d.donor_email}</div>
-                    )}
-                  </td>
-                  <td className={styles.td}>
-                    <strong>{d.amount.toFixed(2)}</strong> {d.currency}
-                  </td>
-                  <td className={styles.td}>
-                    {d.category ? CATEGORY_LABELS[d.category] ?? d.category : <em style={{ color: "var(--text-muted)" }}>—</em>}
-                  </td>
-                  <td className={styles.td}>
-                    <span
-                      className={
-                        d.payment_status === "succeeded"
-                          ? styles.badgeActive
-                          : d.payment_status === "failed"
-                          ? styles.badgeRejected
-                          : d.payment_status === "pending"
-                          ? styles.badgePending
-                          : styles.badgeInactive
-                      }
-                      style={{ padding: "0.2rem 0.55rem", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 600 }}
-                    >
-                      {STATUS_LABELS[d.payment_status] ?? d.payment_status}
-                    </span>
-                  </td>
-                  <td className={styles.td} style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                    {d.receipt_number}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          columns={columns}
+          data={donations}
+          getRowId={(d) => d.id}
+          pageSize={10}
+          emptyMessage="Aucun don enregistré."
+        />
       </section>
     </div>
   );
