@@ -50,13 +50,16 @@ _EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en 
 
 
 def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
-    """Lève HTTP 409 avec un message générique si l'email est déjà pris."""
+    """Lève HTTP 409 si une fiche Membre existe déjà avec cet email.
+
+    On ne vérifie volontairement pas la table Users : un compte existant sans
+    fiche Membre (ex. admin, ou personne déjà inscrite ailleurs) doit pouvoir
+    soumettre une demande d'adhésion — _do_approve réutilise alors ce compte.
+    """
     query = select(Member).where(Member.email == email)
     if exclude_id is not None:
         query = query.where(Member.id != exclude_id)
     if db.scalar(query):
-        raise HTTPException(409, _EMAIL_TAKEN)
-    if db.scalar(select(User).where(User.email == email)):
         raise HTTPException(409, _EMAIL_TAKEN)
 
 

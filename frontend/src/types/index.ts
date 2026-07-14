@@ -30,7 +30,7 @@ export interface UserCreate {
   password: string;
 }
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "mon-profil" | "mot-de-passe-oublie";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "evenements" | "mon-profil" | "mot-de-passe-oublie";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -212,4 +212,54 @@ export interface SermonInput {
   description?: string;
   series?: string;
   status?: SermonStatus;
+}
+
+// ── Événements ─────────────────────────────────────────────────────────────
+
+export type EventRegistrationStatus = "confirmed" | "cancelled";
+
+export interface EventItem {
+  id: number;
+  title: string;
+  description: string | null;
+  date_start: string;
+  date_end: string | null;
+  location: string | null;
+  church_id: number | null;
+  district: District | null;
+  max_participants: number | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  registered_count: number;
+  spots_left: number | null;
+}
+
+export interface EventListResult {
+  items: EventItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EventInput {
+  title: string;
+  description?: string | null;
+  date_start: string;
+  date_end?: string | null;
+  location?: string | null;
+  church_id?: number | null;
+  district?: District | null;
+  max_participants?: number | null;
+  is_published?: boolean;
+}
+
+export interface EventRegistration {
+  id: number;
+  event_id: number;
+  member_id: number;
+  registered_at: string;
+  status: EventRegistrationStatus;
+  member_name: string | null;
+  member_email: string | null;
 }

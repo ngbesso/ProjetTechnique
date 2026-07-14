@@ -8,6 +8,7 @@ import type { MemberStatus, Role, Permission } from "../../types";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
+import { EvenementsPanel } from "./EvenementsPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { SermonsPanel } from "./SermonsPanel";
@@ -398,6 +399,8 @@ export function AdminPage() {
               <DonsPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
+          ) : section === "evenements" ? (
+              <EvenementsPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : (
