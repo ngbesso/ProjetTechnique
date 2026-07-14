@@ -50,10 +50,23 @@ function formatPrice(price: number): string {
 // ── Page principale ───────────────────────────────────────────────────────────
 
 export function EspacePage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>("profil");
   const { churches, load: loadChurches } = useChurches();
+
+  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  // Un admin n'a généralement pas de fiche membre : /espace serait vide pour
+  // lui. On vérifie et on le renvoie vers son tableau de bord le cas échéant —
+  // sauf s'il a effectivement une fiche membre (ex. pasteur aussi inscrit).
+  const [checkingAdminProfile, setCheckingAdminProfile] = useState(!!isAdmin);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchMyProfile()
+      .then(() => setCheckingAdminProfile(false))
+      .catch(() => navigate("admin"));
+  }, [isAdmin, navigate]);
 
   useEffect(() => {
     loadChurches();
@@ -64,6 +77,14 @@ export function EspacePage() {
   }
 
   const activeLabel = NAV_ITEMS.find((i) => i.id === section)?.label ?? "Mon espace";
+
+  if (checkingAdminProfile) {
+    return (
+      <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
+        Chargement…
+      </div>
+    );
+  }
 
   return (
     <div className={admin.layout}>
@@ -293,7 +314,7 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="family_status">Statut familial</label>
+              <label className={styles.label} htmlFor="family_status">Statut matrimonial</label>
               <select
                 id="family_status"
                 className={admin.select}

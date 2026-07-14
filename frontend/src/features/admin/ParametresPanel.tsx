@@ -72,11 +72,11 @@ function IntegrationsPanel() {
     );
 }
 
-// ── Listes de valeurs (sexe / statut familial / districts) ───────────────────
+// ── Listes de valeurs (sexe / statut matrimonial / districts) ────────────────
 
 const SECTIONS = [
     { category: "sexe", label: "Sexe" },
-    { category: "family_status", label: "Statut familial" },
+    { category: "family_status", label: "Statut matrimonial" },
     { category: "district", label: "Districts" },
     { category: "donation_category", label: "Catégories de don" },
 ] as const;
