@@ -9,11 +9,8 @@ import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
-<<<<<<< HEAD
 import { EvenementsPanel } from "./EvenementsPanel";
-=======
 import { FormationsPanel } from "./FormationsPanel";
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { SermonsPanel } from "./SermonsPanel";
@@ -408,15 +405,12 @@ export function AdminPage() {
               <DonsPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
-<<<<<<< HEAD
           ) : section === "evenements" ? (
               <EvenementsPanel />
-=======
           ) : section === "blog" ? (
               <BlogPanel />
           ) : section === "formations" ? (
               <FormationsPanel />
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : (

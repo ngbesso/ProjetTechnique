@@ -237,7 +237,6 @@ export interface SermonInput {
   status?: SermonStatus;
 }
 
-<<<<<<< HEAD
 // ── Événements ─────────────────────────────────────────────────────────────
 
 export type EventRegistrationStatus = "confirmed" | "cancelled";
@@ -261,7 +260,35 @@ export interface EventItem {
 
 export interface EventListResult {
   items: EventItem[];
-=======
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EventInput {
+  title: string;
+  description?: string | null;
+  date_start: string;
+  date_end?: string | null;
+  location?: string | null;
+  church_id?: number | null;
+  district?: District | null;
+  max_participants?: number | null;
+  is_published?: boolean;
+}
+
+export interface EventRegistration {
+  id: number;
+  event_id: number;
+  member_id: number;
+  registered_at: string;
+  status: EventRegistrationStatus;
+  member_name: string | null;
+  member_email: string | null;
+}
+
+// ── Formations ─────────────────────────────────────────────────────────────
+
 export type FormationStatus = "draft" | "published" | "archived";
 
 export interface Formation {
@@ -294,34 +321,11 @@ export interface FormationRegistration {
 
 export interface FormationListResult {
   items: Formation[];
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
   total: number;
   limit: number;
   offset: number;
 }
 
-<<<<<<< HEAD
-export interface EventInput {
-  title: string;
-  description?: string | null;
-  date_start: string;
-  date_end?: string | null;
-  location?: string | null;
-  church_id?: number | null;
-  district?: District | null;
-  max_participants?: number | null;
-  is_published?: boolean;
-}
-
-export interface EventRegistration {
-  id: number;
-  event_id: number;
-  member_id: number;
-  registered_at: string;
-  status: EventRegistrationStatus;
-  member_name: string | null;
-  member_email: string | null;
-=======
 export interface FormationInput {
   title: string;
   instructor: string;
@@ -346,6 +350,8 @@ export interface MyFormationRegistration {
   created_at: string;
   formation: FormationRegistrationSummary;
 }
+
+// ── Blog ───────────────────────────────────────────────────────────────────
 
 export type PostStatus = "draft" | "published" | "archived";
 
@@ -378,5 +384,4 @@ export interface PostInput {
   status?: PostStatus;
   category?: string;
   cover_image_url?: string;
->>>>>>> d0d57f51c33bbaa3ade557af3ed7df98756e9541
 }
