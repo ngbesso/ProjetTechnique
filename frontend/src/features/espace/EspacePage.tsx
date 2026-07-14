@@ -8,8 +8,9 @@ import { useParameters } from "../../hooks/useParameters";
 import { useDonations } from "../../hooks/useDonations";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
 import { fetchMyFormationRegistrations } from "../../lib/api/formations";
+import { fetchMyEventRegistrations } from "../../lib/api/events";
 import { validatePhone, validateAddress } from "../../lib/validation";
-import type { Member, MemberSelfInput, MyFormationRegistration } from "../../types";
+import type { Member, MemberSelfInput, MyEventRegistration, MyFormationRegistration } from "../../types";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,13 @@ function formatLongDate(iso: string): string {
 
 function formatPrice(price: number): string {
   return price === 0 ? "Gratuit" : `${price.toFixed(2)} $`;
+}
+
+function formatEventDateTime(iso: string): string {
+  const d = new Date(iso);
+  const dateLabel = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  const timeLabel = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  return `${dateLabel} · ${timeLabel}`;
 }
 
 // ── Page principale ───────────────────────────────────────────────────────────
@@ -441,15 +449,33 @@ function RegistrationCard({ reg, isPast }: { reg: MyFormationRegistration; isPas
   );
 }
 
+function EventRegistrationCard({ reg, isPast }: { reg: MyEventRegistration; isPast?: boolean }) {
+  return (
+    <div className={`${styles.regCard} ${isPast ? styles.pastReg : ""}`}>
+      <div>
+        <p className={styles.regTitle}>{reg.event.title}</p>
+        <p className={styles.regMeta}>
+          {formatEventDateTime(reg.event.date_start)}
+          {reg.event.location && ` · ${reg.event.location}`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function InscriptionsSection() {
   const navigate = useNavigate();
-  const [registrations, setRegistrations] = useState<MyFormationRegistration[]>([]);
+  const [formationRegs, setFormationRegs] = useState<MyFormationRegistration[]>([]);
+  const [eventRegs, setEventRegs] = useState<MyEventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchMyFormationRegistrations()
-      .then(setRegistrations)
+    Promise.all([fetchMyFormationRegistrations(), fetchMyEventRegistrations()])
+      .then(([formations, events]) => {
+        setFormationRegs(formations);
+        setEventRegs(events);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
       .finally(() => setLoading(false));
   }, []);
@@ -457,47 +483,69 @@ function InscriptionsSection() {
   if (loading) return <p className={admin.stateMsg}>Chargement…</p>;
 
   const today = new Date().toISOString().split("T")[0];
-  const upcoming = registrations
+  const upcomingFormations = formationRegs
     .filter((r) => r.formation.formation_date >= today)
     .sort((a, b) => a.formation.formation_date.localeCompare(b.formation.formation_date));
-  const past = registrations
+  const pastFormations = formationRegs
     .filter((r) => r.formation.formation_date < today)
     .sort((a, b) => b.formation.formation_date.localeCompare(a.formation.formation_date));
+
+  const now = Date.now();
+  const upcomingEvents = eventRegs
+    .filter((r) => new Date(r.event.date_start).getTime() >= now)
+    .sort((a, b) => new Date(a.event.date_start).getTime() - new Date(b.event.date_start).getTime());
+  const pastEvents = eventRegs
+    .filter((r) => new Date(r.event.date_start).getTime() < now)
+    .sort((a, b) => new Date(b.event.date_start).getTime() - new Date(a.event.date_start).getTime());
 
   return (
     <div className={admin.rbacWrapper}>
       {error && <p className={admin.errorMsg} role="alert">{error}</p>}
 
-      {/* Formations — un futur module « Événements » pourra suivre le même schéma */}
       <section className={admin.card}>
         <h3 className={admin.cardTitle}>Formations</h3>
 
-        {registrations.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>🎓</p>
-            <p>Vous n'êtes inscrit(e) à aucune formation pour le moment.</p>
-            <button className={admin.btnPrimary} onClick={() => navigate("home")}>
-              Voir les formations
-            </button>
-          </div>
+        <h4 className={styles.subGroupTitle}>À venir</h4>
+        {upcomingFormations.length === 0 ? (
+          <p className={admin.empty}>Aucune formation à venir.</p>
         ) : (
-          <>
-            <h4 className={styles.subGroupTitle}>À venir</h4>
-            {upcoming.length === 0 ? (
-              <p className={admin.empty}>Aucune formation à venir.</p>
-            ) : (
-              upcoming.map((r) => <RegistrationCard key={r.id} reg={r} />)
-            )}
+          upcomingFormations.map((r) => <RegistrationCard key={r.id} reg={r} />)
+        )}
 
-            <h4 className={styles.subGroupTitle}>Passées</h4>
-            {past.length === 0 ? (
-              <p className={admin.empty}>Aucune formation passée.</p>
-            ) : (
-              past.map((r) => <RegistrationCard key={r.id} reg={r} isPast />)
-            )}
-          </>
+        <h4 className={styles.subGroupTitle}>Passées</h4>
+        {pastFormations.length === 0 ? (
+          <p className={admin.empty}>Aucune formation passée.</p>
+        ) : (
+          pastFormations.map((r) => <RegistrationCard key={r.id} reg={r} isPast />)
         )}
       </section>
+
+      <section className={admin.card}>
+        <h3 className={admin.cardTitle}>Événements</h3>
+
+        <h4 className={styles.subGroupTitle}>À venir</h4>
+        {upcomingEvents.length === 0 ? (
+          <p className={admin.empty}>Aucun événement à venir.</p>
+        ) : (
+          upcomingEvents.map((r) => <EventRegistrationCard key={r.id} reg={r} />)
+        )}
+
+        <h4 className={styles.subGroupTitle}>Passées</h4>
+        {pastEvents.length === 0 ? (
+          <p className={admin.empty}>Aucun événement passé.</p>
+        ) : (
+          pastEvents.map((r) => <EventRegistrationCard key={r.id} reg={r} isPast />)
+        )}
+      </section>
+
+      <div className={styles.inscriptionsActions}>
+        <button className={admin.btnPrimary} onClick={() => navigate("formations")}>
+          Voir les formations
+        </button>
+        <button className={admin.btnPrimary} onClick={() => navigate("evenements")}>
+          Voir les événements
+        </button>
+      </div>
     </div>
   );
 }

@@ -83,3 +83,19 @@ class RegistrationRead(BaseModel):
     member_email: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class EventSummary(BaseModel):
+    id: int
+    title: str
+    date_start: datetime
+    location: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class MyEventRegistration(BaseModel):
+    id: int
+    event_id: int
+    registered_at: datetime
+    event: EventSummary
