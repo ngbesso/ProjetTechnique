@@ -162,23 +162,14 @@
   gap: 1rem;
 }
 
-.userInfo {
+.userBadge {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-}
-
-.userEmail {
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-main);
-}
-
-.userRoles {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .logoutBtn {

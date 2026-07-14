@@ -357,10 +357,9 @@ export function AdminPage() {
                 <span className={styles.notifBadge}>{pendingCount}</span>
               )}
             </button>
-            <div className={styles.userInfo}>
-              <span className={styles.userEmail}>{user?.email}</span>
-              <span className={styles.userRoles}>{user?.roles.join(", ")}</span>
-            </div>
+            <span className={styles.userBadge} title={user?.email}>
+              <span aria-hidden>&#128100;</span> Admin
+            </span>
             <button className={styles.logoutBtn} onClick={logout}>
               Déconnexion
             </button>

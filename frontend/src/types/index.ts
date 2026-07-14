@@ -287,6 +287,20 @@ export interface EventRegistration {
   member_email: string | null;
 }
 
+export interface EventRegistrationSummary {
+  id: number;
+  title: string;
+  date_start: string;
+  location: string | null;
+}
+
+export interface MyEventRegistration {
+  id: number;
+  event_id: number;
+  registered_at: string;
+  event: EventRegistrationSummary;
+}
+
 // ── Formations ─────────────────────────────────────────────────────────────
 
 export type FormationStatus = "draft" | "published" | "archived";
