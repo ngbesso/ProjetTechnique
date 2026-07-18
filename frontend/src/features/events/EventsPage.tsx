@@ -5,9 +5,26 @@ import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate } from "../../context/RouterContext";
 import { fetchChurches } from "../../lib/api/churches";
 import { getEvents } from "../../lib/api/events";
-import type { Church, District, EventItem } from "../../types";
+import type { Church, District, EventCategory, EventItem } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
+
+const CATEGORY_LABELS: Record<EventCategory, string> = {
+  conference: "Conférence",
+  colloque: "Colloque",
+  croisade: "Croisade",
+  retraite: "Retraite",
+  formation: "Formation",
+};
+
+const CATEGORY_FILTERS: { value: EventCategory | ""; label: string }[] = [
+  { value: "", label: "Tous" },
+  { value: "conference", label: "Conférences" },
+  { value: "colloque", label: "Colloques" },
+  { value: "croisade", label: "Croisades" },
+  { value: "retraite", label: "Retraites" },
+  { value: "formation", label: "Formations" },
+];
 
 function formatDateRange(startIso: string, endIso: string | null): string {
   const start = new Date(startIso);
@@ -35,13 +52,18 @@ function formatDateRange(startIso: string, endIso: string | null): string {
   return `${startLabel} – ${endLabel}`;
 }
 
+function formatPrice(price: number | null): string {
+  if (!price) return "Gratuit";
+  return `${price.toFixed(2)} $`;
+}
+
 export function EventsPage() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [churches, setChurches] = useState<Church[]>([]);
   const [district, setDistrict] = useState("");
   const [churchId, setChurchId] = useState("");
-  const [upcomingOnly, setUpcomingOnly] = useState(true);
+  const [category, setCategory] = useState<EventCategory | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -55,12 +77,65 @@ export function EventsPage() {
     getEvents({
       district: district || undefined,
       church_id: churchId ? Number(churchId) : undefined,
-      upcoming_only: upcomingOnly,
+      category: category || undefined,
+      upcoming_only: false,
+      limit: 100,
     })
       .then((result) => setEvents(result.items))
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur de chargement."))
       .finally(() => setLoading(false));
-  }, [district, churchId, upcomingOnly]);
+  }, [district, churchId, category]);
+
+  const now = Date.now();
+  const upcoming = events
+    .filter((e) => new Date(e.date_start).getTime() >= now)
+    .sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime());
+  const past = events
+    .filter((e) => new Date(e.date_start).getTime() < now)
+    .sort((a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime());
+
+  function renderCard(event: EventItem, isPast = false) {
+    const isFull = event.capacity !== null && (event.spots_left ?? 0) <= 0;
+    return (
+      <article key={event.id} className={isPast ? `${styles.card} ${styles.cardPast}` : styles.card}>
+        {event.image_url && (
+          <div className={styles.cardImage}>
+            <img src={event.image_url} alt="" />
+          </div>
+        )}
+        <div className={styles.cardDate}>{formatDateRange(event.date_start, event.date_end)}</div>
+        <div className={styles.cardBody}>
+          <div className={styles.cardBadges}>
+            <span className={styles.badge}>{CATEGORY_LABELS[event.category]}</span>
+            {event.district && <span className={styles.badge}>{event.district}</span>}
+            {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
+          </div>
+          <h2 className={styles.cardTitle}>{event.title}</h2>
+          {event.location && <p className={styles.cardMeta}>📍 {event.location}</p>}
+          {event.instructor && <p className={styles.cardMeta}>👤 {event.instructor}</p>}
+          {!isPast && (
+            <div className={styles.cardBadges}>
+              {event.capacity !== null ? (
+                <span className={isFull ? styles.spotsFull : styles.spotsLeft}>
+                  {isFull
+                    ? "Complet"
+                    : `${event.spots_left} place${event.spots_left! > 1 ? "s" : ""} restante${event.spots_left! > 1 ? "s" : ""}`}
+                </span>
+              ) : (
+                <span className={styles.badge}>Places illimitées</span>
+              )}
+            </div>
+          )}
+          <button
+            className={styles.btnDetail}
+            onClick={() => navigate("evenements", { event: String(event.id) })}
+          >
+            Voir détail
+          </button>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -71,44 +146,54 @@ export function EventsPage() {
           <span className={styles.heroEyebrow}>📅 Agenda</span>
           <h1 className={styles.heroTitle}>Événements</h1>
           <p className={styles.heroSubtitle}>
-            Retrouvez les rencontres, conférences et activités de la mission et
-            de ses églises affiliées.
+            Retrouvez les conférences, colloques, croisades, retraites et
+            formations de la mission et de ses églises affiliées.
           </p>
         </div>
       </section>
 
       <main className={styles.main}>
         <div className={styles.filters}>
-          <select
-            className={styles.filterSelect}
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-          >
-            <option value="">Tous les districts</option>
-            {DISTRICTS.map((d) => (
-              <option key={d} value={d}>{d}</option>
+          <div className={styles.categoryTabs}>
+            {CATEGORY_FILTERS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                className={
+                  category === c.value
+                    ? `${styles.categoryTab} ${styles.categoryTabActive}`
+                    : styles.categoryTab
+                }
+                onClick={() => setCategory(c.value)}
+              >
+                {c.label}
+              </button>
             ))}
-          </select>
+          </div>
 
-          <select
-            className={styles.filterSelect}
-            value={churchId}
-            onChange={(e) => setChurchId(e.target.value)}
-          >
-            <option value="">Toutes les églises</option>
-            {churches.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className={styles.filterRow}>
+            <select
+              className={styles.filterSelect}
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            >
+              <option value="">Tous les districts</option>
+              {DISTRICTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
 
-          <label className={styles.filterCheckbox}>
-            <input
-              type="checkbox"
-              checked={upcomingOnly}
-              onChange={(e) => setUpcomingOnly(e.target.checked)}
-            />
-            À venir seulement
-          </label>
+            <select
+              className={styles.filterSelect}
+              value={churchId}
+              onChange={(e) => setChurchId(e.target.value)}
+            >
+              <option value="">Toutes les églises</option>
+              {churches.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {error && (
@@ -122,45 +207,23 @@ export function EventsPage() {
         ) : events.length === 0 ? (
           <p className={styles.stateMsg}>Aucun événement trouvé.</p>
         ) : (
-          <div className={styles.grid}>
-            {events.map((event) => {
-              const isFull =
-                event.max_participants !== null && (event.spots_left ?? 0) <= 0;
-              return (
-                <article key={event.id} className={styles.card}>
-                  <div className={styles.cardDate}>
-                    {formatDateRange(event.date_start, event.date_end)}
-                  </div>
-                  <div className={styles.cardBody}>
-                    <h2 className={styles.cardTitle}>{event.title}</h2>
-                    {event.location && (
-                      <p className={styles.cardMeta}>📍 {event.location}</p>
-                    )}
-                    <div className={styles.cardBadges}>
-                      {event.district && (
-                        <span className={styles.badge}>{event.district}</span>
-                      )}
-                      {event.max_participants !== null ? (
-                        <span className={isFull ? styles.spotsFull : styles.spotsLeft}>
-                          {isFull
-                            ? "Complet"
-                            : `${event.spots_left} place${event.spots_left! > 1 ? "s" : ""} restante${event.spots_left! > 1 ? "s" : ""}`}
-                        </span>
-                      ) : (
-                        <span className={styles.badge}>Places illimitées</span>
-                      )}
-                    </div>
-                    <button
-                      className={styles.btnDetail}
-                      onClick={() => navigate("evenements", { event: String(event.id) })}
-                    >
-                      Voir détail
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <>
+            <section className={styles.group}>
+              <h2 className={styles.groupTitle}>À venir</h2>
+              {upcoming.length === 0 ? (
+                <p className={styles.stateMsg}>Aucun événement à venir.</p>
+              ) : (
+                <div className={styles.grid}>{upcoming.map((e) => renderCard(e))}</div>
+              )}
+            </section>
+
+            {past.length > 0 && (
+              <section className={styles.group}>
+                <h2 className={styles.groupTitle}>Passés</h2>
+                <div className={styles.grid}>{past.map((e) => renderCard(e, true))}</div>
+              </section>
+            )}
+          </>
         )}
       </main>
 

@@ -453,6 +453,8 @@
 .eventTop {
   height: 90px;
   background: linear-gradient(135deg, var(--deep-violet) 0%, var(--vivid-violet) 100%);
+  background-size: cover;
+  background-position: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -461,208 +463,24 @@
   line-height: 1.1;
 }
 
-.eventDateDay { font-size: 1.6rem; font-weight: 800; }
-.eventDateMonth { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; }
+.eventDateDay { font-size: 1.6rem; font-weight: 800; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+.eventDateMonth { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
 
 .eventBody { padding: 1rem 1.25rem; }
-.eventCardTitle { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.35rem; line-height: 1.35; }
-.eventCardMeta { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
-
-/* ── Formations à venir (cartes + inscription) ────────────────────────────── */
-
-.formationsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.formationCard {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.4rem;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.formationCard:hover {
-  box-shadow: 0 6px 20px rgba(42, 38, 96, 0.12);
-  transform: translateY(-3px);
-}
-
-.formationCardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.formationPrice {
-  font-size: 0.78rem;
+.eventCategoryBadge {
+  display: inline-block;
+  font-size: 0.68rem;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--vivid-violet);
   background: rgba(83, 74, 183, 0.08);
-  padding: 0.25rem 0.7rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 99px;
+  margin-bottom: 0.45rem;
 }
-
-.formationPlaces {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #047857;
-  background: #ecfdf5;
-  padding: 0.25rem 0.7rem;
-  border-radius: 99px;
-}
-
-.formationPlacesFull {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #b91c1c;
-  background: #fef2f2;
-  padding: 0.25rem 0.7rem;
-  border-radius: 99px;
-}
-
-.formationCardTitle {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: var(--deep-violet);
-  line-height: 1.3;
-  margin: 0;
-}
-
-.formationCardMeta {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.formationCardDesc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin: 0.35rem 0 0.85rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Modale d'inscription */
-.formationModalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 14, 46, 0.55);
-  backdrop-filter: blur(2px);
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-}
-
-.formationModal {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 25px 70px rgba(20, 14, 46, 0.35);
-  width: 100%;
-  max-width: 480px;
-  overflow: hidden;
-}
-
-.formationModalHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, var(--deep-violet) 0%, var(--vivid-violet) 100%);
-  color: #fff;
-}
-
-.formationModalTitle {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
-  line-height: 1.3;
-}
-
-.formationModalSub {
-  font-size: 0.78rem;
-  opacity: 0.8;
-  margin: 0.25rem 0 0;
-}
-
-.formationModalClose {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: #fff;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.formationModalClose:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.formationModalBody {
-  padding: 1.4rem 1.5rem 1.5rem;
-}
-
-.formationFormGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.formationInput {
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.875rem;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.formationInput:focus {
-  outline: none;
-  border-color: var(--vivid-violet);
-  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.1);
-}
-
-.formationModalActions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.25rem;
-}
-
-.formationError {
-  font-size: 0.82rem;
-  color: #b91c1c;
-  margin: 0.85rem 0 0;
-}
-
-.formationSuccess {
-  font-size: 0.95rem;
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 9px;
-  padding: 0.9rem 1.1rem;
-  margin: 0;
-}
+.eventCardTitle { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.35rem; line-height: 1.35; }
+.eventCardMeta { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
 
 /* ── Formation ────────────────────────────────────────────────────────────── */
 .formationLayout {

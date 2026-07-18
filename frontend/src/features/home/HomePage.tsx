@@ -3,13 +3,11 @@ import styles from "./HomePage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
-import { useFormations } from "../../hooks/useFormations";
 import { usePosts } from "../../hooks/usePosts";
-import { registerToFormation } from "../../lib/api/formations";
 import { getEvents } from "../../lib/api/events";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
-import type { EventItem, Formation, FormationRegistrationInput } from "../../types";
+import type { EventCategory, EventItem } from "../../types";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -31,26 +29,6 @@ const PILLARS = [
 
 function formatSermonDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
-}
-
-function formatFormationDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("fr-CA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatFormationPrice(price: number): string {
-  return price === 0
-    ? "Gratuit"
-    : price.toLocaleString("fr-CA", {
-        style: "currency",
-        currency: "CAD",
-        maximumFractionDigits: 2,
-      });
 }
 
 function formatPostDate(iso: string): string {
@@ -207,6 +185,14 @@ function SermonsSection() {
   );
 }
 
+const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  conference: "Conférence",
+  colloque: "Colloque",
+  croisade: "Croisade",
+  retraite: "Retraite",
+  formation: "Formation",
+};
+
 function EventsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -231,7 +217,7 @@ function EventsSection() {
       <div className={styles.sectionHeader}>
         <div>
           <p className={styles.sectionEyebrow}>Calendrier</p>
-          <h2 className={styles.sectionTitle}>Événements</h2>
+          <h2 className={styles.sectionTitle}>Événements &amp; Formations</h2>
         </div>
         <Link page="evenements" className={styles.seeAllLink}>
           Voir tout →
@@ -248,216 +234,29 @@ function EventsSection() {
               className={styles.eventCard}
               onClick={() => navigate("evenements")}
             >
-              <div className={styles.eventTop}>
-                <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
-                <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
-              </div>
+              {evt.image_url ? (
+                <div className={styles.eventTop} style={{ backgroundImage: `url(${evt.image_url})` }}>
+                  <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
+                  <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
+                </div>
+              ) : (
+                <div className={styles.eventTop}>
+                  <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
+                  <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
+                </div>
+              )}
               <div className={styles.eventBody}>
+                <span className={styles.eventCategoryBadge}>{EVENT_CATEGORY_LABELS[evt.category]}</span>
                 <p className={styles.eventCardTitle}>{evt.title}</p>
                 {evt.location && (
                   <p className={styles.eventCardMeta}>📍 {evt.location}</p>
                 )}
+                {evt.instructor && (
+                  <p className={styles.eventCardMeta}>👤 {evt.instructor}</p>
+                )}
               </div>
             </button>
           ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-const EMPTY_REGISTRATION: FormationRegistrationInput = {
-  first_name: "",
-  last_name: "",
-  email: "",
-};
-
-function FormationSection() {
-  const { member } = useAuth();
-  const { formations, loading, load } = useFormations();
-
-  const [registering, setRegistering] = useState<Formation | null>(null);
-  const [regForm, setRegForm] = useState<FormationRegistrationInput>(EMPTY_REGISTRATION);
-  const [regSaving, setRegSaving] = useState(false);
-  const [regError, setRegError] = useState("");
-  const [regSuccess, setRegSuccess] = useState(false);
-
-  useEffect(() => {
-    load({ upcoming: true, available: true, limit: 5 });
-  }, [load]);
-
-  function openRegistration(f: Formation) {
-    if (f.capacity - f.registered_count <= 0) return;
-    setRegistering(f);
-    setRegForm(
-      member
-        ? { first_name: member.first_name, last_name: member.last_name, email: member.email }
-        : EMPTY_REGISTRATION,
-    );
-    setRegError("");
-    setRegSuccess(false);
-  }
-
-  function closeRegistration() {
-    setRegistering(null);
-    setRegForm(EMPTY_REGISTRATION);
-    setRegError("");
-    setRegSuccess(false);
-  }
-
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    if (!registering) return;
-    if (!regForm.first_name.trim() || !regForm.last_name.trim() || !regForm.email.trim()) {
-      setRegError("Tous les champs sont requis.");
-      return;
-    }
-    setRegSaving(true);
-    setRegError("");
-    try {
-      await registerToFormation(registering.id, {
-        first_name: regForm.first_name.trim(),
-        last_name: regForm.last_name.trim(),
-        email: regForm.email.trim(),
-      });
-      setRegSuccess(true);
-      load({ upcoming: true, available: true, limit: 5 });
-    } catch (err) {
-      setRegError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
-    } finally {
-      setRegSaving(false);
-    }
-  }
-
-  if (!loading && formations.length === 0) return null;
-
-  return (
-    <section id="formation" className={`${styles.section} ${styles.sectionAlt}`}>
-      <div className={styles.sectionHeader}>
-        <div>
-          <p className={styles.sectionEyebrow}>Grandir</p>
-          <h2 className={styles.sectionTitle}>Formations à venir</h2>
-        </div>
-        <Link page="formations" className={styles.seeAllLink}>
-          Voir tout →
-        </Link>
-      </div>
-
-      {loading ? (
-        <p>Chargement…</p>
-      ) : (
-        <div className={styles.formationsGrid}>
-          {formations.map((f) => {
-            const placesLeft = f.capacity - f.registered_count;
-            const isFull = placesLeft <= 0;
-            return (
-              <article key={f.id} className={styles.formationCard}>
-                <div className={styles.formationCardTop}>
-                  <span className={styles.formationPrice}>{formatFormationPrice(f.price)}</span>
-                  <span className={isFull ? styles.formationPlacesFull : styles.formationPlaces}>
-                    {isFull ? "Complet" : `${placesLeft} place${placesLeft > 1 ? "s" : ""} restante${placesLeft > 1 ? "s" : ""}`}
-                  </span>
-                </div>
-                <p className={styles.formationCardTitle}>{f.title}</p>
-                <p className={styles.formationCardMeta}>
-                  👤 {f.instructor}
-                </p>
-                <p className={styles.formationCardMeta}>
-                  📅 {formatFormationDate(f.formation_date)}
-                </p>
-                {f.description && (
-                  <p className={styles.formationCardDesc}>{f.description}</p>
-                )}
-                <button
-                  className={styles.btnPrimary}
-                  disabled={isFull}
-                  style={{ marginTop: "auto", opacity: isFull ? 0.5 : 1 }}
-                  onClick={() => openRegistration(f)}
-                >
-                  {isFull ? "Complet" : "S'inscrire"}
-                </button>
-              </article>
-            );
-          })}
-        </div>
-      )}
-
-      {registering && (
-        <div className={styles.formationModalOverlay} onClick={closeRegistration}>
-          <div className={styles.formationModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.formationModalHeader}>
-              <div>
-                <p className={styles.formationModalTitle}>{registering.title}</p>
-                <p className={styles.formationModalSub}>
-                  {registering.instructor} · {formatFormationDate(registering.formation_date)} · {formatFormationPrice(registering.price)}
-                </p>
-              </div>
-              <button
-                className={styles.formationModalClose}
-                onClick={closeRegistration}
-                aria-label="Fermer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {regSuccess ? (
-              <div className={styles.formationModalBody}>
-                <p className={styles.formationSuccess}>
-                  ✓ Inscription confirmée ! Nous vous attendons le{" "}
-                  {formatFormationDate(registering.formation_date)}.
-                </p>
-                <div className={styles.formationModalActions}>
-                  <button className={styles.btnPrimary} onClick={closeRegistration}>
-                    Fermer
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form className={styles.formationModalBody} onSubmit={handleRegister}>
-                <div className={styles.formationFormGrid}>
-                  <input
-                    className={styles.formationInput}
-                    placeholder="Prénom *"
-                    required
-                    value={regForm.first_name}
-                    onChange={(e) => setRegForm({ ...regForm, first_name: e.target.value })}
-                  />
-                  <input
-                    className={styles.formationInput}
-                    placeholder="Nom *"
-                    required
-                    value={regForm.last_name}
-                    onChange={(e) => setRegForm({ ...regForm, last_name: e.target.value })}
-                  />
-                  <input
-                    className={styles.formationInput}
-                    type="email"
-                    placeholder="Courriel *"
-                    required
-                    value={regForm.email}
-                    onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-                  />
-                </div>
-                {regError && (
-                  <p className={styles.formationError} role="alert">⚠ {regError}</p>
-                )}
-                <div className={styles.formationModalActions}>
-                  <button
-                    type="button"
-                    className={styles.btnSecondary}
-                    onClick={closeRegistration}
-                    disabled={regSaving}
-                  >
-                    Annuler
-                  </button>
-                  <button type="submit" className={styles.btnPrimary} disabled={regSaving}>
-                    {regSaving ? "Inscription…" : "Confirmer mon inscription"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
         </div>
       )}
     </section>
@@ -543,7 +342,6 @@ export function HomePage() {
         <AboutSection />
         <SermonsSection />
         <EventsSection />
-        <FormationSection />
         <BlogSection />
       </main>
       <SiteFooter />
