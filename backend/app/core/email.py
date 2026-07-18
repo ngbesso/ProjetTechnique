@@ -95,24 +95,31 @@ def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
     )
 
 
-def formation_registration_received(
+def event_registration_received(
     sender: EmailSender,
     to: str,
     name: str,
-    formation_title: str,
-    formation_date: str,
-    instructor: str,
-    price_label: str,
+    event_title: str,
+    event_date: str,
+    location: str | None,
+    instructor: str | None,
+    price_label: str | None,
 ) -> None:
+    details = [f"  Date      : {event_date}"]
+    if location:
+        details.append(f"  Lieu      : {location}")
+    if instructor:
+        details.append(f"  Formateur : {instructor}")
+    if price_label:
+        details.append(f"  Prix      : {price_label}")
     sender.send(
         to,
-        f"Inscription reçue — {formation_title}",
+        f"Inscription reçue — {event_title}",
         f"Bonjour {name},\n\n"
-        f"Nous avons bien reçu votre inscription à la formation suivante :\n\n"
-        f"  Formation : {formation_title}\n"
-        f"  Date      : {formation_date}\n"
-        f"  Formateur : {instructor}\n"
-        f"  Prix      : {price_label}\n\n"
+        f"Nous avons bien reçu votre inscription à l'événement suivant :\n\n"
+        f"  Événement : {event_title}\n"
+        + "\n".join(details)
+        + "\n\n"
         f"Nous avons hâte de vous y retrouver. Si vous avez des questions, "
         f"répondez simplement à ce courriel.\n\n"
         f"Fraternellement,\nMission Évangélique",

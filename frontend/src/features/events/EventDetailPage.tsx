@@ -6,11 +6,19 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { cancelRegistration, getEvent, registerToEvent } from "../../lib/api/events";
 import { ApiError } from "../../lib/api/client";
-import type { EventItem } from "../../types";
+import type { EventCategory, EventItem } from "../../types";
 
 interface EventDetailPageProps {
   eventId: number;
 }
+
+const CATEGORY_LABELS: Record<EventCategory, string> = {
+  conference: "Conférence",
+  colloque: "Colloque",
+  croisade: "Croisade",
+  retraite: "Retraite",
+  formation: "Formation",
+};
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-CA", {
@@ -22,12 +30,19 @@ function formatDateTime(iso: string): string {
   });
 }
 
+function formatPrice(price: number | null): string {
+  if (!price) return "Gratuit";
+  return `${price.toFixed(2)} $`;
+}
+
 // L'API n'expose pas de "suis-je inscrit ?" — l'état local suit uniquement les
 // actions faites pendant cette visite ; register est idempotent côté backend.
 type MyStatus = "unknown" | "confirmed" | "cancelled";
 
+const EMPTY_GUEST = { first_name: "", last_name: "", email: "" };
+
 export function EventDetailPage({ eventId }: EventDetailPageProps) {
-  const { user } = useAuth();
+  const { member } = useAuth();
   const navigate = useNavigate();
 
   const [event, setEvent] = useState<EventItem | null>(null);
@@ -37,6 +52,7 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionMsg, setActionMsg] = useState("");
+  const [guestForm, setGuestForm] = useState(EMPTY_GUEST);
 
   function load() {
     setLoading(true);
@@ -52,12 +68,28 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
-  async function handleRegister() {
+  async function handleRegister(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!member) {
+      if (!guestForm.first_name.trim() || !guestForm.last_name.trim() || !guestForm.email.trim()) {
+        setActionError("Prénom, nom et courriel sont requis pour s'inscrire.");
+        return;
+      }
+    }
     setSubmitting(true);
     setActionError("");
     setActionMsg("");
     try {
-      await registerToEvent(eventId);
+      await registerToEvent(
+        eventId,
+        member
+          ? undefined
+          : {
+              first_name: guestForm.first_name.trim(),
+              last_name: guestForm.last_name.trim(),
+              email: guestForm.email.trim(),
+            },
+      );
       setMyStatus("confirmed");
       setActionMsg("Vous êtes inscrit à cet événement.");
       load();
@@ -88,6 +120,8 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
     }
   }
 
+  const isFull = event ? event.capacity !== null && (event.spots_left ?? 0) <= 0 : false;
+
   return (
     <div className={styles.page}>
       <SiteHeader activePage="evenements" />
@@ -105,6 +139,11 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
               ← Retour aux événements
             </button>
 
+            <div className={styles.cardBadges}>
+              <span className={styles.badge}>{CATEGORY_LABELS[event.category]}</span>
+              {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
+            </div>
+
             <h1 className={styles.detailTitle}>{event.title}</h1>
             <p className={styles.detailMeta}>
               🗓️ {formatDateTime(event.date_start)}
@@ -113,13 +152,16 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
             {event.location && (
               <p className={styles.detailMeta}>📍 {event.location}</p>
             )}
+            {event.instructor && (
+              <p className={styles.detailMeta}>👤 {event.instructor}</p>
+            )}
             {event.district && (
               <p className={styles.detailMeta}>🗺️ District {event.district}</p>
             )}
             <p className={styles.detailMeta}>
-              {event.max_participants !== null
+              {event.capacity !== null
                 ? (event.spots_left ?? 0) > 0
-                  ? `${event.spots_left} place(s) restante(s) sur ${event.max_participants}`
+                  ? `${event.spots_left} place(s) restante(s) sur ${event.capacity}`
                   : "Événement complet"
                 : "Places illimitées"}
             </p>
@@ -136,37 +178,59 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
             {actionMsg && <p className={styles.successMsg}>{actionMsg}</p>}
 
             <div className={styles.detailActions}>
-              {!user ? (
-                <div className={styles.authNotice}>
-                  Connectez-vous avec votre compte membre pour vous inscrire.
-                  <div>
-                    <button
-                      className={styles.authNoticeBtn}
-                      onClick={() => navigate("login")}
-                    >
-                      Se connecter
-                    </button>
+              {member ? (
+                myStatus === "confirmed" ? (
+                  <button
+                    className={styles.btnCancel}
+                    onClick={handleCancel}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Traitement…" : "Annuler mon inscription"}
+                  </button>
+                ) : (
+                  <button
+                    className={styles.btnRegister}
+                    onClick={() => handleRegister()}
+                    disabled={submitting || isFull}
+                  >
+                    {submitting ? "Traitement…" : "S'inscrire"}
+                  </button>
+                )
+              ) : myStatus === "confirmed" ? null : (
+                <form className={styles.guestForm} onSubmit={handleRegister}>
+                  <p className={styles.guestFormLabel}>S'inscrire sans compte :</p>
+                  <div className={styles.guestFormGrid}>
+                    <input
+                      className={styles.input}
+                      placeholder="Prénom *"
+                      required
+                      value={guestForm.first_name}
+                      onChange={(e) => setGuestForm({ ...guestForm, first_name: e.target.value })}
+                    />
+                    <input
+                      className={styles.input}
+                      placeholder="Nom *"
+                      required
+                      value={guestForm.last_name}
+                      onChange={(e) => setGuestForm({ ...guestForm, last_name: e.target.value })}
+                    />
+                    <input
+                      className={styles.input}
+                      type="email"
+                      placeholder="Courriel *"
+                      required
+                      value={guestForm.email}
+                      onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })}
+                    />
                   </div>
-                </div>
-              ) : myStatus === "confirmed" ? (
-                <button
-                  className={styles.btnCancel}
-                  onClick={handleCancel}
-                  disabled={submitting}
-                >
-                  {submitting ? "Traitement…" : "Annuler mon inscription"}
-                </button>
-              ) : (
-                <button
-                  className={styles.btnRegister}
-                  onClick={handleRegister}
-                  disabled={
-                    submitting ||
-                    (event.max_participants !== null && (event.spots_left ?? 0) <= 0)
-                  }
-                >
-                  {submitting ? "Traitement…" : "S'inscrire"}
-                </button>
+                  <button
+                    type="submit"
+                    className={styles.btnRegister}
+                    disabled={submitting || isFull}
+                  >
+                    {submitting ? "Traitement…" : "S'inscrire"}
+                  </button>
+                </form>
               )}
             </div>
           </div>
