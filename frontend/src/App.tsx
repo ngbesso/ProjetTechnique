@@ -15,7 +15,6 @@ import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
 import {EspacePage} from "./features/espace/EspacePage";
 import {PrivacyPage} from "./features/legal/PrivacyPage";
-import {FormationsPage} from "./features/formations/FormationsPage";
 
 export default function App() {
   const page = usePage();
@@ -43,7 +42,6 @@ export default function App() {
     return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
   }
   if (page === "blog") return <BlogPage />;
-  if (page === "formations") return <FormationsPage />;
   if (page === "confidentialite") return <PrivacyPage />;
 
   // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"

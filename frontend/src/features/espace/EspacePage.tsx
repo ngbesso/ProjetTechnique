@@ -7,10 +7,9 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useDonations } from "../../hooks/useDonations";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
-import { fetchMyFormationRegistrations } from "../../lib/api/formations";
 import { fetchMyEventRegistrations } from "../../lib/api/events";
 import { validatePhone, validateAddress } from "../../lib/validation";
-import type { Member, MemberSelfInput, MyEventRegistration, MyFormationRegistration } from "../../types";
+import type { EventCategory, Member, MemberSelfInput, MyEventRegistration } from "../../types";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -35,6 +34,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   developpement: "Développement",
 };
 
+const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  conference: "Conférence",
+  colloque: "Colloque",
+  croisade: "Croisade",
+  retraite: "Retraite",
+  formation: "Formation",
+};
+
 function formatLongDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("fr-CA", {
@@ -42,10 +49,6 @@ function formatLongDate(iso: string): string {
     month: "long",
     year: "numeric",
   });
-}
-
-function formatPrice(price: number): string {
-  return price === 0 ? "Gratuit" : `${price.toFixed(2)} $`;
 }
 
 function formatEventDateTime(iso: string): string {
@@ -435,20 +438,6 @@ function DonsSection({ churchName }: { churchName: (id: number | null | undefine
 
 // ── Section : Mes inscriptions ───────────────────────────────────────────────
 
-function RegistrationCard({ reg, isPast }: { reg: MyFormationRegistration; isPast?: boolean }) {
-  return (
-    <div className={`${styles.regCard} ${isPast ? styles.pastReg : ""}`}>
-      <div>
-        <p className={styles.regTitle}>{reg.formation.title}</p>
-        <p className={styles.regMeta}>
-          {formatLongDate(reg.formation.formation_date)} · {reg.formation.instructor}
-        </p>
-      </div>
-      <span className={styles.regPrice}>{formatPrice(reg.formation.price)}</span>
-    </div>
-  );
-}
-
 function EventRegistrationCard({ reg, isPast }: { reg: MyEventRegistration; isPast?: boolean }) {
   return (
     <div className={`${styles.regCard} ${isPast ? styles.pastReg : ""}`}>
@@ -459,36 +448,25 @@ function EventRegistrationCard({ reg, isPast }: { reg: MyEventRegistration; isPa
           {reg.event.location && ` · ${reg.event.location}`}
         </p>
       </div>
+      <span className={styles.regPrice}>{EVENT_CATEGORY_LABELS[reg.event.category]}</span>
     </div>
   );
 }
 
 function InscriptionsSection() {
   const navigate = useNavigate();
-  const [formationRegs, setFormationRegs] = useState<MyFormationRegistration[]>([]);
   const [eventRegs, setEventRegs] = useState<MyEventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchMyFormationRegistrations(), fetchMyEventRegistrations()])
-      .then(([formations, events]) => {
-        setFormationRegs(formations);
-        setEventRegs(events);
-      })
+    fetchMyEventRegistrations()
+      .then(setEventRegs)
       .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p className={admin.stateMsg}>Chargement…</p>;
-
-  const today = new Date().toISOString().split("T")[0];
-  const upcomingFormations = formationRegs
-    .filter((r) => r.formation.formation_date >= today)
-    .sort((a, b) => a.formation.formation_date.localeCompare(b.formation.formation_date));
-  const pastFormations = formationRegs
-    .filter((r) => r.formation.formation_date < today)
-    .sort((a, b) => b.formation.formation_date.localeCompare(a.formation.formation_date));
 
   const now = Date.now();
   const upcomingEvents = eventRegs
@@ -503,25 +481,7 @@ function InscriptionsSection() {
       {error && <p className={admin.errorMsg} role="alert">{error}</p>}
 
       <section className={admin.card}>
-        <h3 className={admin.cardTitle}>Formations</h3>
-
-        <h4 className={styles.subGroupTitle}>À venir</h4>
-        {upcomingFormations.length === 0 ? (
-          <p className={admin.empty}>Aucune formation à venir.</p>
-        ) : (
-          upcomingFormations.map((r) => <RegistrationCard key={r.id} reg={r} />)
-        )}
-
-        <h4 className={styles.subGroupTitle}>Passées</h4>
-        {pastFormations.length === 0 ? (
-          <p className={admin.empty}>Aucune formation passée.</p>
-        ) : (
-          pastFormations.map((r) => <RegistrationCard key={r.id} reg={r} isPast />)
-        )}
-      </section>
-
-      <section className={admin.card}>
-        <h3 className={admin.cardTitle}>Événements</h3>
+        <h3 className={admin.cardTitle}>Événements &amp; Formations</h3>
 
         <h4 className={styles.subGroupTitle}>À venir</h4>
         {upcomingEvents.length === 0 ? (
@@ -539,9 +499,6 @@ function InscriptionsSection() {
       </section>
 
       <div className={styles.inscriptionsActions}>
-        <button className={admin.btnPrimary} onClick={() => navigate("formations")}>
-          Voir les formations
-        </button>
         <button className={admin.btnPrimary} onClick={() => navigate("evenements")}>
           Voir les événements
         </button>

@@ -1,20 +1,23 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models.event import RegistrationStatus
+from app.models.event import EventCategory, EventStatus, RegistrationStatus
 
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
+    category: EventCategory
     date_start: datetime
     date_end: datetime | None = None
     location: str | None = None
+    instructor: str | None = None
+    price: float | None = Field(default=0, ge=0)
     church_id: int | None = None
     district: str | None = None
-    max_participants: int | None = Field(default=None, gt=0)
-    is_published: bool = False
+    capacity: int | None = Field(default=None, gt=0)
+    status: EventStatus = EventStatus.draft
 
     @field_validator("date_end")
     @classmethod
@@ -28,31 +31,38 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
+    category: EventCategory | None = None
     date_start: datetime | None = None
     date_end: datetime | None = None
     location: str | None = None
+    instructor: str | None = None
+    price: float | None = Field(default=None, ge=0)
     church_id: int | None = None
     district: str | None = None
-    max_participants: int | None = Field(default=None, gt=0)
-    is_published: bool | None = None
+    capacity: int | None = Field(default=None, gt=0)
+    status: EventStatus | None = None
 
 
 class EventRead(BaseModel):
     id: int
     title: str
     description: str | None
+    category: EventCategory
     date_start: datetime
     date_end: datetime | None
     location: str | None
+    instructor: str | None
+    price: float | None
     church_id: int | None
     district: str | None
-    max_participants: int | None
-    is_published: bool
+    capacity: int | None
+    status: EventStatus
     created_at: datetime
     updated_at: datetime
     # Calculés à la volée par la route (pas des colonnes en base)
     registered_count: int
     spots_left: int | None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -65,22 +75,38 @@ class EventList(BaseModel):
 
 
 class RegistrationCreate(BaseModel):
-    """Corps optionnel : l'événement vient de l'URL, le membre du JWT.
+    """Invité (sans compte) : first_name/last_name/email requis.
 
-    Vide pour l'instant — réservé si un champ (ex. note) devait s'ajouter.
+    Membre connecté : ces champs sont ignorés, l'inscription est auto-remplie
+    et liée à partir de son profil.
     """
 
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+
     model_config = {"extra": "ignore"}
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def strip_not_blank(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Ce champ ne peut pas être vide")
+        return v
 
 
 class RegistrationRead(BaseModel):
     id: int
     event_id: int
-    member_id: int
+    member_id: int | None
+    first_name: str
+    last_name: str
+    email: str
     registered_at: datetime
     status: RegistrationStatus
-    member_name: str | None = None
-    member_email: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -88,6 +114,7 @@ class RegistrationRead(BaseModel):
 class EventSummary(BaseModel):
     id: int
     title: str
+    category: EventCategory
     date_start: datetime
     location: str | None
 
@@ -99,3 +126,20 @@ class MyEventRegistration(BaseModel):
     event_id: int
     registered_at: datetime
     event: EventSummary
+
+
+class TopEventItem(BaseModel):
+    id: int
+    title: str
+    category: EventCategory
+    registered_count: int
+
+
+class StatusBreakdownItem(BaseModel):
+    status: EventStatus
+    count: int
+
+
+class EventStats(BaseModel):
+    top_events: list[TopEventItem]
+    status_breakdown: list[StatusBreakdownItem]
