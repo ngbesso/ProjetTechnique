@@ -35,6 +35,273 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* ── KPIs (tableau de bord) ────────────────────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpiCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.1);
+}
+
+.kpiCard::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.kpiCard.violet::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.kpiCard.amber::before  { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.kpiCard.emerald::before { background: linear-gradient(90deg, #059669, #34d399); }
+.kpiCard.rose::before   { background: linear-gradient(90deg, #e11d48, #fb7185); }
+
+.kpiIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpiIcon.violet { background: rgba(124, 58, 237, .12); color: #7c3aed; }
+.kpiIcon.amber  { background: rgba(217, 119, 6, .12);  color: #d97706; }
+.kpiIcon.emerald { background: rgba(5, 150, 105, .12); color: #059669; }
+.kpiIcon.rose   { background: rgba(225, 29, 72, .12);  color: #e11d48; }
+
+.kpiIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kpiBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.kpiValue {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #1e293b;
+  margin-bottom: 0.2rem;
+}
+
+.kpiLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ── Onglets de filtre par statut ──────────────────────────────────────────── */
+
+.statusTabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0 1.75rem 1rem;
+}
+
+.statusTab {
+  padding: 0.45rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.statusTab:hover {
+  border-color: #c4b5fd;
+  color: #3b2f8a;
+}
+
+.statusTabActive {
+  background: linear-gradient(135deg, #3b2f8a 0%, #7c3aed 100%);
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+.statusTabActive:hover {
+  color: #fff;
+}
+
+/* ── Barre de progression (assistant multi-étapes) ────────────────────────── */
+
+.stepProgress {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem 1.75rem 0.5rem;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.stepItem:last-child {
+  flex: 0 0 auto;
+}
+
+.stepDotCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stepDot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.stepDotActive {
+  background: linear-gradient(135deg, #3b2f8a 0%, #7c3aed 100%);
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+.stepDotDone {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #7c3aed;
+}
+
+.stepLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.stepLabelActive {
+  color: #3b2f8a;
+}
+
+.stepLine {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  margin: 0 0.5rem;
+  transform: translateY(-14px);
+}
+
+.stepLineDone {
+  background: #c4b5fd;
+}
+
+/* ── Étape Images (dépôt de fichier + aperçu) ─────────────────────────────── */
+
+.imageStepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.imagePreviewWrap {
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.imagePreview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.imageHint {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.reviewImageThumb {
+  width: 80px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Révision (résumé en lecture seule) ───────────────────────────────────── */
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.reviewRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f3f0ff;
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+}
+
+.reviewLabel {
+  font-size: 0.82rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.reviewValue {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a1040;
+  text-align: right;
+}
+
 /* ── Formulaire événement ─────────────────────────────────────────────────── */
 
 .formCard {
@@ -419,6 +686,32 @@
   border: 1px solid #e2e8f0;
 }
 
+.badgeCancelled {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.badgeCompleted {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
 /* Métadonnées (date, lieu, église, district, places) */
 .eventMeta {
   display: flex;
@@ -601,6 +894,12 @@
 
 .participantsBody {
   padding: 1.25rem 1.75rem 1.75rem;
+}
+
+.participantsActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .participantRow {

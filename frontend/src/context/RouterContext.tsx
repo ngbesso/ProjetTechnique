@@ -28,7 +28,6 @@ const PAGE_PATHS: Record<Page, string> = {
   sermons: "/sermons",
   blog: "/blog",
   evenements: "/evenements",
-  formations: "/formations",
   "mon-profil": "/mon-profil",
   espace: "/espace",
   "mot-de-passe-oublie": "/mot-de-passe-oublie",

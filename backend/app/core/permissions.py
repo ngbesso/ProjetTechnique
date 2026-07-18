@@ -14,8 +14,6 @@ PERMISSIONS: dict[str, str] = {
     "event:manage": "Gérer les événements",
     "sermon:read": "Consulter les sermons",
     "sermon:manage": "Gérer les sermons",
-    "formation:read": "Consulter les formations",
-    "formation:manage": "Gérer les formations",
     "post:manage": "Gérer les articles de blog",
     "content:manage": "Gérer les pages et le menu (CMS)",
 }
@@ -25,7 +23,7 @@ DEFAULT_ROLES: dict[str, dict] = {
     "admin": {"description": "Administrateur", "permissions": ["*"]},
     "membre": {
         "description": "Membre",
-        "permissions": ["donation:create", "event:read", "sermon:read", "formation:read"],
+        "permissions": ["donation:create", "event:read", "sermon:read"],
     },
 }
 

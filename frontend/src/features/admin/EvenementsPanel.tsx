@@ -1,22 +1,62 @@
 import { useEffect, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./EvenementsPanel.module.css";
+import { Button } from "../../components/ui/Button";
+import { Field } from "../../components/ui/Field";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useEvents } from "../../hooks/useEvents";
 import { useParameters } from "../../hooks/useParameters";
-import type { District, EventInput, EventItem } from "../../types";
+import { exportEventRegistrations, uploadEventImage } from "../../lib/api/events";
+import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
+import type { District, EventCategory, EventInput, EventItem, EventStatus } from "../../types";
+
+type StepId = "info" | "date" | "details" | "images" | "review";
+
+const STEPS: { id: StepId; label: string }[] = [
+  { id: "info", label: "Informations" },
+  { id: "date", label: "Date & Lieu" },
+  { id: "details", label: "Détails" },
+  { id: "images", label: "Images" },
+  { id: "review", label: "Révision" },
+];
 
 const EMPTY: EventInput = {
   title: "",
   description: "",
+  category: "conference",
   date_start: "",
   date_end: "",
   location: "",
+  instructor: "",
+  price: 0,
   church_id: null,
   district: null,
-  max_participants: null,
+  capacity: null,
+  status: "draft",
+};
+
+const CATEGORY_LABELS: Record<EventCategory, string> = {
+  conference: "Conférence",
+  colloque: "Colloque",
+  croisade: "Croisade",
+  retraite: "Retraite",
+  formation: "Formation",
+};
+
+const STATUS_LABELS: Record<EventStatus, string> = {
+  draft: "Brouillon",
+  published: "Publié",
+  cancelled: "Annulé",
+  completed: "Terminé",
+};
+
+const STATUS_BADGE_CLASS: Record<EventStatus, string> = {
+  draft: "badgeDraft",
+  published: "badgePublished",
+  cancelled: "badgeCancelled",
+  completed: "badgeCompleted",
 };
 
 /** Convertit une valeur <input type="datetime-local"> (heure locale) en ISO UTC pour l'API. */
@@ -37,12 +77,16 @@ function eventToForm(e: EventItem): EventInput {
   return {
     title: e.title,
     description: e.description ?? "",
+    category: e.category,
     date_start: toLocalInput(e.date_start),
     date_end: toLocalInput(e.date_end),
     location: e.location ?? "",
+    instructor: e.instructor ?? "",
+    price: e.price ?? 0,
     church_id: e.church_id,
     district: e.district,
-    max_participants: e.max_participants,
+    capacity: e.capacity,
+    status: e.status,
   };
 }
 
@@ -50,6 +94,102 @@ function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-CA", {
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
+}
+
+function formatPrice(price: number | null): string {
+  return !price ? "Gratuit" : `${price.toFixed(2)} $`;
+}
+
+function formatLocalDateTime(localValue: string | null | undefined): string {
+  if (!localValue) return "—";
+  return new Date(localValue).toLocaleString("fr-CA", {
+    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+// ── Icônes KPI (même pattern que DashboardPanel) ─────────────────────────────
+
+function IconCalendar() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+function IconFileEdit() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
+    </svg>
+  );
+}
+
+function IconCheckCircle() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="8 12 11 15 16 9" />
+    </svg>
+  );
+}
+
+function IconXCircle() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  );
+}
+
+interface KpiProps {
+  color: "violet" | "amber" | "emerald" | "rose";
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+}
+
+function KpiCard({ color, icon, value, label }: KpiProps) {
+  return (
+    <div className={`${styles.kpiCard} ${styles[color]}`}>
+      <div className={`${styles.kpiIcon} ${styles[color]}`}>{icon}</div>
+      <div className={styles.kpiBody}>
+        <div className={styles.kpiLabel}>{label}</div>
+        <div className={styles.kpiValue}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function StepProgress({ current }: { current: number }) {
+  return (
+    <div className={styles.stepProgress}>
+      {STEPS.map((s, i) => (
+        <div key={s.id} className={styles.stepItem}>
+          <div className={styles.stepDotCol}>
+            <div
+              className={`${styles.stepDot} ${i === current ? styles.stepDotActive : ""} ${i < current ? styles.stepDotDone : ""}`}
+            >
+              {i < current ? "✓" : i + 1}
+            </div>
+            <span className={i === current ? `${styles.stepLabel} ${styles.stepLabelActive}` : styles.stepLabel}>
+              {s.label}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={`${styles.stepLine} ${i < current ? styles.stepLineDone : ""}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function EvenementsPanel() {
@@ -78,13 +218,26 @@ export function EvenementsPanel() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [step, setStep] = useState(0);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const isEditing = editingId !== null;
+  const isLastStep = step === STEPS.length - 1;
+
+  function resetImageState(existingUrl: string | null = null) {
+    if (imagePreview && imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(existingUrl);
+  }
 
   const [participantsEvent, setParticipantsEvent] = useState<EventItem | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [view, setView] = useState<"liste" | "statistiques">("liste");
 
   const [filterQ, setFilterQ] = useState("");
-  const [filterPublished, setFilterPublished] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | EventStatus>("all");
 
   useEffect(() => {
     loadAdmin();
@@ -92,16 +245,33 @@ export function EvenementsPanel() {
     loadDistricts();
   }, [loadAdmin, loadChurches, loadDistricts]);
 
-  function applyFilters(overrides?: { q?: string; is_published?: string; district?: string }) {
+  function applyFilters(overrides?: { q?: string; category?: string; district?: string }) {
     const q = overrides?.q ?? filterQ;
-    const publishedStr = overrides?.is_published ?? filterPublished;
+    const category = overrides?.category ?? filterCategory;
     const district = overrides?.district ?? filterDistrict;
     loadAdmin({
       q: q.trim() || undefined,
-      is_published: publishedStr === "" ? undefined : publishedStr === "true",
+      category: (category || undefined) as EventCategory | undefined,
       district: district || undefined,
     });
   }
+
+  const kpi = {
+    total: events.length,
+    draft: events.filter((e) => e.status === "draft").length,
+    published: events.filter((e) => e.status === "published").length,
+    cancelled: events.filter((e) => e.status === "cancelled").length,
+  };
+
+  const STATUS_TABS: { id: "all" | EventStatus; label: string }[] = [
+    { id: "all", label: "Tous" },
+    { id: "draft", label: "Brouillons" },
+    { id: "published", label: "Publiés" },
+    { id: "cancelled", label: "Annulés" },
+    { id: "completed", label: "Terminés" },
+  ];
+
+  const visibleEvents = statusTab === "all" ? events : events.filter((e) => e.status === statusTab);
 
   function churchLabel(churchId: number | null): string {
     if (churchId === null) return "Toute la mission";
@@ -112,6 +282,8 @@ export function EvenementsPanel() {
     setEditingId(null);
     setForm(EMPTY);
     setFormError("");
+    setStep(0);
+    resetImageState(null);
     setShowModal(true);
   }
 
@@ -119,6 +291,8 @@ export function EvenementsPanel() {
     setEditingId(e.id);
     setForm(eventToForm(e));
     setFormError("");
+    setStep(0);
+    resetImageState(e.image_url);
     setShowModal(true);
   }
 
@@ -126,17 +300,37 @@ export function EvenementsPanel() {
     setEditingId(null);
     setForm(EMPTY);
     setFormError("");
+    setStep(0);
+    resetImageState(null);
     setShowModal(false);
+  }
+
+  function validateStep(currentStep: number): string | null {
+    if (currentStep === 0 && !form.title.trim()) return "Le titre est requis.";
+    if (currentStep === 1 && !form.date_start) return "La date de début est requise.";
+    return null;
+  }
+
+  function goPrev() {
+    setFormError("");
+    setStep((s) => Math.max(s - 1, 0));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.title.trim() || !form.date_start) {
-      setFormError("Titre et date de début sont requis.");
+    const stepError = validateStep(step);
+    if (stepError) {
+      setFormError(stepError);
       return;
     }
-    setSaving(true);
     setFormError("");
+
+    if (!isLastStep) {
+      setStep((s) => Math.min(s + 1, STEPS.length - 1));
+      return;
+    }
+
+    setSaving(true);
     try {
       const payload = {
         ...form,
@@ -145,11 +339,12 @@ export function EvenementsPanel() {
         date_end: toIso(form.date_end ?? "") ?? null,
         description: form.description || undefined,
         location: form.location || undefined,
+        instructor: form.instructor || undefined,
       };
-      if (editingId !== null) {
-        await edit(editingId, payload);
-      } else {
-        await add({ ...payload, is_published: false });
+      const saved = editingId !== null ? await edit(editingId, payload) : await add(payload);
+      if (imageFile) {
+        await uploadEventImage(saved.id, imageFile);
+        loadAdmin();
       }
       cancelEdit();
     } catch (err) {
@@ -174,27 +369,37 @@ export function EvenementsPanel() {
     }
   }
 
-  async function handleTogglePublish(e: EventItem) {
-    const action = e.is_published ? "Dépublier" : "Publier";
-    const ok = await confirm({
-      title: `${action} l'événement « ${e.title} » ?`,
-      description: e.is_published
-        ? "L'événement ne sera plus visible publiquement."
-        : "L'événement devient visible et ouvert aux inscriptions.",
-      variant: e.is_published ? "danger" : "default",
-      confirmLabel: action,
-    });
-    if (!ok) return;
+  async function handleStatusChange(id: number, status: EventStatus) {
     try {
-      await edit(e.id, { is_published: !e.is_published });
+      await edit(id, { status });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Opération impossible");
+      alert(err instanceof Error ? err.message : "Mise à jour impossible");
     }
   }
 
   function openParticipants(e: EventItem) {
     setParticipantsEvent(e);
     loadParticipants(e.id);
+  }
+
+  async function handleExportCsv() {
+    if (!participantsEvent) return;
+    setExporting(true);
+    try {
+      const blob = await exportEventRegistrations(participantsEvent.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `inscriptions-evenement-${participantsEvent.id}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Export impossible");
+    } finally {
+      setExporting(false);
+    }
   }
 
   if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
@@ -216,7 +421,7 @@ export function EvenementsPanel() {
                 <p className={styles.formHeaderSub}>
                   {isEditing
                     ? "Modifiez les informations ci-dessous puis enregistrez."
-                    : "Remplissez les informations du nouvel événement (créé en brouillon)."}
+                    : "Remplissez les informations du nouvel événement."}
                 </p>
               </div>
               <button type="button" className={styles.formHeaderClose} onClick={cancelEdit} aria-label="Fermer">
@@ -224,123 +429,255 @@ export function EvenementsPanel() {
               </button>
             </div>
 
+            <StepProgress current={step} />
+
             <form onSubmit={handleSubmit} className={styles.formBody}>
-              <div className={styles.grid2}>
-                <div className={styles.sectionDivider}>
-                  <p className={styles.sectionLabel}>Informations générales</p>
-                </div>
+              {STEPS[step].id === "info" && (
+                <div className={styles.grid2}>
+                  <div className={styles.fullWidth}>
+                    <Field label="Titre *">
+                      <input
+                        className={styles.input}
+                        placeholder="ex. : Camp de jeunes d'été"
+                        required
+                        value={form.title}
+                        onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      />
+                    </Field>
+                  </div>
 
-                <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>
-                    Titre <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    className={styles.input}
-                    placeholder="ex. : Camp de jeunes d'été"
-                    required
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  />
-                </div>
+                  <Field label="Catégorie *">
+                    <select
+                      className={styles.select}
+                      value={form.category}
+                      onChange={(e) => setForm({ ...form, category: e.target.value as EventCategory })}
+                    >
+                      {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map((c) => (
+                        <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                      ))}
+                    </select>
+                  </Field>
 
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>
-                    Date de début <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    className={styles.input}
-                    type="datetime-local"
-                    required
-                    value={form.date_start}
-                    onChange={(e) => setForm({ ...form, date_start: e.target.value })}
-                  />
+                  <div className={styles.fullWidth}>
+                    <Field label="Description">
+                      <textarea
+                        className={styles.textarea}
+                        placeholder="Description de l'événement (optionnel)"
+                        value={form.description ?? ""}
+                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      />
+                    </Field>
+                  </div>
                 </div>
+              )}
 
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>Date de fin</label>
-                  <input
-                    className={styles.input}
-                    type="datetime-local"
-                    value={form.date_end ?? ""}
-                    onChange={(e) => setForm({ ...form, date_end: e.target.value })}
-                  />
-                </div>
+              {STEPS[step].id === "date" && (
+                <div className={styles.grid2}>
+                  <Field label="Date de début *">
+                    <input
+                      className={styles.input}
+                      type="datetime-local"
+                      required
+                      value={form.date_start}
+                      onChange={(e) => setForm({ ...form, date_start: e.target.value })}
+                    />
+                  </Field>
 
-                <div className={styles.sectionDivider}>
-                  <p className={styles.sectionLabel}>Lieu et organisation</p>
-                </div>
+                  <Field label="Date de fin">
+                    <input
+                      className={styles.input}
+                      type="datetime-local"
+                      value={form.date_end ?? ""}
+                      onChange={(e) => setForm({ ...form, date_end: e.target.value })}
+                    />
+                  </Field>
 
-                <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>Lieu</label>
-                  <input
-                    className={styles.input}
-                    placeholder="ex. : Centre de plein air, Sainte-Adèle"
-                    value={form.location ?? ""}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  />
-                </div>
+                  <div className={styles.fullWidth}>
+                    <Field label="Lieu">
+                      <input
+                        className={styles.input}
+                        placeholder="ex. : Centre de plein air, Sainte-Adèle"
+                        value={form.location ?? ""}
+                        onChange={(e) => setForm({ ...form, location: e.target.value })}
+                      />
+                    </Field>
+                  </div>
 
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>Église organisatrice</label>
-                  <select
-                    className={styles.select}
-                    value={form.church_id ?? ""}
-                    onChange={(e) =>
-                      setForm({ ...form, church_id: e.target.value ? Number(e.target.value) : null })
-                    }
-                  >
-                    <option value="">Toute la mission</option>
-                    {churches.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                  <Field label="Église organisatrice">
+                    <select
+                      className={styles.select}
+                      value={form.church_id ?? ""}
+                      onChange={(e) =>
+                        setForm({ ...form, church_id: e.target.value ? Number(e.target.value) : null })
+                      }
+                    >
+                      <option value="">Toute la mission</option>
+                      {churches.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </Field>
 
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>District</label>
-                  <select
-                    className={styles.select}
-                    value={form.district ?? ""}
-                    onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}
-                  >
-                    <option value="">Aucun district</option>
-                    {districtValues.map((d) => (
-                      <option key={d.id} value={d.label}>{d.label}</option>
-                    ))}
-                  </select>
+                  <Field label="District">
+                    <select
+                      className={styles.select}
+                      value={form.district ?? ""}
+                      onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}
+                    >
+                      <option value="">Aucun district</option>
+                      {districtValues.map((d) => (
+                        <option key={d.id} value={d.label}>{d.label}</option>
+                      ))}
+                    </select>
+                  </Field>
                 </div>
+              )}
 
-                <div className={styles.sectionDivider}>
-                  <p className={styles.sectionLabel}>Capacité et description</p>
-                </div>
+              {STEPS[step].id === "details" && (
+                <div className={styles.grid2}>
+                  <Field label="Formateur / animateur">
+                    <input
+                      className={styles.input}
+                      placeholder="Surtout pour les formations"
+                      value={form.instructor ?? ""}
+                      onChange={(e) => setForm({ ...form, instructor: e.target.value })}
+                    />
+                  </Field>
 
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>Places maximum</label>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    min={1}
-                    placeholder="Vide = illimité"
-                    value={form.max_participants ?? ""}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        max_participants: e.target.value ? Number(e.target.value) : null,
-                      })
-                    }
-                  />
-                </div>
+                  <Field label="Prix (CAD) — 0 = gratuit">
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.price ?? 0}
+                      onChange={(e) => setForm({ ...form, price: e.target.value ? Number(e.target.value) : 0 })}
+                    />
+                  </Field>
 
-                <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>Description</label>
-                  <textarea
-                    className={styles.textarea}
-                    placeholder="Description de l'événement (optionnel)"
-                    value={form.description ?? ""}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
+                  <Field label="Places maximum">
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min={1}
+                      placeholder="Vide = illimité"
+                      value={form.capacity ?? ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          capacity: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Statut">
+                    <select
+                      className={styles.select}
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as EventStatus })}
+                    >
+                      {(Object.keys(STATUS_LABELS) as EventStatus[]).map((s) => (
+                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                      ))}
+                    </select>
+                  </Field>
                 </div>
-              </div>
+              )}
+
+              {STEPS[step].id === "images" && (
+                <div className={styles.imageStepBody}>
+                  <Field label="Image de couverture">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={styles.input}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (imagePreview && imagePreview.startsWith("blob:")) {
+                          URL.revokeObjectURL(imagePreview);
+                        }
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                      }}
+                    />
+                  </Field>
+                  {imagePreview ? (
+                    <div className={styles.imagePreviewWrap}>
+                      <img src={imagePreview} alt="Aperçu de l'image de couverture" className={styles.imagePreview} />
+                    </div>
+                  ) : (
+                    <p className={styles.imageHint}>Aucune image sélectionnée — formats acceptés : JPG, PNG, WebP.</p>
+                  )}
+                  {imageFile && (
+                    <p className={styles.imageHint}>Cette image sera envoyée lors de l'enregistrement.</p>
+                  )}
+                </div>
+              )}
+
+              {STEPS[step].id === "review" && (
+                <div className={styles.reviewList}>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Titre</span>
+                    <span className={styles.reviewValue}>{form.title || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Catégorie</span>
+                    <span className={styles.reviewValue}>{CATEGORY_LABELS[form.category]}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Description</span>
+                    <span className={styles.reviewValue}>{form.description || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Date de début</span>
+                    <span className={styles.reviewValue}>{formatLocalDateTime(form.date_start)}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Date de fin</span>
+                    <span className={styles.reviewValue}>{formatLocalDateTime(form.date_end)}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Lieu</span>
+                    <span className={styles.reviewValue}>{form.location || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Église organisatrice</span>
+                    <span className={styles.reviewValue}>{churchLabel(form.church_id ?? null)}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>District</span>
+                    <span className={styles.reviewValue}>{form.district || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Formateur</span>
+                    <span className={styles.reviewValue}>{form.instructor || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Prix</span>
+                    <span className={styles.reviewValue}>{formatPrice(form.price ?? 0)}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Places maximum</span>
+                    <span className={styles.reviewValue}>{form.capacity ?? "Illimité"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Statut</span>
+                    <span className={styles.reviewValue}>{STATUS_LABELS[form.status ?? "draft"]}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Image de couverture</span>
+                    <span className={styles.reviewValue}>
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="" className={styles.reviewImageThumb} />
+                      ) : (
+                        "—"
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {formError && (
                 <div className={styles.errorBanner} role="alert">
@@ -350,21 +687,58 @@ export function EvenementsPanel() {
               )}
 
               <div className={styles.formActions}>
-                <button type="button" className={styles.btnGhost} onClick={cancelEdit} disabled={saving}>
+                {step > 0 && (
+                  <Button type="button" variant="outline" onClick={goPrev} disabled={saving}>
+                    ← Précédent
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" onClick={cancelEdit} disabled={saving}>
                   Annuler
-                </button>
-                <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                </Button>
+                <Button type="submit" variant="primary" disabled={saving}>
                   {saving
                     ? "Enregistrement…"
+                    : !isLastStep
+                    ? "Suivant →"
                     : isEditing
                     ? "✓ Enregistrer les modifications"
                     : "+ Créer l'événement"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* ── Onglets de vue ── */}
+      <div className={styles.statusTabs} style={{ padding: "0 0 1rem" }}>
+        <button
+          type="button"
+          className={view === "liste" ? `${styles.statusTab} ${styles.statusTabActive}` : styles.statusTab}
+          onClick={() => setView("liste")}
+        >
+          📋 Liste
+        </button>
+        <button
+          type="button"
+          className={view === "statistiques" ? `${styles.statusTab} ${styles.statusTabActive}` : styles.statusTab}
+          onClick={() => setView("statistiques")}
+        >
+          📊 Statistiques
+        </button>
+      </div>
+
+      {view === "statistiques" ? (
+        <EvenementsStatsPanel />
+      ) : (
+        <>
+      {/* ── KPIs ── */}
+      <div className={styles.kpiGrid}>
+        <KpiCard color="violet" icon={<IconCalendar />} value={kpi.total} label="Total" />
+        <KpiCard color="amber" icon={<IconFileEdit />} value={kpi.draft} label="Brouillons" />
+        <KpiCard color="emerald" icon={<IconCheckCircle />} value={kpi.published} label="Publiés" />
+        <KpiCard color="rose" icon={<IconXCircle />} value={kpi.cancelled} label="Annulés" />
+      </div>
 
       {/* ── Liste ── */}
       <div className={styles.listCard}>
@@ -376,8 +750,21 @@ export function EvenementsPanel() {
           )}
           <p className={styles.listTitle}>
             Événements
-            <span className={styles.listCount}>{events.length}</span>
+            <span className={styles.listCount}>{visibleEvents.length}</span>
           </p>
+        </div>
+
+        <div className={styles.statusTabs}>
+          {STATUS_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={statusTab === t.id ? `${styles.statusTab} ${styles.statusTabActive}` : styles.statusTab}
+              onClick={() => setStatusTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         <div className={styles.filterRow}>
@@ -389,12 +776,13 @@ export function EvenementsPanel() {
           />
           <select
             className={styles.filterSelect}
-            value={filterPublished}
-            onChange={(e) => { setFilterPublished(e.target.value); applyFilters({ is_published: e.target.value }); }}
+            value={filterCategory}
+            onChange={(e) => { setFilterCategory(e.target.value); applyFilters({ category: e.target.value }); }}
           >
-            <option value="">Tous statuts</option>
-            <option value="true">Publié</option>
-            <option value="false">Brouillon</option>
+            <option value="">Toutes catégories</option>
+            {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+            ))}
           </select>
           <select
             className={styles.filterSelect}
@@ -408,27 +796,29 @@ export function EvenementsPanel() {
           </select>
         </div>
 
-        {events.length === 0 ? (
+        {visibleEvents.length === 0 ? (
           <div className={styles.emptyState}>
             <p className={styles.emptyIcon}>📅</p>
             <p className={styles.emptyText}>Aucun événement trouvé.</p>
           </div>
         ) : (
           <div className={styles.eventGrid}>
-            {events.map((e) => (
+            {visibleEvents.map((e) => (
               <div
                 key={e.id}
-                className={`${styles.eventCard} ${editingId === e.id ? styles.eventCardEditing : ""} ${!e.is_published ? styles.eventCardInactive : ""}`}
+                className={`${styles.eventCard} ${editingId === e.id ? styles.eventCardEditing : ""} ${e.status !== "published" ? styles.eventCardInactive : ""}`}
               >
-                <div className={`${styles.eventCardBand} ${e.is_published ? styles.eventCardBandPublished : ""}`} />
+                <div className={`${styles.eventCardBand} ${e.status === "published" ? styles.eventCardBandPublished : ""}`} />
                 <div className={styles.eventCardBody}>
                   <div className={styles.eventCardTop}>
                     <p className={styles.eventCardName}>{e.title}</p>
-                    {e.is_published
-                      ? <span className={styles.badgePublished}>Publié</span>
-                      : <span className={styles.badgeDraft}>Brouillon</span>}
+                    <span className={styles[STATUS_BADGE_CLASS[e.status]]}>{STATUS_LABELS[e.status]}</span>
                   </div>
                   <div className={styles.eventMeta}>
+                    <div className={styles.eventMetaRow}>
+                      <span className={styles.metaIcon}>🏷️</span>
+                      <span className={styles.metaText}>{CATEGORY_LABELS[e.category]}</span>
+                    </div>
                     <div className={styles.eventMetaRow}>
                       <span className={styles.metaIcon}>🗓️</span>
                       <span className={styles.metaText}>{formatDateTime(e.date_start)}</span>
@@ -439,6 +829,12 @@ export function EvenementsPanel() {
                         <span className={styles.metaText}>{e.location}</span>
                       </div>
                     )}
+                    {e.instructor && (
+                      <div className={styles.eventMetaRow}>
+                        <span className={styles.metaIcon}>👤</span>
+                        <span className={styles.metaText}>{e.instructor}</span>
+                      </div>
+                    )}
                     <div className={styles.eventMetaRow}>
                       <span className={styles.metaIcon}>⛪</span>
                       <span className={styles.metaText}>
@@ -446,10 +842,14 @@ export function EvenementsPanel() {
                       </span>
                     </div>
                     <div className={styles.eventMetaRow}>
+                      <span className={styles.metaIcon}>💲</span>
+                      <span className={styles.metaText}>{formatPrice(e.price)}</span>
+                    </div>
+                    <div className={styles.eventMetaRow}>
                       <span className={styles.metaIcon}>👥</span>
                       <span className={styles.metaText}>
-                        {e.max_participants !== null
-                          ? `${e.registered_count} / ${e.max_participants} inscrits`
+                        {e.capacity !== null
+                          ? `${e.registered_count} / ${e.capacity} inscrits`
                           : `${e.registered_count} inscrit(s) · illimité`}
                       </span>
                     </div>
@@ -460,12 +860,15 @@ export function EvenementsPanel() {
                     <button className={styles.btnCardEdit} onClick={() => startEdit(e)}>
                       ✏ Modifier
                     </button>
-                    <button
-                      className={e.is_published ? styles.btnCardDeactivate : styles.btnCardActivate}
-                      onClick={() => handleTogglePublish(e)}
+                    <select
+                      className={styles.filterSelect}
+                      value={e.status}
+                      onChange={(ev) => handleStatusChange(e.id, ev.target.value as EventStatus)}
                     >
-                      {e.is_published ? "⏸ Dépublier" : "▶ Publier"}
-                    </button>
+                      {(Object.keys(STATUS_LABELS) as EventStatus[]).map((s) => (
+                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                      ))}
+                    </select>
                     <button className={styles.btnCardParticipants} onClick={() => openParticipants(e)}>
                       👥 Participants
                     </button>
@@ -479,6 +882,8 @@ export function EvenementsPanel() {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* ── Modale : participants ── */}
       {participantsEvent && (
@@ -500,6 +905,11 @@ export function EvenementsPanel() {
               </button>
             </div>
             <div className={styles.participantsBody}>
+              <div className={styles.participantsActions}>
+                <Button type="button" variant="outline" onClick={handleExportCsv} disabled={exporting}>
+                  {exporting ? "Export…" : "⬇ Exporter CSV"}
+                </Button>
+              </div>
               {participantsLoading ? (
                 <p className={adminStyles.stateMsg}>Chargement…</p>
               ) : participants.length === 0 ? (
@@ -510,9 +920,9 @@ export function EvenementsPanel() {
               ) : (
                 participants.map((p) => (
                   <div key={p.id} className={styles.participantRow}>
-                    <span className={styles.participantName}>{p.member_name ?? "—"}</span>
+                    <span className={styles.participantName}>{p.first_name} {p.last_name}</span>
                     <span className={styles.participantMeta}>
-                      {p.member_email ?? "—"} · inscrit le{" "}
+                      {p.email} · inscrit le{" "}
                       {new Date(p.registered_at).toLocaleDateString("fr-CA")}
                     </span>
                   </div>

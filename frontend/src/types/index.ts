@@ -31,7 +31,7 @@ export interface UserCreate {
 }
 
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog"| "evenements"| "formations" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
+export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -239,23 +239,29 @@ export interface SermonInput {
 
 // ── Événements ─────────────────────────────────────────────────────────────
 
+export type EventCategory = "conference" | "colloque" | "croisade" | "retraite" | "formation";
+export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventRegistrationStatus = "confirmed" | "cancelled";
 
 export interface EventItem {
   id: number;
   title: string;
   description: string | null;
+  category: EventCategory;
   date_start: string;
   date_end: string | null;
   location: string | null;
+  instructor: string | null;
+  price: number | null;
   church_id: number | null;
   district: District | null;
-  max_participants: number | null;
-  is_published: boolean;
+  capacity: number | null;
+  status: EventStatus;
   created_at: string;
   updated_at: string;
   registered_count: number;
   spots_left: number | null;
+  image_url: string | null;
 }
 
 export interface EventListResult {
@@ -268,28 +274,39 @@ export interface EventListResult {
 export interface EventInput {
   title: string;
   description?: string | null;
+  category: EventCategory;
   date_start: string;
   date_end?: string | null;
   location?: string | null;
+  instructor?: string | null;
+  price?: number | null;
   church_id?: number | null;
   district?: District | null;
-  max_participants?: number | null;
-  is_published?: boolean;
+  capacity?: number | null;
+  status?: EventStatus;
+}
+
+export interface EventRegistrationInput {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
 }
 
 export interface EventRegistration {
   id: number;
   event_id: number;
-  member_id: number;
+  member_id: number | null;
+  first_name: string;
+  last_name: string;
+  email: string;
   registered_at: string;
   status: EventRegistrationStatus;
-  member_name: string | null;
-  member_email: string | null;
 }
 
 export interface EventRegistrationSummary {
   id: number;
   title: string;
+  category: EventCategory;
   date_start: string;
   location: string | null;
 }
@@ -301,68 +318,21 @@ export interface MyEventRegistration {
   event: EventRegistrationSummary;
 }
 
-// ── Formations ─────────────────────────────────────────────────────────────
-
-export type FormationStatus = "draft" | "published" | "archived";
-
-export interface Formation {
+export interface TopEventItem {
   id: number;
   title: string;
-  description: string | null;
-  instructor: string;
-  formation_date: string;
-  price: number;
-  capacity: number;
-  status: FormationStatus;
+  category: EventCategory;
   registered_count: number;
-  created_at: string;
 }
 
-export interface FormationRegistrationInput {
-  first_name: string;
-  last_name: string;
-  email: string;
+export interface StatusBreakdownItem {
+  status: EventStatus;
+  count: number;
 }
 
-export interface FormationRegistration {
-  id: number;
-  formation_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  created_at: string;
-}
-
-export interface FormationListResult {
-  items: Formation[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface FormationInput {
-  title: string;
-  instructor: string;
-  formation_date: string;
-  price: number;
-  capacity: number;
-  description?: string;
-  status?: FormationStatus;
-}
-
-export interface FormationRegistrationSummary {
-  id: number;
-  title: string;
-  formation_date: string;
-  price: number;
-  instructor: string;
-}
-
-export interface MyFormationRegistration {
-  id: number;
-  formation_id: number;
-  created_at: string;
-  formation: FormationRegistrationSummary;
+export interface EventStats {
+  top_events: TopEventItem[];
+  status_breakdown: StatusBreakdownItem[];
 }
 
 // ── Blog ───────────────────────────────────────────────────────────────────
