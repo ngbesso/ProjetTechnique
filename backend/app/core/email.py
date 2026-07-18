@@ -120,9 +120,9 @@ def event_registration_received(
         f"  Événement : {event_title}\n"
         + "\n".join(details)
         + "\n\n"
-        f"Nous avons hâte de vous y retrouver. Si vous avez des questions, "
-        f"répondez simplement à ce courriel.\n\n"
-        f"Fraternellement,\nMission Évangélique",
+        "Nous avons hâte de vous y retrouver. Si vous avez des questions, "
+        "répondez simplement à ce courriel.\n\n"
+        "Fraternellement,\nMission Évangélique",
     )
 
 
