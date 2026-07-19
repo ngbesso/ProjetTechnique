@@ -1,8 +1,11 @@
 """Tests pour GET/POST /parameters/{category} et PATCH/DELETE /parameters/{id}."""
 
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import select
 
 from app.models.church import Church
+from app.models.event import Event, EventStatus
 
 
 def _mother_id(db) -> int:
@@ -229,3 +232,79 @@ def test_delete_requires_global_admin(client, make_user, auth_header):
     ).json()["id"]
     r = client.delete(f"/parameters/{pv_id}", headers=auth_header("membre@p.com"))
     assert r.status_code == 403
+
+
+# ── DELETE bloqué si la valeur est utilisée ───────────────────────────────────
+
+
+def test_delete_blocked_when_used_by_member(client, make_user, make_member, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "SexeUtilise"}, headers=h
+    ).json()["id"]
+
+    member = make_member("used_sexe@test.com", _mother_id(db_session))
+    member.sexe = "SexeUtilise"
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "SexeUtilise" in r.json()["detail"]
+    assert "1 membre(s)" in r.json()["detail"]
+
+    # La valeur n'a pas été supprimée
+    labels = [v["label"] for v in client.get("/parameters/sexe").json()]
+    assert "SexeUtilise" in labels
+
+
+def test_delete_blocked_when_used_by_event(client, make_user, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/event_category", json={"label": "CategorieEvenementUtilisee"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Event(
+            title="Événement pour test paramètre",
+            category="CategorieEvenementUtilisee",
+            date_start=datetime.now(timezone.utc) + timedelta(days=1),
+            status=EventStatus.draft,
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 événement(s)" in r.json()["detail"]
+
+
+def test_delete_allowed_when_unused(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/event_category", json={"label": "CategorieInutilisee"}, headers=h
+    ).json()["id"]
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 204
+
+
+# ── PATCH toujours autorisé, même si la valeur est utilisée ──────────────────
+
+
+def test_rename_allowed_even_when_used(client, make_user, make_member, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/family_status", json={"label": "StatutUtilise"}, headers=h
+    ).json()["id"]
+
+    member = make_member("used_status@test.com", _mother_id(db_session))
+    member.family_status = "StatutUtilise"
+    db_session.flush()
+
+    r = client.patch(f"/parameters/{pv_id}", json={"label": "StatutRenomme"}, headers=h)
+    assert r.status_code == 200
+    assert r.json()["label"] == "StatutRenomme"

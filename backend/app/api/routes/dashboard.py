@@ -1,57 +1,34 @@
-from datetime import date
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_admin
 from app.db.session import get_db
-from app.models.church import Church
-from app.models.donation import Donation, DonationCurrency
+from app.models.donation import Donation
+from app.models.event import Event, EventRegistration, RegistrationStatus
 from app.models.member import Member, MemberStatus
+from app.models.post import Post, PostStatus
+from app.models.prayer_request import PrayerRequest, PrayerRequestStatus
 from app.models.sermon import Sermon, SermonStatus
 from app.models.user import User
+from app.models.volunteer_request import VolunteerRequest, VolunteerRequestStatus
 from app.schemas.dashboard import (
-    ChurchStats,
+    ActivityItem,
     DashboardStats,
-    DonationStats,
-    MemberStats,
-    MonthAmount,
-    MonthCount,
-    PendingMemberItem,
-    SermonStats,
+    PrayerAlertItem,
+    PrayerAlertStats,
+    VolunteerAlertItem,
+    VolunteerAlertStats,
 )
 
 router = APIRouter(prefix="/admin", tags=["dashboard"])
 
-MONTHS_FR = [
-    "Jan",
-    "Fév",
-    "Mar",
-    "Avr",
-    "Mai",
-    "Juin",
-    "Juil",
-    "Août",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Déc",
-]
-
-
-def _six_months() -> list[tuple[int, int, str]]:
-    today = date.today()
-    result = []
-    for i in range(5, -1, -1):
-        m = today.month - i
-        y = today.year
-        while m <= 0:
-            m += 12
-            y -= 1
-        result.append((y, m, MONTHS_FR[m - 1]))
-    return result
+_RECENT_LIMIT = 5
+_ACTIVITY_PER_SOURCE = 10
+_ACTIVITY_TOTAL = 10
 
 
 @router.get("/dashboard", response_model=DashboardStats)
@@ -59,124 +36,198 @@ def get_dashboard(
     _admin: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DashboardStats:
-    # ── Membres ──────────────────────────────────────────────────────────────
-    status_rows = db.execute(
-        select(Member.status, func.count(Member.id)).group_by(Member.status)
-    ).all()
-    status_map: dict[str, int] = {r[0]: r[1] for r in status_rows}
-
-    members_by_month: list[MonthCount] = []
-    for y, m, label in _six_months():
-        cnt = (
-            db.scalar(
-                select(func.count(Member.id)).where(
-                    func.extract("year", Member.created_at) == y,
-                    func.extract("month", Member.created_at) == m,
-                )
-            )
-            or 0
+    # ── Membres en attente ───────────────────────────────────────────────────
+    membres_pending_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(Member)
+            .where(Member.status == MemberStatus.pending)
         )
-        members_by_month.append(MonthCount(month=label, count=cnt))
-
-    total_members = sum(status_map.values())
-
-    membre_stats = MemberStats(
-        total=total_members,
-        active=status_map.get(MemberStatus.active, 0),
-        pending=status_map.get(MemberStatus.pending, 0),
-        inactive=status_map.get(MemberStatus.inactive, 0),
-        rejected=status_map.get(MemberStatus.rejected, 0),
-        by_month=members_by_month,
-    )
-
-    # ── Églises ───────────────────────────────────────────────────────────────
-    church_total = db.scalar(select(func.count(Church.id))) or 0
-    church_affiliates = (
-        db.scalar(select(func.count(Church.id)).where(Church.parent_id.isnot(None)))
         or 0
     )
 
-    eglise_stats = ChurchStats(total=church_total, affiliates=church_affiliates)
-
-    # ── Dons ─────────────────────────────────────────────────────────────────
-    don_rows = db.execute(
-        select(Donation.currency, func.sum(Donation.amount)).group_by(Donation.currency)
+    # ── Demandes de prière ───────────────────────────────────────────────────
+    prayer_pending_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(PrayerRequest)
+            .where(PrayerRequest.status == PrayerRequestStatus.new)
+        )
+        or 0
+    )
+    prayer_recent_rows = db.scalars(
+        select(PrayerRequest)
+        .options(selectinload(PrayerRequest.member))
+        .where(PrayerRequest.status == PrayerRequestStatus.new)
+        .order_by(PrayerRequest.created_at.desc())
+        .limit(_RECENT_LIMIT)
     ).all()
-    total_cad = 0.0
-    total_usd = 0.0
-    for currency, total in don_rows:
-        if currency == DonationCurrency.CAD:
-            total_cad = float(total or 0)
-        elif currency == DonationCurrency.USD:
-            total_usd = float(total or 0)
-
-    don_count = db.scalar(select(func.count(Donation.id))) or 0
-
-    cat_rows = db.execute(
-        select(Donation.category, func.sum(Donation.amount)).group_by(Donation.category)
-    ).all()
-    by_category: dict[str, float] = {
-        (r[0] or "Non classifié"): float(r[1] or 0) for r in cat_rows
-    }
-
-    dons_by_month: list[MonthAmount] = []
-    for y, m, label in _six_months():
-        amt = (
-            db.scalar(
-                select(func.sum(Donation.amount)).where(
-                    Donation.currency == DonationCurrency.CAD,
-                    func.extract("year", Donation.created_at) == y,
-                    func.extract("month", Donation.created_at) == m,
-                )
+    prieres = PrayerAlertStats(
+        pending=prayer_pending_count,
+        recent=[
+            PrayerAlertItem(
+                id=p.id,
+                member_name=p.member.full_name if p.member else "—",
+                created_at=p.created_at.isoformat(),
             )
-            or 0
-        )
-        dons_by_month.append(MonthAmount(month=label, amount=float(amt)))
-
-    don_stats = DonationStats(
-        total_cad=total_cad,
-        total_usd=total_usd,
-        count=don_count,
-        by_category=by_category,
-        by_month=dons_by_month,
+            for p in prayer_recent_rows
+        ],
     )
 
-    # ── Sermons ───────────────────────────────────────────────────────────────
-    sermon_rows = db.execute(
-        select(Sermon.status, func.count(Sermon.id)).group_by(Sermon.status)
+    # ── Demandes de bénévolat ────────────────────────────────────────────────
+    volunteer_pending_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(VolunteerRequest)
+            .where(VolunteerRequest.status == VolunteerRequestStatus.pending)
+        )
+        or 0
+    )
+    volunteer_recent_rows = db.scalars(
+        select(VolunteerRequest)
+        .options(
+            selectinload(VolunteerRequest.member), selectinload(VolunteerRequest.event)
+        )
+        .where(VolunteerRequest.status == VolunteerRequestStatus.pending)
+        .order_by(VolunteerRequest.created_at.desc())
+        .limit(_RECENT_LIMIT)
     ).all()
-    sermon_map: dict[str, int] = {r[0]: r[1] for r in sermon_rows}
-
-    sermon_stats = SermonStats(
-        total=sum(sermon_map.values()),
-        published=sermon_map.get(SermonStatus.published, 0),
-        draft=sermon_map.get(SermonStatus.draft, 0),
-        archived=sermon_map.get(SermonStatus.archived, 0),
+    benevolat = VolunteerAlertStats(
+        pending=volunteer_pending_count,
+        recent=[
+            VolunteerAlertItem(
+                id=v.id,
+                member_name=v.member.full_name if v.member else "—",
+                event_title=v.event.title if v.event else "—",
+                created_at=v.created_at.isoformat(),
+            )
+            for v in volunteer_recent_rows
+        ],
     )
 
-    # ── Membres en attente récents ────────────────────────────────────────────
-    pending_members = db.scalars(
-        select(Member)
-        .where(Member.status == MemberStatus.pending)
-        .order_by(Member.created_at.desc())
-        .limit(5)
-    ).all()
+    # ── Activité récente (union de tous les modules, triée par date) ────────
+    activity: list[tuple[datetime, ActivityItem]] = []
 
-    recent_pending = [
-        PendingMemberItem(
-            id=m.id,
-            first_name=m.first_name,
-            last_name=m.last_name,
-            email=m.email,
-            created_at=m.created_at.strftime("%Y-%m-%d"),
+    for m in db.scalars(
+        select(Member).order_by(Member.created_at.desc()).limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        activity.append((
+            m.created_at,
+            ActivityItem(
+                type="member",
+                label=f"Nouveau membre : {m.first_name} {m.last_name}",
+                date=m.created_at.isoformat(),
+            ),
+        ))
+
+    for d in db.scalars(
+        select(Donation).order_by(Donation.created_at.desc()).limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        donor = d.donor_name or d.donor_email or "Anonyme"
+        activity.append((
+            d.created_at,
+            ActivityItem(
+                type="donation",
+                label=f"Don reçu : {float(d.amount):.2f} $ {d.currency.value} de {donor}",
+                date=d.created_at.isoformat(),
+            ),
+        ))
+
+    for s in db.scalars(
+        select(Sermon)
+        .where(Sermon.status == SermonStatus.published)
+        .order_by(Sermon.created_at.desc())
+        .limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        activity.append((
+            s.created_at,
+            ActivityItem(
+                type="sermon",
+                label=f"Sermon publié : {s.title}",
+                date=s.created_at.isoformat(),
+            ),
+        ))
+
+    for p in db.scalars(
+        select(Post)
+        .where(Post.status == PostStatus.published)
+        .order_by(Post.created_at.desc())
+        .limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        activity.append((
+            p.created_at,
+            ActivityItem(
+                type="post",
+                label=f"Article publié : {p.title}",
+                date=p.created_at.isoformat(),
+            ),
+        ))
+
+    reg_rows = db.execute(
+        select(EventRegistration, Event)
+        .join(Event, Event.id == EventRegistration.event_id)
+        .where(EventRegistration.status == RegistrationStatus.confirmed)
+        .order_by(EventRegistration.registered_at.desc())
+        .limit(_ACTIVITY_PER_SOURCE)
+    ).all()
+    for reg, event in reg_rows:
+        activity.append((
+            reg.registered_at,
+            ActivityItem(
+                type="event_registration",
+                label=(
+                    f"Inscription à « {event.title} » par "
+                    f"{reg.first_name} {reg.last_name}"
+                ),
+                date=reg.registered_at.isoformat(),
+            ),
+        ))
+
+    for pr in db.scalars(
+        select(PrayerRequest)
+        .options(selectinload(PrayerRequest.member))
+        .order_by(PrayerRequest.created_at.desc())
+        .limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        activity.append((
+            pr.created_at,
+            ActivityItem(
+                type="prayer_request",
+                label=(
+                    "Nouvelle demande de prière de "
+                    f"{pr.member.full_name if pr.member else '—'}"
+                ),
+                date=pr.created_at.isoformat(),
+            ),
+        ))
+
+    for vr in db.scalars(
+        select(VolunteerRequest)
+        .options(
+            selectinload(VolunteerRequest.member), selectinload(VolunteerRequest.event)
         )
-        for m in pending_members
-    ]
+        .order_by(VolunteerRequest.created_at.desc())
+        .limit(_ACTIVITY_PER_SOURCE)
+    ).all():
+        activity.append((
+            vr.created_at,
+            ActivityItem(
+                type="volunteer_request",
+                label=(
+                    "Nouvelle demande de bénévolat de "
+                    f"{vr.member.full_name if vr.member else '—'} pour "
+                    f"« {vr.event.title if vr.event else '—'} »"
+                ),
+                date=vr.created_at.isoformat(),
+            ),
+        ))
+
+    activity.sort(key=lambda item: item[0], reverse=True)
+    recent_activity = [item for _, item in activity[:_ACTIVITY_TOTAL]]
 
     return DashboardStats(
-        membres=membre_stats,
-        eglises=eglise_stats,
-        dons=don_stats,
-        sermons=sermon_stats,
-        recent_pending=recent_pending,
+        membres_pending=membres_pending_count,
+        prieres=prieres,
+        benevolat=benevolat,
+        recent_activity=recent_activity,
     )

@@ -22,14 +22,6 @@ class RegistrationStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
-class EventCategory(str, enum.Enum):
-    conference = "conference"
-    colloque = "colloque"
-    croisade = "croisade"
-    retraite = "retraite"
-    formation = "formation"
-
-
 class EventStatus(str, enum.Enum):
     draft = "draft"
     published = "published"
@@ -43,10 +35,7 @@ class Event(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(Text, default=None)
-    category: Mapped[EventCategory] = mapped_column(
-        Enum(EventCategory, native_enum=False, length=20),
-        default=EventCategory.conference,
-    )
+    category: Mapped[str] = mapped_column(String(50), default="Conférence")
     date_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     date_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     location: Mapped[str | None] = mapped_column(String(255), default=None)

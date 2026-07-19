@@ -10,7 +10,7 @@ import { useEvents } from "../../hooks/useEvents";
 import { useParameters } from "../../hooks/useParameters";
 import { exportEventRegistrations, uploadEventImage } from "../../lib/api/events";
 import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
-import type { District, EventCategory, EventInput, EventItem, EventStatus } from "../../types";
+import type { District, EventInput, EventItem, EventStatus } from "../../types";
 
 type StepId = "info" | "date" | "details" | "images" | "review";
 
@@ -25,7 +25,7 @@ const STEPS: { id: StepId; label: string }[] = [
 const EMPTY: EventInput = {
   title: "",
   description: "",
-  category: "conference",
+  category: "",
   date_start: "",
   date_end: "",
   location: "",
@@ -35,14 +35,6 @@ const EMPTY: EventInput = {
   district: null,
   capacity: null,
   status: "draft",
-};
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
 };
 
 const STATUS_LABELS: Record<EventStatus, string> = {
@@ -208,6 +200,7 @@ export function EvenementsPanel() {
   } = useEvents();
   const { churches, load: loadChurches } = useChurches();
   const { values: districtValues, load: loadDistricts } = useParameters("district");
+  const { values: categoryValues, load: loadCategories } = useParameters("event_category");
   const { confirm, dialog } = useConfirm();
 
   const canManage =
@@ -243,7 +236,8 @@ export function EvenementsPanel() {
     loadAdmin();
     loadChurches();
     loadDistricts();
-  }, [loadAdmin, loadChurches, loadDistricts]);
+    loadCategories();
+  }, [loadAdmin, loadChurches, loadDistricts, loadCategories]);
 
   function applyFilters(overrides?: { q?: string; category?: string; district?: string }) {
     const q = overrides?.q ?? filterQ;
@@ -251,7 +245,7 @@ export function EvenementsPanel() {
     const district = overrides?.district ?? filterDistrict;
     loadAdmin({
       q: q.trim() || undefined,
-      category: (category || undefined) as EventCategory | undefined,
+      category: category || undefined,
       district: district || undefined,
     });
   }
@@ -307,6 +301,7 @@ export function EvenementsPanel() {
 
   function validateStep(currentStep: number): string | null {
     if (currentStep === 0 && !form.title.trim()) return "Le titre est requis.";
+    if (currentStep === 0 && !form.category) return "La catégorie est requise.";
     if (currentStep === 1 && !form.date_start) return "La date de début est requise.";
     return null;
   }
@@ -450,10 +445,11 @@ export function EvenementsPanel() {
                     <select
                       className={styles.select}
                       value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value as EventCategory })}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })}
                     >
-                      {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map((c) => (
-                        <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                      <option value="" disabled>Sélectionner…</option>
+                      {categoryValues.map((c) => (
+                        <option key={c.id} value={c.label}>{c.label}</option>
                       ))}
                     </select>
                   </Field>
@@ -624,7 +620,7 @@ export function EvenementsPanel() {
                   </div>
                   <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Catégorie</span>
-                    <span className={styles.reviewValue}>{CATEGORY_LABELS[form.category]}</span>
+                    <span className={styles.reviewValue}>{form.category || "—"}</span>
                   </div>
                   <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Description</span>
@@ -780,8 +776,8 @@ export function EvenementsPanel() {
             onChange={(e) => { setFilterCategory(e.target.value); applyFilters({ category: e.target.value }); }}
           >
             <option value="">Toutes catégories</option>
-            {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map((c) => (
-              <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+            {categoryValues.map((c) => (
+              <option key={c.id} value={c.label}>{c.label}</option>
             ))}
           </select>
           <select
@@ -817,7 +813,7 @@ export function EvenementsPanel() {
                   <div className={styles.eventMeta}>
                     <div className={styles.eventMetaRow}>
                       <span className={styles.metaIcon}>🏷️</span>
-                      <span className={styles.metaText}>{CATEGORY_LABELS[e.category]}</span>
+                      <span className={styles.metaText}>{e.category}</span>
                     </div>
                     <div className={styles.eventMetaRow}>
                       <span className={styles.metaIcon}>🗓️</span>
