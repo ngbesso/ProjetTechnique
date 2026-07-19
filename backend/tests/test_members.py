@@ -183,6 +183,51 @@ def test_affiliate_admin_sees_only_own(client, make_user, auth_header, db_sessio
     assert {m["church_id"] for m in items} == {a}
 
 
+# ── GET /members/admin/stats ──────────────────────────────────────────────────
+
+
+def test_stats_requires_auth(client):
+    assert client.get("/members/admin/stats").status_code == 401
+
+
+def test_stats_counts_by_status(client, fake_email, make_user, auth_header, db_session):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    mother = _mother_id(db_session)
+    _request(client, mother, "s1@b.com", "S", "1")
+    m2 = _request(client, mother, "s2@b.com", "S", "2").json()["id"]
+    m3 = _request(client, mother, "s3@b.com", "S", "3").json()["id"]
+    m4 = _request(client, mother, "s4@b.com", "S", "4").json()["id"]
+    client.post(f"/members/{m2}/approve", headers=h)
+    client.post(f"/members/{m3}/approve", headers=h)
+    client.post(f"/members/{m3}/deactivate", headers=h)
+    client.post(f"/members/{m4}/reject", headers=h)
+
+    r = client.get("/members/admin/stats", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["pending"] == 1
+    assert body["active"] == 1
+    assert body["inactive"] == 1
+    assert body["rejected"] == 1
+
+
+def test_stats_scoped_to_affiliate_admin(client, make_user, auth_header, db_session):
+    make_user("boss@b.com", roles=["admin"])
+    h = auth_header("boss@b.com")
+    a = _affiliate(client, h, "A", "Ouest")
+    b = _affiliate(client, h, "B", "Est")
+    _request(client, a, "al@b.com", "Al", "A")
+    _request(client, b, "bo@b.com", "Bo", "B")
+    chef = make_user("chef@b.com")
+    admin = db_session.scalar(select(Role).where(Role.name == "admin"))
+    db_session.add(UserRole(user_id=chef.id, role_id=admin.id, church_id=a))
+    db_session.flush()
+    r = client.get("/members/admin/stats", headers=auth_header("chef@b.com"))
+    assert r.status_code == 200
+    assert r.json()["pending"] == 1
+
+
 # ── GET /members/{id} ─────────────────────────────────────────────────────────
 
 

@@ -11,7 +11,7 @@ from app.api.deps import get_current_user, require_global_permission
 from app.db.session import get_db
 from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.user import User
-from app.schemas.sermon import SermonList, SermonRead, SermonUpdate
+from app.schemas.sermon import SermonAdminStats, SermonList, SermonRead, SermonUpdate, TopSermonItem
 from app.services import storage
 
 router = APIRouter(prefix="/sermons", tags=["sermons"])
@@ -91,6 +91,31 @@ def list_sermons_admin(
         query.order_by(Sermon.created_at.desc()).limit(limit).offset(offset)
     ).all()
     return SermonList(items=list(rows), total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/admin/stats", response_model=SermonAdminStats, dependencies=[can_manage])
+def get_sermons_stats(db: Annotated[Session, Depends(get_db)]):
+    """Publiés/brouillons, total des vues et top 5 des sermons les plus vus."""
+    status_rows = db.execute(
+        select(Sermon.status, func.count(Sermon.id)).group_by(Sermon.status)
+    ).all()
+    status_map: dict[SermonStatus, int] = dict(status_rows)
+
+    total_views = db.scalar(select(func.coalesce(func.sum(Sermon.views), 0))) or 0
+
+    top_rows = db.scalars(
+        select(Sermon).order_by(Sermon.views.desc()).limit(5)
+    ).all()
+
+    return SermonAdminStats(
+        published=status_map.get(SermonStatus.published, 0),
+        draft=status_map.get(SermonStatus.draft, 0),
+        total_views=total_views,
+        top_sermons=[
+            TopSermonItem(id=s.id, title=s.title, preacher=s.preacher, views=s.views)
+            for s in top_rows
+        ],
+    )
 
 
 @router.get("/series", response_model=list[str])

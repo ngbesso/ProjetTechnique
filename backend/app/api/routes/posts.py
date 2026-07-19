@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.post import Post, PostStatus
-from app.schemas.post import PostCreate, PostList, PostRead, PostUpdate
+from app.schemas.post import PostAdminStats, PostCreate, PostList, PostRead, PostUpdate, TopPostItem
 from app.services import storage
 
 router = APIRouter(prefix="/posts", tags=["blog"])
@@ -72,6 +72,29 @@ def list_posts_admin(
         query.order_by(Post.created_at.desc()).offset(offset).limit(limit)
     ).all()
     return PostList(items=list(items), total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/admin/stats", response_model=PostAdminStats, dependencies=[can_manage])
+def get_posts_stats(db: Annotated[Session, Depends(get_db)]):
+    """Publiés/brouillons, total des vues et top 5 des articles les plus lus."""
+    status_rows = db.execute(
+        select(Post.status, func.count(Post.id)).group_by(Post.status)
+    ).all()
+    status_map: dict[PostStatus, int] = dict(status_rows)
+
+    total_views = db.scalar(select(func.coalesce(func.sum(Post.views), 0))) or 0
+
+    top_rows = db.scalars(select(Post).order_by(Post.views.desc()).limit(5)).all()
+
+    return PostAdminStats(
+        published=status_map.get(PostStatus.published, 0),
+        draft=status_map.get(PostStatus.draft, 0),
+        total_views=total_views,
+        top_posts=[
+            TopPostItem(id=p.id, title=p.title, author=p.author, views=p.views)
+            for p in top_rows
+        ],
+    )
 
 
 @router.get("/categories", response_model=list[str])

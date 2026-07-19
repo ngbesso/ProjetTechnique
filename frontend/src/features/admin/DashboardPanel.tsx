@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./DashboardPanel.module.css";
+import { KpiCard } from "../../components/ui/KpiCard";
 import {
     fetchDashboardStats,
     DashboardStats,
@@ -43,29 +44,6 @@ function IconBook() {
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
         </svg>
-    );
-}
-
-// ── KPI Card ──────────────────────────────────────────────────────────────────
-
-interface KpiProps {
-    color: "violet" | "amber" | "emerald" | "blue";
-    icon: React.ReactNode;
-    value: string | number;
-    label: string;
-    sub: string;
-}
-
-function KpiCard({ color, icon, value, label, sub }: KpiProps) {
-    return (
-        <div className={`${styles.kpiCard} ${styles[color]}`}>
-            <div className={`${styles.kpiIcon} ${styles[color]}`}>{icon}</div>
-            <div className={styles.kpiBody}>
-                <div className={styles.kpiLabel}>{label}</div>
-                <div className={styles.kpiValue}>{value}</div>
-                <div className={styles.kpiSub}>{sub}</div>
-            </div>
-        </div>
     );
 }
 
