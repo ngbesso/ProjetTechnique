@@ -5,8 +5,39 @@ import { useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../hooks/usePosts";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import { fetchPostCategories, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
-import type { Post, PostInput, PostStatus } from "../../types";
+import { fetchPostCategories, fetchPostsStats, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
+import { KpiCard } from "../../components/ui/KpiCard";
+import type { Post, PostAdminStats, PostInput, PostStatus } from "../../types";
+
+// ── Icônes KPI ────────────────────────────────────────────────────────────────
+
+function IconCheckCircle() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="8 12 11 15 16 9" />
+    </svg>
+  );
+}
+
+function IconFileEdit() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
+    </svg>
+  );
+}
+
+function IconEye() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 const EMPTY: PostInput = {
   title: "",
@@ -134,6 +165,7 @@ export function BlogPanel() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [stats, setStats] = useState<PostAdminStats | null>(null);
 
   const canManage =
     user?.permissions.includes("*") || user?.permissions.includes("post:manage");
@@ -141,6 +173,7 @@ export function BlogPanel() {
   useEffect(() => {
     loadAdmin();
     fetchPostCategories().then(setCategories).catch(() => {});
+    fetchPostsStats().then(setStats).catch(() => {});
   }, [loadAdmin]);
 
   function applyFilters(overrides?: Record<string, string>) {
@@ -310,6 +343,35 @@ export function BlogPanel() {
   return (
     <div className={styles.rbacWrapper}>
       {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+
+      {stats && (
+        <>
+          <div className={styles.kpiGrid}>
+            <KpiCard color="emerald" icon={<IconCheckCircle />} value={stats.published} label="Publiés" />
+            <KpiCard color="amber" icon={<IconFileEdit />} value={stats.draft} label="Brouillons" />
+            <KpiCard color="violet" icon={<IconEye />} value={stats.total_views} label="Total des vues" />
+          </div>
+
+          <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Top 5 des articles les plus lus</h3>
+            {stats.top_posts.length === 0 ? (
+              <p className={styles.empty}>Aucun article enregistré.</p>
+            ) : (
+              stats.top_posts.map((p, i) => (
+                <div key={p.id} className={styles.topListRow}>
+                  <span className={i === 0 ? `${styles.topListRank} ${styles.topListRankFirst}` : styles.topListRank}>
+                    {i + 1}
+                  </span>
+                  <div className={styles.topListBody}>
+                    <span className={styles.topListName}>{p.title}</span>
+                    <span className={styles.topListValue}>{p.views} vue{p.views > 1 ? "s" : ""} · {p.author}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
+        </>
+      )}
 
       <section className={styles.listCard}>
         <div className={styles.listHeader}>

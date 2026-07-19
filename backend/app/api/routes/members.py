@@ -45,6 +45,7 @@ from app.schemas.member import (
     MemberRead,
     MemberSelfUpdate,
     MembershipRequest,
+    MemberStatusStats,
     MemberUpdate,
 )
 
@@ -323,6 +324,30 @@ def list_members(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/admin/stats", response_model=MemberStatusStats)
+def get_members_stats(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Comptages de membres par statut, dans le périmètre de l'utilisateur."""
+    scope = current_user.accessible_church_ids("member:read")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Aucun périmètre accessible")
+    query = select(Member.status, func.count(Member.id))
+    if scope is not None:
+        query = query.where(Member.church_id.in_(scope))
+    rows = db.execute(query.group_by(Member.status)).all()
+    counts = {s: 0 for s in MemberStatus}
+    for status_value, cnt in rows:
+        counts[status_value] = cnt
+    return MemberStatusStats(
+        active=counts[MemberStatus.active],
+        pending=counts[MemberStatus.pending],
+        inactive=counts[MemberStatus.inactive],
+        rejected=counts[MemberStatus.rejected],
     )
 
 
