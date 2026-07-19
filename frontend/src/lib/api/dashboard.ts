@@ -1,58 +1,48 @@
 import { http } from "./client";
 
-export interface MonthCount {
-    month: string;
-    count: number;
-}
-
-export interface MonthAmount {
-    month: string;
-    amount: number;
-}
-
-export interface MemberStats {
-    total: number;
-    active: number;
-    pending: number;
-    inactive: number;
-    rejected: number;
-    by_month: MonthCount[];
-}
-
-export interface ChurchStats {
-    total: number;
-    affiliates: number;
-}
-
-export interface DonationStats {
-    total_cad: number;
-    total_usd: number;
-    count: number;
-    by_category: Record<string, number>;
-    by_month: MonthAmount[];
-}
-
-export interface SermonStats {
-    total: number;
-    published: number;
-    draft: number;
-    archived: number;
-}
-
-export interface PendingMemberItem {
+export interface PrayerAlertItem {
     id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
+    member_name: string;
     created_at: string;
 }
 
+export interface PrayerAlertStats {
+    pending: number;
+    recent: PrayerAlertItem[];
+}
+
+export interface VolunteerAlertItem {
+    id: number;
+    member_name: string;
+    event_title: string;
+    created_at: string;
+}
+
+export interface VolunteerAlertStats {
+    pending: number;
+    recent: VolunteerAlertItem[];
+}
+
+export type ActivityType =
+    | "member"
+    | "donation"
+    | "sermon"
+    | "post"
+    | "event_registration"
+    | "prayer_request"
+    | "volunteer_request";
+
+export interface ActivityItem {
+    type: ActivityType;
+    label: string;
+    date: string;
+}
+
 export interface DashboardStats {
-    membres: MemberStats;
-    eglises: ChurchStats;
-    dons: DonationStats;
-    sermons: SermonStats;
-    recent_pending: PendingMemberItem[];
+    membres_pending: number;
+    prieres: PrayerAlertStats;
+    benevolat: VolunteerAlertStats;
+    recent_activity: ActivityItem[];
 }
 
 export function fetchDashboardStats(): Promise<DashboardStats> {

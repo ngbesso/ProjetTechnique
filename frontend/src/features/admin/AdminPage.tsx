@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
@@ -12,12 +13,13 @@ import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
+import { PrieresPanel } from "./PrieresPanel";
 import { SermonsPanel } from "./SermonsPanel";
 import { UsersPanel } from "./UsersPanel";
 
 // ── Navigation sidebar ────────────────────────────────────────────────────────
 
-type Section =
+export type Section =
   | "dashboard"
   | "membres"
   | "eglises"
@@ -25,6 +27,8 @@ type Section =
   | "sermons"
   | "blog"
   | "evenements"
+  | "prieres"
+  | "benevolat"
   | "pages"
   | "utilisateurs"
   | "parametres";
@@ -37,6 +41,8 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "blog", label: "Blog", icon: "✍️" },
   { id: "evenements", label: "Événements", icon: "📅" },
+  { id: "prieres", label: "Demandes de prière", icon: "🙏" },
+  { id: "benevolat", label: "Bénévolat", icon: "🤝" },
   { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
   { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
   { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
@@ -366,7 +372,7 @@ export function AdminPage() {
         {/* Content */}
         <main className={styles.content}>
           {section === "dashboard" ? (
-              <DashboardPanel />
+              <DashboardPanel onNavigate={setSection} />
           ) : section === "utilisateurs" ? (
               <>
               <UsersPanel />
@@ -405,6 +411,10 @@ export function AdminPage() {
               <EvenementsPanel />
           ) : section === "blog" ? (
               <BlogPanel />
+          ) : section === "prieres" ? (
+              <PrieresPanel />
+          ) : section === "benevolat" ? (
+              <BenevolatPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : (
