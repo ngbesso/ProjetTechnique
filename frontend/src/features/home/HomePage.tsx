@@ -7,7 +7,7 @@ import { usePosts } from "../../hooks/usePosts";
 import { getEvents } from "../../lib/api/events";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
-import type { EventCategory, EventItem } from "../../types";
+import type { EventItem } from "../../types";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -185,14 +185,6 @@ function SermonsSection() {
   );
 }
 
-const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
-};
-
 function EventsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -246,7 +238,7 @@ function EventsSection() {
                 </div>
               )}
               <div className={styles.eventBody}>
-                <span className={styles.eventCategoryBadge}>{EVENT_CATEGORY_LABELS[evt.category]}</span>
+                <span className={styles.eventCategoryBadge}>{evt.category}</span>
                 <p className={styles.eventCardTitle}>{evt.title}</p>
                 {evt.location && (
                   <p className={styles.eventCardMeta}>📍 {evt.location}</p>

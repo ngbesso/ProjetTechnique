@@ -16,6 +16,8 @@ PERMISSIONS: dict[str, str] = {
     "sermon:manage": "Gérer les sermons",
     "post:manage": "Gérer les articles de blog",
     "content:manage": "Gérer les pages et le menu (CMS)",
+    "prayer:manage": "Gérer les demandes de prière",
+    "volunteer:manage": "Gérer les demandes de bénévolat",
 }
 
 # Rôles initiaux et leurs permissions.

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_member, get_current_member_optional, require_global_permission
 from app.core.email import EmailSender, event_registration_received, get_email_sender
 from app.db.session import get_db
-from app.models.event import Event, EventCategory, EventRegistration, EventStatus, RegistrationStatus
+from app.models.event import Event, EventRegistration, EventStatus, RegistrationStatus
 from app.models.member import Member
 from app.schemas.event import (
     EventCreate,
@@ -114,7 +114,7 @@ def _to_registration_read(registration: EventRegistration) -> RegistrationRead:
 @router.get("/", response_model=EventList)
 def list_events(
     db: Annotated[Session, Depends(get_db)],
-    category: EventCategory | None = None,
+    category: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     upcoming_only: bool = True,
@@ -149,7 +149,7 @@ def list_events(
 def list_events_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
-    category: EventCategory | None = None,
+    category: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     event_status: EventStatus | None = None,

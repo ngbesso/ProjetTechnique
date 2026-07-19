@@ -3,28 +3,12 @@ import styles from "./EventsPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate } from "../../context/RouterContext";
+import { useParameters } from "../../hooks/useParameters";
 import { fetchChurches } from "../../lib/api/churches";
 import { getEvents } from "../../lib/api/events";
-import type { Church, District, EventCategory, EventItem } from "../../types";
+import type { Church, District, EventItem } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
-};
-
-const CATEGORY_FILTERS: { value: EventCategory | ""; label: string }[] = [
-  { value: "", label: "Tous" },
-  { value: "conference", label: "Conférences" },
-  { value: "colloque", label: "Colloques" },
-  { value: "croisade", label: "Croisades" },
-  { value: "retraite", label: "Retraites" },
-  { value: "formation", label: "Formations" },
-];
 
 function formatDateRange(startIso: string, endIso: string | null): string {
   const start = new Date(startIso);
@@ -63,13 +47,15 @@ export function EventsPage() {
   const [churches, setChurches] = useState<Church[]>([]);
   const [district, setDistrict] = useState("");
   const [churchId, setChurchId] = useState("");
-  const [category, setCategory] = useState<EventCategory | "">("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { values: categoryValues, load: loadCategories } = useParameters("event_category");
 
   useEffect(() => {
     fetchChurches().then(setChurches).catch(() => {});
-  }, []);
+    loadCategories();
+  }, [loadCategories]);
 
   useEffect(() => {
     setLoading(true);
@@ -106,7 +92,7 @@ export function EventsPage() {
         <div className={styles.cardDate}>{formatDateRange(event.date_start, event.date_end)}</div>
         <div className={styles.cardBody}>
           <div className={styles.cardBadges}>
-            <span className={styles.badge}>{CATEGORY_LABELS[event.category]}</span>
+            <span className={styles.badge}>{event.category}</span>
             {event.district && <span className={styles.badge}>{event.district}</span>}
             {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
           </div>
@@ -155,16 +141,27 @@ export function EventsPage() {
       <main className={styles.main}>
         <div className={styles.filters}>
           <div className={styles.categoryTabs}>
-            {CATEGORY_FILTERS.map((c) => (
+            <button
+              type="button"
+              className={
+                category === ""
+                  ? `${styles.categoryTab} ${styles.categoryTabActive}`
+                  : styles.categoryTab
+              }
+              onClick={() => setCategory("")}
+            >
+              Tous
+            </button>
+            {categoryValues.map((c) => (
               <button
-                key={c.value}
+                key={c.id}
                 type="button"
                 className={
-                  category === c.value
+                  category === c.label
                     ? `${styles.categoryTab} ${styles.categoryTabActive}`
                     : styles.categoryTab
                 }
-                onClick={() => setCategory(c.value)}
+                onClick={() => setCategory(c.label)}
               >
                 {c.label}
               </button>
