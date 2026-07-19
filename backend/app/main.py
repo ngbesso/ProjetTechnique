@@ -14,8 +14,10 @@ from app.api.routes import (
     admin_users,
     parameters,
     posts,
+    prayer_requests,
     sermons,
     settings as settings_routes,
+    volunteer_requests,
 )
 from app.core.config import settings
 from app.seed import run as seed_run
@@ -55,6 +57,8 @@ app.include_router(admin_users.router)
 app.include_router(parameters.router)
 app.include_router(settings_routes.router)
 app.include_router(dashboard.router)
+app.include_router(prayer_requests.router)
+app.include_router(volunteer_requests.router)
 
 
 @app.get("/")

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from sqlalchemy import select
 
 from app.models.church import Church
-from app.models.event import Event, EventCategory, EventRegistration, EventStatus
+from app.models.event import Event, EventRegistration, EventStatus
 
 BASE = "/api/events"
 
@@ -15,7 +15,7 @@ BASE = "/api/events"
 def _event(
     db_session,
     title="Conférence Test",
-    category=EventCategory.conference,
+    category="Conférence",
     status=EventStatus.published,
     days_from_now=7,
     capacity=None,
@@ -77,10 +77,10 @@ def test_list_filters_by_district(client, db_session):
 
 
 def test_list_filters_by_category(client, db_session):
-    _event(db_session, "Conférence A", category=EventCategory.conference)
-    _event(db_session, "Formation B", category=EventCategory.formation)
+    _event(db_session, "Conférence A", category="Conférence")
+    _event(db_session, "Formation B", category="Formation")
 
-    r = client.get(f"{BASE}/?category=formation")
+    r = client.get(f"{BASE}/?category=Formation")
     assert r.status_code == 200
     titles = [e["title"] for e in r.json()["items"]]
     assert "Formation B" in titles
@@ -93,7 +93,7 @@ def test_get_event_detail(client, db_session):
     assert r.status_code == 200
     body = r.json()
     assert body["title"] == "Détail public"
-    assert body["category"] == "conference"
+    assert body["category"] == "Conférence"
     assert body["registered_count"] == 0
     assert body["spots_left"] is None
 
@@ -137,7 +137,7 @@ def test_admin_list_includes_drafts_and_past(client, make_user, auth_header, db_
 def _payload(church_id=None):
     return {
         "title": "Nouvel événement",
-        "category": "conference",
+        "category": "Conférence",
         "date_start": (datetime.now(timezone.utc) + timedelta(days=10)).isoformat(),
         "location": "Église mère",
         "church_id": church_id,
@@ -166,14 +166,14 @@ def test_create_formation_category_as_admin(client, make_user, auth_header, db_s
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     h = _admin_header(make_user, auth_header)
     payload = _payload(church_id)
-    payload["category"] = "formation"
+    payload["category"] = "Formation"
     payload["instructor"] = "Formateur X"
     payload["price"] = 25
     payload["capacity"] = 10
     r = client.post(f"{BASE}/", json=payload, headers=h)
     assert r.status_code == 201
     body = r.json()
-    assert body["category"] == "formation"
+    assert body["category"] == "Formation"
     assert body["instructor"] == "Formateur X"
     assert body["capacity"] == 10
 
@@ -336,7 +336,7 @@ def test_my_registrations_matches_guest_registration_by_email(
     « Mes inscriptions »."""
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     member = make_member("guestmatch@test.com", church_id)
-    e = _event(db_session, "Formation héritée", category=EventCategory.formation)
+    e = _event(db_session, "Formation héritée", category="Formation")
 
     r = client.post(
         f"{BASE}/{e.id}/register",
@@ -349,7 +349,7 @@ def test_my_registrations_matches_guest_registration_by_email(
     body = r.json()
     assert len(body) == 1
     assert body[0]["event"]["title"] == "Formation héritée"
-    assert body[0]["event"]["category"] == "formation"
+    assert body[0]["event"]["category"] == "Formation"
 
 
 def test_my_registrations_isolated_between_members(

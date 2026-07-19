@@ -2,13 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models.event import EventCategory, EventStatus, RegistrationStatus
+from app.models.event import EventStatus, RegistrationStatus
 
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
-    category: EventCategory
+    category: str
     date_start: datetime
     date_end: datetime | None = None
     location: str | None = None
@@ -31,7 +31,7 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
-    category: EventCategory | None = None
+    category: str | None = None
     date_start: datetime | None = None
     date_end: datetime | None = None
     location: str | None = None
@@ -47,7 +47,7 @@ class EventRead(BaseModel):
     id: int
     title: str
     description: str | None
-    category: EventCategory
+    category: str
     date_start: datetime
     date_end: datetime | None
     location: str | None
@@ -114,7 +114,7 @@ class RegistrationRead(BaseModel):
 class EventSummary(BaseModel):
     id: int
     title: str
-    category: EventCategory
+    category: str
     date_start: datetime
     location: str | None
 
@@ -131,7 +131,7 @@ class MyEventRegistration(BaseModel):
 class TopEventItem(BaseModel):
     id: int
     title: str
-    category: EventCategory
+    category: str
     registered_count: int
 
 

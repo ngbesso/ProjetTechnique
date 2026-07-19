@@ -6,19 +6,11 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { cancelRegistration, getEvent, registerToEvent } from "../../lib/api/events";
 import { ApiError } from "../../lib/api/client";
-import type { EventCategory, EventItem } from "../../types";
+import type { EventItem } from "../../types";
 
 interface EventDetailPageProps {
   eventId: number;
 }
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
-};
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-CA", {
@@ -140,7 +132,7 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
             </button>
 
             <div className={styles.cardBadges}>
-              <span className={styles.badge}>{CATEGORY_LABELS[event.category]}</span>
+              <span className={styles.badge}>{event.category}</span>
               {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
             </div>
 

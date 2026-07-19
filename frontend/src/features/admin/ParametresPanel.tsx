@@ -79,6 +79,7 @@ const SECTIONS = [
     { category: "family_status", label: "Statut matrimonial" },
     { category: "district", label: "Districts" },
     { category: "donation_category", label: "Catégories de don" },
+    { category: "event_category", label: "Catégories d'événement" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];

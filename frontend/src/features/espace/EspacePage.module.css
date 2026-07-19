@@ -268,6 +268,60 @@
   opacity: 0.6;
 }
 
+/* ── Demandes (prière / bénévolat) ──────────────────────────── */
+
+.requestCard {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.6rem;
+  background: #fff;
+}
+
+.requestMessage {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.requestMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.requestDate {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.requestBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.requestBadge.new,
+.requestBadge.pending {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.requestBadge.handled,
+.requestBadge.approved {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.requestBadge.rejected {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .grid2 { grid-template-columns: 1fr; }

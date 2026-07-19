@@ -285,7 +285,7 @@ export interface SermonInput {
 
 // ── Événements ─────────────────────────────────────────────────────────────
 
-export type EventCategory = "conference" | "colloque" | "croisade" | "retraite" | "formation";
+export type EventCategory = string;
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventRegistrationStatus = "confirmed" | "cancelled";
 
@@ -428,4 +428,49 @@ export interface PostInput {
   status?: PostStatus;
   category?: string;
   cover_image_url?: string;
+}
+
+// ── Demandes de prière ───────────────────────────────────────────────────────
+
+export type PrayerRequestStatus = "new" | "handled";
+
+export interface PrayerRequestInput {
+  message: string;
+}
+
+export interface PrayerRequest {
+  id: number;
+  member_id: number;
+  message: string;
+  status: PrayerRequestStatus;
+  created_at: string;
+}
+
+export interface PrayerRequestAdmin extends PrayerRequest {
+  member_name: string;
+  member_email: string;
+}
+
+// ── Demandes de bénévolat ─────────────────────────────────────────────────────
+
+export type VolunteerRequestStatus = "pending" | "approved" | "rejected";
+
+export interface VolunteerRequestInput {
+  event_id: number;
+  message?: string;
+}
+
+export interface VolunteerRequest {
+  id: number;
+  member_id: number;
+  event_id: number;
+  event_title: string;
+  message: string | null;
+  status: VolunteerRequestStatus;
+  created_at: string;
+}
+
+export interface VolunteerRequestAdmin extends VolunteerRequest {
+  member_name: string;
+  member_email: string;
 }

@@ -7,19 +7,43 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useDonations } from "../../hooks/useDonations";
 import { fetchMyProfile, updateMyProfile } from "../../lib/api/members";
-import { fetchMyEventRegistrations } from "../../lib/api/events";
+import { fetchMyEventRegistrations, getEvents } from "../../lib/api/events";
+import { createPrayerRequest, fetchMyPrayerRequests } from "../../lib/api/prayerRequests";
+import { createVolunteerRequest, fetchMyVolunteerRequests } from "../../lib/api/volunteerRequests";
 import { validatePhone, validateAddress } from "../../lib/validation";
-import type { EventCategory, Member, MemberSelfInput, MyEventRegistration } from "../../types";
+import type {
+  EventItem,
+  Member,
+  MemberSelfInput,
+  MyEventRegistration,
+  PrayerRequest,
+  PrayerRequestStatus,
+  VolunteerRequest,
+  VolunteerRequestStatus,
+} from "../../types";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
-type Section = "profil" | "dons" | "inscriptions";
+type Section = "profil" | "dons" | "inscriptions" | "priere" | "benevolat";
 
 const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
   { id: "profil", label: "Mon profil", icon: "👤" },
   { id: "dons", label: "Mes dons", icon: "💝" },
   { id: "inscriptions", label: "Mes inscriptions", icon: "🎓" },
+  { id: "priere", label: "Demande de prière", icon: "🙏" },
+  { id: "benevolat", label: "Bénévolat", icon: "🤝" },
 ];
+
+const PRAYER_STATUS_LABEL: Record<PrayerRequestStatus, string> = {
+  new: "Nouvelle",
+  handled: "Traitée",
+};
+
+const VOLUNTEER_STATUS_LABEL: Record<VolunteerRequestStatus, string> = {
+  pending: "En attente",
+  approved: "Approuvée",
+  rejected: "Refusée",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Actif",
@@ -32,14 +56,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   soutien_spirituel: "Soutien spirituel",
   action_communautaire: "Action communautaire",
   developpement: "Développement",
-};
-
-const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
 };
 
 function formatLongDate(iso: string): string {
@@ -141,8 +157,12 @@ export function EspacePage() {
             <ProfilSection churchName={churchName} />
           ) : section === "dons" ? (
             <DonsSection churchName={churchName} />
-          ) : (
+          ) : section === "inscriptions" ? (
             <InscriptionsSection />
+          ) : section === "priere" ? (
+            <PriereSection />
+          ) : (
+            <BenevolatSection />
           )}
         </main>
       </div>
@@ -448,7 +468,7 @@ function EventRegistrationCard({ reg, isPast }: { reg: MyEventRegistration; isPa
           {reg.event.location && ` · ${reg.event.location}`}
         </p>
       </div>
-      <span className={styles.regPrice}>{EVENT_CATEGORY_LABELS[reg.event.category]}</span>
+      <span className={styles.regPrice}>{reg.event.category}</span>
     </div>
   );
 }
@@ -503,6 +523,229 @@ function InscriptionsSection() {
           Voir les événements
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Section : Demande de prière ──────────────────────────────────────────────
+
+function PriereSection() {
+  const [requests, setRequests] = useState<PrayerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  function load() {
+    setLoading(true);
+    fetchMyPrayerRequests()
+      .then(setRequests)
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setSending(true);
+    setSendError("");
+    setSent(false);
+    try {
+      await createPrayerRequest({ message: message.trim() });
+      setMessage("");
+      setSent(true);
+      load();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className={admin.rbacWrapper}>
+      <section className={admin.card}>
+        <h3 className={admin.cardTitle}>Nouvelle demande de prière</h3>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="prayer-message">Votre demande</label>
+            <textarea
+              id="prayer-message"
+              className={admin.input}
+              rows={4}
+              placeholder="Partagez votre sujet de prière…"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+            />
+          </div>
+          {sendError && <p className={admin.errorMsg} role="alert">{sendError}</p>}
+          <div className={styles.formActions}>
+            <button type="submit" className={admin.btnPrimary} disabled={sending}>
+              {sending ? "Envoi…" : "Envoyer"}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {sent && (
+        <p className={styles.successMsg}><span>✓</span> Votre demande de prière a été envoyée.</p>
+      )}
+      {error && <p className={admin.errorMsg} role="alert">{error}</p>}
+
+      <section className={admin.card}>
+        <h3 className={admin.cardTitle}>Mes demandes</h3>
+        {loading ? (
+          <p className={admin.stateMsg}>Chargement…</p>
+        ) : requests.length === 0 ? (
+          <p className={admin.empty}>Aucune demande envoyée pour le moment.</p>
+        ) : (
+          requests.map((r) => (
+            <div key={r.id} className={styles.requestCard}>
+              <p className={styles.requestMessage}>{r.message}</p>
+              <div className={styles.requestMeta}>
+                <span className={styles.requestDate}>{formatEventDateTime(r.created_at)}</span>
+                <span className={`${styles.requestBadge} ${styles[r.status]}`}>
+                  {PRAYER_STATUS_LABEL[r.status]}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ── Section : Bénévolat ──────────────────────────────────────────────────────
+
+function BenevolatSection() {
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [requests, setRequests] = useState<VolunteerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [eventId, setEventId] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  function load() {
+    setLoading(true);
+    setError("");
+    Promise.all([getEvents({ upcoming_only: true, limit: 100 }), fetchMyVolunteerRequests()])
+      .then(([evRes, reqs]) => {
+        setEvents(evRes.items);
+        setRequests(reqs);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!eventId) return;
+    setSending(true);
+    setSendError("");
+    setSent(false);
+    try {
+      await createVolunteerRequest({
+        event_id: Number(eventId),
+        message: message.trim() || undefined,
+      });
+      setEventId("");
+      setMessage("");
+      setSent(true);
+      load();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (loading) return <p className={admin.stateMsg}>Chargement…</p>;
+
+  return (
+    <div className={admin.rbacWrapper}>
+      <section className={admin.card}>
+        <h3 className={admin.cardTitle}>Proposer mon aide</h3>
+        {events.length === 0 ? (
+          <p className={admin.empty}>Aucun événement à venir pour le moment.</p>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className={styles.fieldGroup}>
+              <label className={styles.label} htmlFor="volunteer-event">Événement</label>
+              <select
+                id="volunteer-event"
+                className={admin.select}
+                value={eventId}
+                onChange={(e) => setEventId(e.target.value)}
+                required
+              >
+                <option value="">Choisir un événement…</option>
+                {events.map((e) => (
+                  <option key={e.id} value={e.id}>{e.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.fieldGroup} style={{ marginTop: "0.75rem" }}>
+              <label className={styles.label} htmlFor="volunteer-message">Message (optionnel)</label>
+              <textarea
+                id="volunteer-message"
+                className={admin.input}
+                rows={3}
+                placeholder="Précisez vos disponibilités ou compétences…"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+            {sendError && <p className={admin.errorMsg} role="alert">{sendError}</p>}
+            <div className={styles.formActions}>
+              <button type="submit" className={admin.btnPrimary} disabled={sending}>
+                {sending ? "Envoi…" : "Envoyer"}
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+
+      {sent && (
+        <p className={styles.successMsg}><span>✓</span> Votre demande de bénévolat a été envoyée.</p>
+      )}
+      {error && <p className={admin.errorMsg} role="alert">{error}</p>}
+
+      <section className={admin.card}>
+        <h3 className={admin.cardTitle}>Mes demandes</h3>
+        {requests.length === 0 ? (
+          <p className={admin.empty}>Aucune demande envoyée pour le moment.</p>
+        ) : (
+          requests.map((r) => (
+            <div key={r.id} className={styles.requestCard}>
+              <p className={styles.requestMessage}>
+                <strong>{r.event_title}</strong>
+                {r.message && <> — {r.message}</>}
+              </p>
+              <div className={styles.requestMeta}>
+                <span className={styles.requestDate}>{formatEventDateTime(r.created_at)}</span>
+                <span className={`${styles.requestBadge} ${styles[r.status]}`}>
+                  {VOLUNTEER_STATUS_LABEL[r.status]}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
     </div>
   );
 }

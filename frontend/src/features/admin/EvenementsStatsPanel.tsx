@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./EvenementsStatsPanel.module.css";
 import { getEventsStats } from "../../lib/api/events";
-import type { EventCategory, EventStats, EventStatus } from "../../types";
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  conference: "Conférence",
-  colloque: "Colloque",
-  croisade: "Croisade",
-  retraite: "Retraite",
-  formation: "Formation",
-};
+import type { EventStats, EventStatus } from "../../types";
 
 const STATUS_LABELS: Record<EventStatus, string> = {
   draft: "Brouillon",
@@ -71,7 +63,7 @@ export function EvenementsStatsPanel() {
                       style={{ width: `${(e.registered_count / maxCount) * 100}%` }}
                     />
                   </div>
-                  <p className={styles.rankCategory}>{CATEGORY_LABELS[e.category]}</p>
+                  <p className={styles.rankCategory}>{e.category}</p>
                 </div>
               </div>
             ))}
