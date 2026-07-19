@@ -6,11 +6,33 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
+import { KpiCard } from "../../components/ui/KpiCard";
 import type { Church, ChurchInput, District } from "../../types";
 
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
+
+// ── Icônes KPI ──────────────────────────────────────────────────────────────
+
+function IconCheckCircle() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 11 15 16 9" />
+        </svg>
+    );
+}
+
+function IconXCircle() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+    );
+}
 
 type FieldErrors = { phone?: string; email?: string; address?: string };
 
@@ -62,6 +84,9 @@ export function EglisesPanel() {
         if (filterType === "affiliee" && c.is_mother) return false;
         return true;
     });
+
+    const activeCount = churches.filter((c) => c.is_active).length;
+    const inactiveCount = churches.filter((c) => !c.is_active).length;
 
     function openCreate() {
         setEditingId(null);
@@ -157,6 +182,11 @@ export function EglisesPanel() {
     return (
         <div className={adminStyles.rbacWrapper}>
             {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
+
+            <div className={adminStyles.kpiGrid}>
+                <KpiCard color="emerald" icon={<IconCheckCircle />} value={activeCount} label="Actives" />
+                <KpiCard color="rose" icon={<IconXCircle />} value={inactiveCount} label="Inactives" />
+            </div>
 
             {canManage && showModal && (
             <div className={styles.modalOverlay} onClick={cancelEdit}>

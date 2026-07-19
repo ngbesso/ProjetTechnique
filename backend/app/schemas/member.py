@@ -108,6 +108,13 @@ class MemberList(BaseModel):
     offset: int
 
 
+class MemberStatusStats(BaseModel):
+    active: int
+    pending: int
+    inactive: int
+    rejected: int
+
+
 class MemberImportRowError(BaseModel):
     row: int
     email: str | None = None

@@ -1,6 +1,10 @@
 // members.ts
 import { http, BASE_URL, getToken, ApiError } from "./client";
-import type {Member, MemberImportResult, MemberListResult, MemberQuery, MemberSelfInput, MemberUpdateInput, MembershipInput} from "../../types";
+import type {Member, MemberImportResult, MemberListResult, MemberQuery, MemberSelfInput, MemberStatusStats, MemberUpdateInput, MembershipInput} from "../../types";
+
+export function fetchMembersStats(): Promise<MemberStatusStats> {
+    return http.get<MemberStatusStats>("/members/admin/stats");
+}
 
 export function fetchMembers(query: MemberQuery = {}): Promise<MemberListResult> {
     const params = new URLSearchParams();
