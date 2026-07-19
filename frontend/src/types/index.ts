@@ -47,6 +47,31 @@ export interface DonationCreate {
   church_id: number;
 }
 
+export interface DonationCategoryCount {
+  category: string;
+  count: number;
+}
+
+export interface TopDonorItem {
+  name: string;
+  total: number;
+  count: number;
+}
+
+export interface TopChurchItem {
+  church_id: number;
+  church_name: string;
+  total: number;
+}
+
+export interface DonationAdminStats {
+  total_cad: number;
+  total_usd: number;
+  by_category: DonationCategoryCount[];
+  top_donors: TopDonorItem[];
+  top_churches: TopChurchItem[];
+}
+
 export interface Donation {
   id: number;
   receipt_number: string;
@@ -180,6 +205,13 @@ export interface MemberQuery {
   offset?: number;
 }
 
+export interface MemberStatusStats {
+  active: number;
+  pending: number;
+  inactive: number;
+  rejected: number;
+}
+
 export interface MemberImportRowError {
   row: number;
   email: string | null;
@@ -226,6 +258,20 @@ export interface SermonListResult {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface TopSermonItem {
+  id: number;
+  title: string;
+  preacher: string;
+  views: number;
+}
+
+export interface SermonAdminStats {
+  published: number;
+  draft: number;
+  total_views: number;
+  top_sermons: TopSermonItem[];
 }
 
 export interface SermonInput {
@@ -358,6 +404,20 @@ export interface PostListResult {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface TopPostItem {
+  id: number;
+  title: string;
+  author: string;
+  views: number;
+}
+
+export interface PostAdminStats {
+  published: number;
+  draft: number;
+  total_views: number;
+  top_posts: TopPostItem[];
 }
 
 export interface PostInput {

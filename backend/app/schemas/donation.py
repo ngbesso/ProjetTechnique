@@ -58,6 +58,31 @@ class DonationRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CategoryCount(BaseModel):
+    category: str
+    count: int
+
+
+class TopDonorItem(BaseModel):
+    name: str
+    total: float
+    count: int
+
+
+class TopChurchItem(BaseModel):
+    church_id: int
+    church_name: str
+    total: float
+
+
+class DonationAdminStats(BaseModel):
+    total_cad: float
+    total_usd: float
+    by_category: list[CategoryCount]
+    top_donors: list[TopDonorItem]
+    top_churches: list[TopChurchItem]
+
+
 class ReceiptRead(BaseModel):
     receipt_number: str
     amount: float

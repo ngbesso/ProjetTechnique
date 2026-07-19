@@ -1,5 +1,9 @@
 import { http, BASE_URL } from "./client";
-import type { Sermon, SermonListResult, SermonInput } from "../../types";
+import type { Sermon, SermonAdminStats, SermonListResult, SermonInput } from "../../types";
+
+export function fetchSermonsStats(): Promise<SermonAdminStats> {
+  return http.get<SermonAdminStats>("/sermons/admin/stats");
+}
 
 export function fetchSermons(params?: {
   q?: string;

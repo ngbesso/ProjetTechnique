@@ -45,3 +45,17 @@ class PostList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class TopPostItem(BaseModel):
+    id: int
+    title: str
+    author: str
+    views: int
+
+
+class PostAdminStats(BaseModel):
+    published: int
+    draft: int
+    total_views: int
+    top_posts: list[TopPostItem]

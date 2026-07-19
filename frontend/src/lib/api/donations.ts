@@ -1,5 +1,9 @@
 import { http } from "./client";
-import type { Donation, DonationCreate } from "../../types";
+import type { Donation, DonationAdminStats, DonationCreate } from "../../types";
+
+export function fetchDonationsStats(): Promise<DonationAdminStats> {
+  return http.get<DonationAdminStats>("/api/donations/admin/stats");
+}
 
 export function createDonation(data: DonationCreate): Promise<Donation> {
   return http.post<Donation>("/api/donations/", data);

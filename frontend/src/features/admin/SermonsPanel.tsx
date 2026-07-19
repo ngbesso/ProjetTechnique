@@ -4,8 +4,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import { fetchSermonAdminMediaUrl, fetchSermonSeries } from "../../lib/api/sermons";
-import type { Sermon, SermonInput, SermonStatus } from "../../types";
+import { fetchSermonAdminMediaUrl, fetchSermonSeries, fetchSermonsStats } from "../../lib/api/sermons";
+import { KpiCard } from "../../components/ui/KpiCard";
+import type { Sermon, SermonAdminStats, SermonInput, SermonStatus } from "../../types";
 
 const EMPTY: SermonInput = {
   title: "",
@@ -21,6 +22,36 @@ const STATUS_LABELS: Record<SermonStatus, string> = {
   published: "Publié",
   archived: "Archivé",
 };
+
+// ── Icônes KPI ────────────────────────────────────────────────────────────────
+
+function IconCheckCircle() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="8 12 11 15 16 9" />
+    </svg>
+  );
+}
+
+function IconFileEdit() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
+    </svg>
+  );
+}
+
+function IconEye() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 const col = createColumnHelper<Sermon>();
 
@@ -53,10 +84,12 @@ export function SermonsPanel() {
   const [filterSeries, setFilterSeries] = useState("");
   const [filterFormat, setFilterFormat] = useState("");
   const [seriesList, setSeriesList] = useState<string[]>([]);
+  const [stats, setStats] = useState<SermonAdminStats | null>(null);
 
   useEffect(() => {
     loadAdmin();
     fetchSermonSeries().then(setSeriesList).catch(() => {});
+    fetchSermonsStats().then(setStats).catch(() => {});
   }, [loadAdmin]);
 
   function applyAdminFilters(overrides?: Record<string, string>) {
@@ -238,6 +271,35 @@ export function SermonsPanel() {
         <p className={styles.errorMsg} role="alert">
           {error}
         </p>
+      )}
+
+      {stats && (
+        <>
+          <div className={styles.kpiGrid}>
+            <KpiCard color="emerald" icon={<IconCheckCircle />} value={stats.published} label="Publiés" />
+            <KpiCard color="amber" icon={<IconFileEdit />} value={stats.draft} label="Brouillons" />
+            <KpiCard color="violet" icon={<IconEye />} value={stats.total_views} label="Total des vues" />
+          </div>
+
+          <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Top 5 des sermons les plus vus</h3>
+            {stats.top_sermons.length === 0 ? (
+              <p className={styles.empty}>Aucun sermon enregistré.</p>
+            ) : (
+              stats.top_sermons.map((s, i) => (
+                <div key={s.id} className={styles.topListRow}>
+                  <span className={i === 0 ? `${styles.topListRank} ${styles.topListRankFirst}` : styles.topListRank}>
+                    {i + 1}
+                  </span>
+                  <div className={styles.topListBody}>
+                    <span className={styles.topListName}>{s.title}</span>
+                    <span className={styles.topListValue}>{s.views} vue{s.views > 1 ? "s" : ""} · {s.preacher}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
+        </>
       )}
 
       <section className={styles.listCard}>
