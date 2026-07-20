@@ -82,20 +82,9 @@ class TestBirthDateUpdate:
         assert MemberUpdate(birth_date=None).birth_date is None
 
 
-# ── birth_date — MemberSelfUpdate ─────────────────────────────────────────────
-
-
-class TestBirthDateSelfUpdate:
-    def test_future_raises(self):
-        with pytest.raises(ValidationError):
-            MemberSelfUpdate(birth_date=_future())
-
-    def test_today_accepted(self):
-        obj = MemberSelfUpdate(birth_date=date.today())
-        assert obj.birth_date == date.today()
-
-    def test_none_accepted(self):
-        assert MemberSelfUpdate(birth_date=None).birth_date is None
+# birth_date n'existe plus sur MemberSelfUpdate : la date de naissance est
+# réservée à la gestion administrative (voir TestBirthDateUpdate ci-dessus,
+# et test_patch_me_ignores_restricted_fields dans test_members.py).
 
 
 # ── telephone — MembershipRequest ─────────────────────────────────────────────

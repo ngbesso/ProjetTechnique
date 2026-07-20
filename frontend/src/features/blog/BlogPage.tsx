@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./BlogPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
-import { useRouteParams } from "../../context/RouterContext";
+import { useNavigate, useRouteParams } from "../../context/RouterContext";
 import { usePosts } from "../../hooks/usePosts";
 import { coverUrl, fetchPost, fetchPostCategories } from "../../lib/api/posts";
 import type { Post } from "../../types";
@@ -181,9 +181,9 @@ function PostDetail({ postId, onBack }: { postId: number; onBack: () => void }) 
 export function BlogPage() {
   const { posts, total, loading, error, load } = usePosts();
   const params = useRouteParams();
-  const [selectedPostId, setSelectedPostId] = useState<number | null>(
-    typeof params.postId === "number" ? params.postId : null,
-  );
+  const navigate = useNavigate();
+  // L'article affiché vient de l'URL (/blog/:id) : lien partageable, F5 et retour navigateur OK
+  const selectedPostId = typeof params.postId === "number" ? params.postId : null;
   const [filterQ, setFilterQ] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
@@ -194,7 +194,7 @@ export function BlogPage() {
   }, [load]);
 
   if (selectedPostId !== null) {
-    return <PostDetail postId={selectedPostId} onBack={() => setSelectedPostId(null)} />;
+    return <PostDetail postId={selectedPostId} onBack={() => navigate("blog")} />;
   }
 
   function applyFilters(overrides?: { q?: string; category?: string }) {
@@ -271,7 +271,7 @@ export function BlogPage() {
         {!loading && posts.length > 0 && (
           <div className={styles.grid}>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} onClick={() => setSelectedPostId(post.id)} />
+              <PostCard key={post.id} post={post} onClick={() => navigate("blog", { postId: post.id })} />
             ))}
           </div>
         )}

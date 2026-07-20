@@ -96,6 +96,37 @@ def test_list_admin_requires_permission(client, make_user, auth_header):
     assert r.status_code == 403
 
 
+# ── GET /admin/stats ─────────────────────────────────────────────────────────
+
+
+def test_stats_requires_permission(client, make_user, auth_header):
+    make_user("regular_stats@test.com")
+    h = auth_header("regular_stats@test.com")
+    r = client.get("/sermons/admin/stats", headers=h)
+    assert r.status_code == 403
+
+
+def test_stats_counts_and_top_sermons(client, db_session, make_user, auth_header):
+    s1 = _sermon(db_session, "Populaire", SermonStatus.published)
+    s1.views = 100
+    s2 = _sermon(db_session, "Moyen", SermonStatus.published)
+    s2.views = 40
+    s3 = _sermon(db_session, "Brouillon", SermonStatus.draft)
+    s3.views = 5
+    db_session.flush()
+    h = _admin_header(make_user, auth_header)
+
+    r = client.get("/sermons/admin/stats", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["published"] == 2
+    assert body["draft"] == 1
+    assert body["total_views"] == 145
+    assert body["top_sermons"][0]["title"] == "Populaire"
+    assert body["top_sermons"][0]["views"] == 100
+    assert body["top_sermons"][1]["title"] == "Moyen"
+
+
 # ── GET /{id} ──────────────────────────────────────────────────────────────────
 
 

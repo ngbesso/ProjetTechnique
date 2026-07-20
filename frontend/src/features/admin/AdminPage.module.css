@@ -162,23 +162,14 @@
   gap: 1rem;
 }
 
-.userInfo {
+.userBadge {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-}
-
-.userEmail {
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-main);
-}
-
-.userRoles {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .logoutBtn {
@@ -305,6 +296,14 @@
 
 .listBody {
   padding: 1.25rem 1.75rem 1.75rem;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
 }
 
 /* ── Inline create form ─────────────────────────────────────── */
@@ -833,6 +832,88 @@
   border-top: 1px solid var(--border);
   background: var(--neutral-bg);
   flex-shrink: 0;
+}
+
+/* ── KPI grid (réutilisé par les mini-dashboards des panneaux admin) ────────── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .kpiGrid { grid-template-columns: 1fr; }
+}
+
+.topListsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .topListsGrid { grid-template-columns: 1fr; }
+}
+
+/* ── Bloc "Top 5" (donateurs, sermons, articles…) ────────────────────────────── */
+.topListRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.topListRow:last-child { border-bottom: none; }
+
+.topListRank {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ede9fe;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.topListRankFirst {
+  background: linear-gradient(135deg, #3b2f8a 0%, #7c3aed 100%);
+  color: #fff;
+}
+
+.topListBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.topListName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--deep-violet);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topListValue {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #7c3aed;
+  white-space: nowrap;
 }
 
 .helpText { font-size: .78rem; color: var(--text-muted); margin: .75rem 0 0; }

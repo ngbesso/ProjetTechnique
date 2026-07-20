@@ -95,6 +95,81 @@ def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
     )
 
 
+def event_registration_received(
+    sender: EmailSender,
+    to: str,
+    name: str,
+    event_title: str,
+    event_date: str,
+    location: str | None,
+    instructor: str | None,
+    price_label: str | None,
+) -> None:
+    details = [f"  Date      : {event_date}"]
+    if location:
+        details.append(f"  Lieu      : {location}")
+    if instructor:
+        details.append(f"  Formateur : {instructor}")
+    if price_label:
+        details.append(f"  Prix      : {price_label}")
+    sender.send(
+        to,
+        f"Inscription reçue — {event_title}",
+        f"Bonjour {name},\n\n"
+        f"Nous avons bien reçu votre inscription à l'événement suivant :\n\n"
+        f"  Événement : {event_title}\n"
+        + "\n".join(details)
+        + "\n\n"
+        "Nous avons hâte de vous y retrouver. Si vous avez des questions, "
+        "répondez simplement à ce courriel.\n\n"
+        "Fraternellement,\nMission Évangélique",
+    )
+
+
+def prayer_request_received(sender: EmailSender, to: str, member_name: str, message: str) -> None:
+    sender.send(
+        to,
+        "Nouvelle demande de prière",
+        f"Une nouvelle demande de prière a été soumise par {member_name}.\n\n"
+        f"Message :\n{message}",
+    )
+
+
+def volunteer_request_received(
+    sender: EmailSender,
+    to: str,
+    member_name: str,
+    event_title: str,
+    message: str | None,
+) -> None:
+    details = f"\n\nMessage :\n{message}" if message else ""
+    sender.send(
+        to,
+        f"Nouvelle demande de bénévolat — {event_title}",
+        f"{member_name} souhaite être bénévole pour l'événement « {event_title} »."
+        f"{details}",
+    )
+
+
+def volunteer_request_reviewed(
+    sender: EmailSender, to: str, name: str, event_title: str, status: str
+) -> None:
+    if status == "approved":
+        sender.send(
+            to,
+            f"Bénévolat approuvé — {event_title}",
+            f"Bonjour {name}, votre demande de bénévolat pour « {event_title} » "
+            "a été approuvée. Merci pour votre engagement !",
+        )
+    else:
+        sender.send(
+            to,
+            f"Bénévolat — {event_title}",
+            f"Bonjour {name}, votre demande de bénévolat pour « {event_title} » "
+            "n'a pas été retenue cette fois-ci. Merci de votre intérêt.",
+        )
+
+
 def password_reset_email(sender: EmailSender, to: str, link: str) -> None:
     sender.send(
         to,

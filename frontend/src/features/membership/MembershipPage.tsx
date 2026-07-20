@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./MembershipPage.module.css";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { requestMembership } from "../../lib/api/members";
+import { fetchPublicSettings } from "../../lib/api/settings";
 import { validatePhone, validateEmail, validateAddress } from "../../lib/validation";
 import type { MembershipInput } from "../../types";
 import { SiteHeader } from "../../components/layout/SiteHeader";
@@ -51,6 +53,7 @@ const EMPTY: FormState = {
 
 export function MembershipPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { churches, load } = useChurches();
   const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
   const { values: familyOptions, load: loadFamily } = useParameters("family_status");
@@ -58,9 +61,17 @@ export function MembershipPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [done, setDone] = useState<{ church: string } | null>(null);
+  const [done, setDone] = useState<{ church: string; approved: boolean } | null>(null);
+  const [autoApprove, setAutoApprove] = useState(false);
 
-  useEffect(() => { load({ activeOnly: true }); loadSexe(); loadFamily(); }, [load, loadSexe, loadFamily]);
+  useEffect(() => {
+    load({ activeOnly: true });
+    loadSexe();
+    loadFamily();
+    fetchPublicSettings()
+      .then((s) => setAutoApprove(s.auto_approve_members === "true"))
+      .catch(() => {});
+  }, [load, loadSexe, loadFamily]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -98,14 +109,69 @@ export function MembershipPage() {
       is_baptized: form.is_baptized,
     };
     try {
-      await requestMembership(payload);
+      const created = await requestMembership(payload);
       const church = churches.find((c) => c.id === Number(form.church_id));
-      setDone({ church: church?.name ?? "l'église choisie" });
+      setDone({
+        church: church?.name ?? "l'église choisie",
+        approved: created.status === "active",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Session en cours de vérification : on n'affiche ni le formulaire ni le
+  // message "déjà membre" pour éviter qu'un visiteur connecté voie le
+  // formulaire clignoter avant d'être remplacé.
+  if (authLoading) {
+    return (
+      <div className={styles.page}>
+        <SiteHeader />
+        <main>
+          <div className={styles.authCheck}>Chargement…</div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className={styles.page}>
+        <SiteHeader />
+        <main>
+          <section className={styles.formSection}>
+            <div className={styles.formInner}>
+              <div className={styles.card}>
+                <div className={styles.brandBar}>
+                  <div className={styles.brandIcon}>+</div>
+                  <div>
+                    <p className={styles.brandName}>Mission Évangélique</p>
+                    <p className={styles.brandSub}>Devenir membre</p>
+                  </div>
+                </div>
+                <div className={styles.body}>
+                  <div className={styles.successBox}>
+                    <p className={styles.successIcon}>✓</p>
+                    <h2 className={styles.successTitle}>Vous êtes déjà membre ✓</h2>
+                    <p className={styles.successText}>
+                      Votre compte est déjà actif. Retrouvez vos informations
+                      et gérez votre profil dans votre espace membre.
+                    </p>
+                    <button className={styles.submit} onClick={() => navigate("espace")}>
+                      Accéder à mon espace
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <SiteFooter />
+      </div>
+    );
   }
 
   return (
@@ -163,9 +229,9 @@ export function MembershipPage() {
             <aside className={styles.formSidebar}>
               <h2 className={styles.sidebarTitle}>Votre demande d'adhésion</h2>
               <p className={styles.sidebarText}>
-                Remplissez le formulaire ci-contre. Un administrateur
-                examinera votre demande sous 48h et vous recevrez un
-                courriel de confirmation.
+                {autoApprove
+                  ? "Remplissez le formulaire ci-contre. Votre adhésion sera approuvée immédiatement et vous recevrez un courriel pour activer votre compte."
+                  : "Remplissez le formulaire ci-contre. Un administrateur examinera votre demande sous 48h et vous recevrez un courriel de confirmation."}
               </p>
               <ul className={styles.checkList}>
                 <li>Gratuit et sans engagement</li>
@@ -188,10 +254,23 @@ export function MembershipPage() {
                 <div className={styles.body}>
                   <div className={styles.successBox}>
                     <p className={styles.successIcon}>✓</p>
-                    <h2 className={styles.successTitle}>Demande envoyée</h2>
+                    <h2 className={styles.successTitle}>
+                      {done.approved ? "Adhésion approuvée !" : "Demande envoyée"}
+                    </h2>
                     <p className={styles.successText}>
-                      Votre demande d'adhésion à <strong>{done.church}</strong> a
-                      bien été reçue. Un administrateur l'examinera prochainement.
+                      {done.approved ? (
+                        <>
+                          Bienvenue ! Votre adhésion à <strong>{done.church}</strong> a
+                          été approuvée. Surveillez votre boîte courriel : un lien pour
+                          activer votre compte vient de vous être envoyé.
+                        </>
+                      ) : (
+                        <>
+                          Votre demande d'adhésion à <strong>{done.church}</strong> a
+                          bien été reçue. Un administrateur l'examinera prochainement
+                          et vous recevrez un courriel de confirmation.
+                        </>
+                      )}
                     </p>
                     <button className={styles.submit} onClick={() => navigate("home")}>
                       Retour à l'accueil
@@ -267,7 +346,7 @@ export function MembershipPage() {
                         onChange={(e) => set("birth_date", e.target.value)} />
                     </div>
                     <div className={styles.col}>
-                      <label className={styles.label}>Statut familial</label>
+                      <label className={styles.label}>Statut matrimonial</label>
                       <select className={styles.select} value={form.family_status}
                         onChange={(e) => set("family_status", e.target.value)}>
                         <option value="">—</option>

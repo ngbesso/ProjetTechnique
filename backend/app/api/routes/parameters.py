@@ -1,11 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models.church import Church
+from app.models.donation import Donation
+from app.models.event import Event
+from app.models.member import Member
 from app.models.parameter import ParameterValue
 from app.models.user import User
 from app.schemas.parameter import (
@@ -16,6 +20,37 @@ from app.schemas.parameter import (
 )
 
 router = APIRouter(prefix="/parameters", tags=["paramètres"])
+
+# Catégorie -> tables/colonnes dont les enregistrements référencent une valeur
+# (modèle, nom de colonne, nom singulier pour le message d'erreur). Ajouter une
+# entrée ici suffit pour protéger une future catégorie contre la suppression
+# de valeurs encore utilisées — aucune autre logique à dupliquer.
+_USAGE_MAP: dict[str, list[tuple[type, str, str]]] = {
+    "sexe": [(Member, "sexe", "membre")],
+    "family_status": [(Member, "family_status", "membre")],
+    "district": [(Church, "district", "église"), (Event, "district", "événement")],
+    "donation_category": [(Donation, "category", "don")],
+    "event_category": [(Event, "category", "événement")],
+}
+
+
+def _usage_count(db: Session, pv: ParameterValue) -> list[tuple[str, int]]:
+    """Compte, pour chaque table associée à la catégorie de pv, le nombre
+    d'enregistrements dont la colonne vaut le libellé de pv."""
+    usage: list[tuple[str, int]] = []
+    for model, column_name, noun in _USAGE_MAP.get(pv.category, []):
+        column = getattr(model, column_name)
+        count = (
+            db.scalar(
+                select(func.count())
+                .select_from(model)
+                .where(cast(column, String) == pv.label)
+            )
+            or 0
+        )
+        if count:
+            usage.append((noun, count))
+    return usage
 
 
 def _check_category(category: str) -> None:
@@ -101,5 +136,11 @@ def delete_value(
     pv = db.get(ParameterValue, id)
     if not pv:
         raise HTTPException(404, "Valeur introuvable")
+    usage = _usage_count(db, pv)
+    if usage:
+        detail = " et ".join(f"{count} {noun}(s)" for noun, count in usage)
+        raise HTTPException(
+            409, f"Impossible de supprimer « {pv.label} » : utilisé par {detail}."
+        )
     db.delete(pv)
     db.commit()

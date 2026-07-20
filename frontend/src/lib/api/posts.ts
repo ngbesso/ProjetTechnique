@@ -1,5 +1,9 @@
 import { http, BASE_URL } from "./client";
-import type { Post, PostInput, PostListResult } from "../../types";
+import type { Post, PostAdminStats, PostInput, PostListResult } from "../../types";
+
+export function fetchPostsStats(): Promise<PostAdminStats> {
+  return http.get<PostAdminStats>("/posts/admin/stats");
+}
 
 /** Construit l'URL absolue d'une couverture stockée en MinIO via le proxy backend. */
 export function coverUrl(url: string | null | undefined): string | null {
