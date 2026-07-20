@@ -2,7 +2,7 @@ const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL ?? "http://localhost:
 
 export interface ChatSource {
   title: string;
-  type: "post" | "sermon";
+  type: "post" | "sermon" | "event" | "church" | "info";
 }
 
 export interface ChatResponse {
