@@ -34,3 +34,17 @@ class SermonList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class TopSermonItem(BaseModel):
+    id: int
+    title: str
+    preacher: str
+    views: int
+
+
+class SermonAdminStats(BaseModel):
+    published: int
+    draft: int
+    total_views: int
+    top_sermons: list[TopSermonItem]

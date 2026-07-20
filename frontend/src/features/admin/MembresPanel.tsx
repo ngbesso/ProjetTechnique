@@ -4,12 +4,52 @@ import { useAuth } from "../../context/AuthContext";
 import { useMembers } from "../../hooks/useMembers";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
-import { downloadImportTemplate, importMembers } from "../../lib/api/members";
+import { downloadImportTemplate, fetchMembersStats, importMembers } from "../../lib/api/members";
 import { validatePhone, validateAddress } from "../../lib/validation";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import type { Church, Member, MemberImportResult, MemberStatus, MemberUpdateInput } from "../../types";
+import { KpiCard } from "../../components/ui/KpiCard";
+import type { Church, Member, MemberImportResult, MemberStatus, MemberStatusStats, MemberUpdateInput } from "../../types";
 
 const TODAY = new Date().toISOString().split("T")[0];
+
+// ── Icônes KPI ────────────────────────────────────────────────────────────────
+
+function IconCheckCircle() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 11 15 16 9" />
+        </svg>
+    );
+}
+
+function IconClock() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+        </svg>
+    );
+}
+
+function IconMinusCircle() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+    );
+}
+
+function IconXCircle() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+    );
+}
 
 const STATUS_META: Record<MemberStatus, { label: string; cls: string }> = {
     pending: { label: "En attente", cls: "badgePending" },
@@ -61,7 +101,7 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
         { label: "Adresse", value: member.address ?? "—" },
         { label: "Sexe", value: member.sexe ?? "—" },
         { label: "Date de naissance", value: formatDate(member.birth_date) },
-        { label: "Statut familial", value: member.family_status ?? "—" },
+        { label: "Statut matrimonial", value: member.family_status ?? "—" },
         { label: "Baptême", value: member.is_baptized ? "Baptisé(e)" : "Non baptisé(e)" },
         { label: "Inscrit le", value: formatDate(member.created_at) },
     ];
@@ -228,7 +268,7 @@ function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                                 onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })} />
                             <select className={styles.select} value={form.family_status ?? ""}
                                 onChange={(e) => setForm({ ...form, family_status: e.target.value || null })}>
-                                <option value="">Statut familial…</option>
+                                <option value="">Statut matrimonial…</option>
                                 {familyOptions.map((f) => <option key={f.id} value={f.label}>{f.label}</option>)}
                             </select>
                             <input className={styles.input} type="date" placeholder="Date de conversion" max={TODAY}
@@ -381,6 +421,7 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const [status, setStatus] = useState<MemberStatus | "">(initialStatus ?? "");
     const [selected, setSelected] = useState<Member | null>(null);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
+    const [stats, setStats] = useState<MemberStatusStats | null>(null);
 
     const canApprove =
         user?.permissions.includes("*") || user?.permissions.includes("member:approve");
@@ -392,6 +433,7 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     useEffect(() => {
         load({ status: initialStatus });
         loadChurches();
+        fetchMembersStats().then(setStats).catch(() => {});
     }, [load, loadChurches, initialStatus]);
 
     function applyFilters(overrides?: { q?: string; status?: string }) {
@@ -465,6 +507,15 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
 
     return (
         <div className={styles.rbacWrapper}>
+            {stats && (
+                <div className={styles.kpiGrid}>
+                    <KpiCard color="emerald" icon={<IconCheckCircle />} value={stats.active} label="Actifs" />
+                    <KpiCard color="amber" icon={<IconClock />} value={stats.pending} label="En attente" />
+                    <KpiCard color="blue" icon={<IconMinusCircle />} value={stats.inactive} label="Inactifs" />
+                    <KpiCard color="rose" icon={<IconXCircle />} value={stats.rejected} label="Refusés" />
+                </div>
+            )}
+
             {canImport && (
                 <MemberImportSection
                     churches={churches}

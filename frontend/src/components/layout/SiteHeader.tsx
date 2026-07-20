@@ -1,20 +1,23 @@
 import styles from "./SiteHeader.module.css";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "../../context/RouterContext";
+import { Link, useNavigate } from "../../context/RouterContext";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
   activePage?: Page;
 }
 
-const NAV_ITEMS = [
-  { label: "Accueil", page: "home" as Page },
-  { label: "Sermons", page: "sermons" as Page },
-  { label: "Blog", page: "blog" as Page },
-  { label: "Événements", page: null },
-  { label: "Formation", page: null },
-  { label: "Faire un don", page: "donation" as Page },
-] as const;
+const NAV_ITEMS: { label: string; page: Page }[] = [
+  { label: "Accueil", page: "home" },
+  { label: "Sermons", page: "sermons" },
+  { label: "Blog", page: "blog" },
+  { label: "Événements", page: "evenements" },
+  { label: "Faire un don", page: "donation" },
+];
+
+function navClass(active: boolean): string {
+  return active ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
+}
 
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
@@ -29,30 +32,29 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
     <header className={styles.header}>
       <div className={styles.inner}>
         {/* Logo */}
-        <button className={styles.logo} onClick={() => navigate("home")}>
+        <Link page="home" className={styles.logo}>
           <div className={styles.logoIcon}>+</div>
           <div className={styles.logoText}>
             <span className={styles.logoTitle}>Mission Évangélique</span>
             <span className={styles.logoSubtitle}>unis dans la foi</span>
           </div>
-        </button>
+        </Link>
 
         {/* Nav */}
         <nav className={styles.nav} aria-label="Navigation principale">
           {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className={
-                activePage === item.page && item.page !== null
-                  ? `${styles.navLink} ${styles.navLinkActive}`
-                  : styles.navLink
-              }
-              onClick={() => item.page && navigate(item.page)}
-              disabled={item.page === null}
-            >
+            <Link key={item.label} page={item.page} className={navClass(activePage === item.page)}>
               {item.label}
-            </button>
+            </Link>
           ))}
+
+          {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
+              hors composant, sans accès à la session) — rendu conditionnel ici. */}
+          {isAdmin && (
+            <Link page="admin" className={navClass(activePage === "admin")}>
+              Administration
+            </Link>
+          )}
         </nav>
 
         {/* Actions */}
@@ -60,25 +62,15 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
           {user ? (
             <>
               <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {displayName}
+                <span aria-hidden>&#128100;</span> {isAdmin ? "Admin" : displayName}
               </span>
-              {isAdmin ? (
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => navigate("admin")}
-                >
-                  Administration
-                </button>
-              ) : (
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => navigate("mon-profil")}
-                >
-                  ✏ Modifier mon profil
+              {!isAdmin && (
+                <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
+                  Mon espace
                 </button>
               )}
-              <button className={styles.btnPrimary} onClick={logout}>
-                Déconnexion
+              <button className={styles.linkMuted} onClick={logout}>
+                Se déconnecter
               </button>
             </>
           ) : (

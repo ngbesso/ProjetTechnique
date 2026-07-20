@@ -45,6 +45,7 @@ from app.schemas.member import (
     MemberRead,
     MemberSelfUpdate,
     MembershipRequest,
+    MemberStatusStats,
     MemberUpdate,
 )
 
@@ -149,7 +150,8 @@ _EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en 
 
 
 def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
-    """Lève HTTP 409 avec un message générique si l'email est déjà pris."""
+    """Lève HTTP 409 (message générique anti-énumération) si l'email est déjà pris,
+    que ce soit par une fiche Membre ou par un compte User existant."""
     query = select(Member).where(Member.email == email)
     if exclude_id is not None:
         query = query.where(Member.id != exclude_id)
@@ -280,23 +282,7 @@ def update_my_profile(
     if not member:
         raise HTTPException(404, "Aucune fiche membre liée à ce compte")
 
-    dump = data.model_dump(exclude_unset=True)
-
-    if "email" in dump:
-        new_email = str(dump.pop("email"))
-        if new_email != member.email:
-            taken_user = db.scalar(
-                select(User).where(User.email == new_email, User.id != current_user.id)
-            )
-            taken_member = db.scalar(
-                select(Member).where(Member.email == new_email, Member.id != member.id)
-            )
-            if taken_user or taken_member:
-                raise HTTPException(409, _EMAIL_TAKEN)
-            member.email = new_email
-            current_user.email = new_email
-
-    for k, v in dump.items():
+    for k, v in data.model_dump(exclude_unset=True).items():
         setattr(member, k, v)
     db.commit()
     db.refresh(member)
@@ -338,6 +324,30 @@ def list_members(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/admin/stats", response_model=MemberStatusStats)
+def get_members_stats(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Comptages de membres par statut, dans le périmètre de l'utilisateur."""
+    scope = current_user.accessible_church_ids("member:read")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Aucun périmètre accessible")
+    query = select(Member.status, func.count(Member.id))
+    if scope is not None:
+        query = query.where(Member.church_id.in_(scope))
+    rows = db.execute(query.group_by(Member.status)).all()
+    counts = {s: 0 for s in MemberStatus}
+    for status_value, cnt in rows:
+        counts[status_value] = cnt
+    return MemberStatusStats(
+        active=counts[MemberStatus.active],
+        pending=counts[MemberStatus.pending],
+        inactive=counts[MemberStatus.inactive],
+        rejected=counts[MemberStatus.rejected],
     )
 
 

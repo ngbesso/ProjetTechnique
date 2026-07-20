@@ -82,6 +82,21 @@ def test_list_my_donations_requires_auth(client):
     assert client.get(f"{BASE}/me").status_code == 401
 
 
+def test_list_my_donations_isolated_between_members(
+    client, make_member, auth_header, db_session
+):
+    """Un membre ne doit jamais voir les dons d'un autre membre via /me."""
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donorA@b.com", church_id)
+    make_member("donorB@b.com", church_id)
+    client.post(f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com"))
+
+    r_a = client.get(f"{BASE}/me", headers=auth_header("donorA@b.com"))
+    r_b = client.get(f"{BASE}/me", headers=auth_header("donorB@b.com"))
+    assert len(r_a.json()) == 1
+    assert len(r_b.json()) == 0
+
+
 # ── GET /api/donations/{id} ───────────────────────────────────────────────────
 
 
@@ -157,6 +172,59 @@ def test_admin_can_list_all_donations(
     r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
     assert r.status_code == 200
     assert len(r.json()) >= 1
+
+
+# ── GET /api/donations/admin/stats ────────────────────────────────────────────
+
+
+def test_donations_stats_requires_admin(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("statsplain@b.com", church_id)
+    r = client.get(f"{BASE}/admin/stats", headers=auth_header("statsplain@b.com"))
+    assert r.status_code == 403
+
+
+def test_donations_stats_totals_category_and_top_lists(
+    client, make_user, make_member, auth_header, db_session
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_user("admin@b.com", roles=["admin"])
+    donor1 = make_member("donorstat1@b.com", church_id)
+    donor2 = make_member("donorstat2@b.com", church_id)
+
+    def _give(email, amount, category="soutien_spirituel"):
+        payload = _payload(church_id)
+        payload["amount"] = amount
+        payload["category"] = category
+        client.post(f"{BASE}/", json=payload, headers=auth_header(email))
+
+    _give("donorstat1@b.com", 100, "soutien_spirituel")
+    _give("donorstat1@b.com", 50, "action_communautaire")
+    _give("donorstat2@b.com", 30, "developpement")
+
+    h = auth_header("admin@b.com")
+    r = client.get(f"{BASE}/admin/stats", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+
+    assert body["total_cad"] == 180
+    assert body["total_usd"] == 0
+
+    cat_map = {c["category"]: c["count"] for c in body["by_category"]}
+    assert cat_map["soutien_spirituel"] == 1
+    assert cat_map["action_communautaire"] == 1
+    assert cat_map["developpement"] == 1
+
+    assert len(body["top_donors"]) == 2
+    top = body["top_donors"][0]
+    assert top["name"] == donor1.full_name
+    assert top["total"] == 150
+    assert top["count"] == 2
+
+    assert len(body["top_churches"]) == 1
+    assert body["top_churches"][0]["church_id"] == church_id
+    assert body["top_churches"][0]["total"] == 180
+    _ = donor2
 
 
 # ── POST /api/donations/webhooks/zeffy ────────────────────────────────────────
