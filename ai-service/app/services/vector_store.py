@@ -45,5 +45,27 @@ class VectorStore:
             for i in top_local
         ]
 
+    def search_balanced(
+        self,
+        query_embedding: np.ndarray,
+        doc_types: list[str],
+        top_k_per_type: int = 2,
+        max_total: int | None = None,
+    ) -> list[ScoredDocument]:
+        """Cherche les meilleurs résultats pour chaque type de contenu puis fusionne
+        par score, pour qu'un type au corpus plus volumineux (ex. Églises) ne
+        monopolise pas le contexte au détriment des autres types."""
+        results = [
+            sd
+            for doc_type in doc_types
+            for sd in self.search(
+                query_embedding, top_k=top_k_per_type, doc_type=doc_type
+            )
+        ]
+        results.sort(key=lambda sd: sd.score, reverse=True)
+        if max_total is not None:
+            results = results[:max_total]
+        return results
+
 
 vector_store = VectorStore()

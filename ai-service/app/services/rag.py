@@ -13,11 +13,23 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = (
     "Tu es l'assistant virtuel de la Mission Évangélique, une plateforme pour une "
     "communauté d'Églises affiliées. Réponds aux questions des visiteurs UNIQUEMENT à "
-    "partir des extraits de contenu fournis ci-dessous (articles de blog et sermons). "
-    "Si l'information demandée ne s'y trouve pas, dis clairement que tu ne sais pas et "
-    "invite la personne à consulter les pages Blog ou Sermons du site. N'invente jamais "
-    "d'information. Réponds en français, de façon concise et chaleureuse."
+    "partir des extraits de contenu fournis ci-dessous (articles de blog, sermons, "
+    "événements et formations, Églises affiliées, et informations générales sur la "
+    "mission, l'adhésion et les dons). Si l'information demandée ne s'y trouve pas, dis "
+    "clairement que tu ne sais pas et invite la personne à consulter la page "
+    "correspondante du site. N'invente jamais d'information. Réponds en français, de "
+    "façon concise et chaleureuse."
 )
+
+DOC_TYPES = ["post", "sermon", "event", "church", "info"]
+
+KIND_LABELS = {
+    "post": "Article de blog",
+    "sermon": "Sermon",
+    "event": "Événement",
+    "church": "Église affiliée",
+    "info": "Information générale",
+}
 
 
 async def warm_up_llm() -> None:
@@ -51,7 +63,7 @@ async def refresh_index() -> int:
 def _build_context(scored_docs: list[ScoredDocument]) -> str:
     blocks = []
     for sd in scored_docs:
-        kind = "Article de blog" if sd.document.type == "post" else "Sermon"
+        kind = KIND_LABELS.get(sd.document.type, sd.document.type)
         blocks.append(f"[{kind}] {sd.document.title}\n{sd.document.text}")
     return "\n\n---\n\n".join(blocks)
 
@@ -64,9 +76,9 @@ async def answer(question: str) -> dict:
         }
 
     query_embedding = (await asyncio.to_thread(embed, [question]))[0]
-    posts = vector_store.search(query_embedding, top_k=2, doc_type="post")
-    sermons = vector_store.search(query_embedding, top_k=2, doc_type="sermon")
-    scored_docs = sorted(posts + sermons, key=lambda sd: sd.score, reverse=True)
+    scored_docs = vector_store.search_balanced(
+        query_embedding, doc_types=DOC_TYPES, top_k_per_type=2, max_total=6
+    )
     context = _build_context(scored_docs)
 
     try:

@@ -8,6 +8,14 @@ interface Message {
   sources?: ChatSource[];
 }
 
+const SOURCE_ICONS: Record<ChatSource["type"], string> = {
+  post: "📝",
+  sermon: "🎙",
+  event: "📅",
+  church: "⛪",
+  info: "ℹ️",
+};
+
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -73,7 +81,7 @@ export function ChatWidget() {
                   <div className={styles.sources}>
                     {m.sources.map((s, j) => (
                       <span key={j} className={styles.sourceTag}>
-                        {s.type === "post" ? "📝" : "🎙"} {s.title}
+                        {SOURCE_ICONS[s.type]} {s.title}
                       </span>
                     ))}
                   </div>
