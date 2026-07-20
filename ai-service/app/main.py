@@ -2,7 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -30,6 +30,10 @@ async def lifespan(app: FastAPI):
     task = asyncio.create_task(_periodic_refresh())
     yield
     task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(title="Service IA Plateforme OBNL", version="0.1.0", lifespan=lifespan)
@@ -73,5 +77,11 @@ async def chat(payload: ChatRequest):
 
 @app.post("/refresh")
 async def refresh():
-    count = await rag.refresh_index()
+    try:
+        count = await rag.refresh_index()
+    except Exception:
+        logger.exception("Échec du rafraîchissement de l'index RAG")
+        raise HTTPException(
+            status_code=503, detail="Échec du rafraîchissement de l'index"
+        )
     return {"documents_indexed": count}

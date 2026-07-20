@@ -13,20 +13,32 @@ class Document:
     text: str
 
 
+async def _fetch_all_items(client: httpx.AsyncClient, path: str) -> list[dict]:
+    """Parcourt toutes les pages d'une liste paginée du backend."""
+    items: list[dict] = []
+    offset = 0
+    limit = 100
+    while True:
+        res = await client.get(path, params={"limit": limit, "offset": offset})
+        res.raise_for_status()
+        page = res.json()
+        items.extend(page["items"])
+        offset += limit
+        if offset >= page["total"] or not page["items"]:
+            break
+    return items
+
+
 async def fetch_documents() -> list[Document]:
     """Récupère les articles et sermons publiés depuis le backend public."""
     documents: list[Document] = []
     async with httpx.AsyncClient(base_url=settings.backend_url, timeout=10.0) as client:
-        posts_res = await client.get("/posts", params={"limit": 100})
-        posts_res.raise_for_status()
-        for p in posts_res.json()["items"]:
+        for p in await _fetch_all_items(client, "/posts"):
             documents.append(
                 Document(id=p["id"], type="post", title=p["title"], text=p["content"])
             )
 
-        sermons_res = await client.get("/sermons", params={"limit": 100})
-        sermons_res.raise_for_status()
-        for s in sermons_res.json()["items"]:
+        for s in await _fetch_all_items(client, "/sermons"):
             parts = [s["title"]]
             if s.get("description"):
                 parts.append(s["description"])

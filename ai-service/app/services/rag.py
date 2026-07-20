@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -22,7 +23,7 @@ SYSTEM_PROMPT = (
 async def refresh_index() -> int:
     """Recharge l'index vectoriel depuis le contenu publié du backend."""
     documents = await fetch_documents()
-    embeddings = embed([d.text for d in documents])
+    embeddings = await asyncio.to_thread(embed, [d.text for d in documents])
     vector_store.load(documents, embeddings)
     logger.info("Index RAG reconstruit : %d documents", len(documents))
     return len(documents)
@@ -43,7 +44,7 @@ async def answer(question: str) -> dict:
             "sources": [],
         }
 
-    query_embedding = embed([question])[0]
+    query_embedding = (await asyncio.to_thread(embed, [question]))[0]
     posts = vector_store.search(query_embedding, top_k=2, doc_type="post")
     sermons = vector_store.search(query_embedding, top_k=2, doc_type="sermon")
     scored_docs = sorted(posts + sermons, key=lambda sd: sd.score, reverse=True)
@@ -68,14 +69,13 @@ async def answer(question: str) -> dict:
                 },
             )
             response.raise_for_status()
-    except httpx.HTTPError:
+        answer_text = response.json()["message"]["content"]
+    except (httpx.HTTPError, KeyError, ValueError):
         logger.exception("Échec de l'appel au service Ollama")
         return {
             "answer": "Le service IA est temporairement indisponible. Réessaie plus tard.",
             "sources": [],
         }
-
-    answer_text = response.json()["message"]["content"]
 
     return {
         "answer": answer_text,
