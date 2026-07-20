@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
         await rag.refresh_index()
     except Exception:
         logger.exception("Échec de la construction initiale de l'index RAG")
+    asyncio.create_task(rag.warm_up_llm())
     task = asyncio.create_task(_periodic_refresh())
     yield
     task.cancel()
