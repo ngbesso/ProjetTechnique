@@ -3,6 +3,7 @@ uvicorn[standard]==0.34.*
 pydantic-settings==2.*
 redis==5.*
 httpx==0.28.*
+numpy
 sentence-transformers==3.*
 # Dev / tests
 pytest==8.*

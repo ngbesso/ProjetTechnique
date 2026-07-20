@@ -62,6 +62,8 @@ services:
     volumes:
       - ./ai-service:/app
     depends_on:
+      backend:
+        condition: service_started
       redis:
         condition: service_started
       ollama:

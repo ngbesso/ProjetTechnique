@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import styles from "./ChatWidget.module.css";
 import { askAssistant, type ChatSource } from "../../lib/api/aiChat";
 
@@ -65,7 +65,7 @@ export function ChatWidget() {
               </p>
             )}
             {messages.map((m, i) => (
-              <div key={i} style={{ display: "contents" }}>
+              <Fragment key={i}>
                 <div className={`${styles.bubble} ${m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}`}>
                   {m.text}
                 </div>
@@ -78,7 +78,7 @@ export function ChatWidget() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Fragment>
             ))}
             {loading && <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>…</div>}
           </div>

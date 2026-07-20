@@ -14,5 +14,6 @@ def _get_model() -> SentenceTransformer:
 def embed(texts: list[str]) -> np.ndarray:
     """Encode une liste de textes en vecteurs normalisés (produit scalaire = similarité cosinus)."""
     if not texts:
-        return np.empty((0, 384), dtype=np.float32)
+        dim = _get_model().get_sentence_embedding_dimension()
+        return np.empty((0, dim), dtype=np.float32)
     return _get_model().encode(texts, normalize_embeddings=True, convert_to_numpy=True)
