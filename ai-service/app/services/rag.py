@@ -20,6 +20,25 @@ SYSTEM_PROMPT = (
 )
 
 
+async def warm_up_llm() -> None:
+    """Déclenche le chargement du modèle Ollama en mémoire pour éviter le
+    cold-start (~1 min) sur la première question d'un visiteur."""
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_url, timeout=120.0
+        ) as client:
+            await client.post(
+                "/api/chat",
+                json={
+                    "model": settings.ollama_model,
+                    "stream": False,
+                    "messages": [{"role": "user", "content": "Bonjour"}],
+                },
+            )
+    except httpx.HTTPError:
+        logger.exception("Échec du préchauffage du modèle Ollama")
+
+
 async def refresh_index() -> int:
     """Recharge l'index vectoriel depuis le contenu publié du backend."""
     documents = await fetch_documents()
@@ -52,7 +71,7 @@ async def answer(question: str) -> dict:
 
     try:
         async with httpx.AsyncClient(
-            base_url=settings.ollama_url, timeout=60.0
+            base_url=settings.ollama_url, timeout=120.0
         ) as client:
             response = await client.post(
                 "/api/chat",
