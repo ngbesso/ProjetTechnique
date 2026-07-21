@@ -430,6 +430,23 @@ export interface PostInput {
   cover_image_url?: string;
 }
 
+export type BlogCommentsMode = "disabled" | "members" | "public";
+
+export interface Comment {
+  id: number;
+  post_id: number;
+  member_id: number | null;
+  author_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface CommentInput {
+  content: string;
+  author_name?: string;
+  author_email?: string;
+}
+
 // ── Demandes de prière ───────────────────────────────────────────────────────
 
 export type PrayerRequestStatus = "new" | "handled";

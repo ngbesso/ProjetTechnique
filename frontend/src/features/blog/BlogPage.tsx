@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import styles from "./BlogPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useRouteParams } from "../../context/RouterContext";
 import { usePosts } from "../../hooks/usePosts";
+import { createComment, fetchComments } from "../../lib/api/comments";
 import { coverUrl, fetchPost, fetchPostCategories } from "../../lib/api/posts";
-import type { Post } from "../../types";
+import { fetchPublicSettings } from "../../lib/api/settings";
+import type { BlogCommentsMode, Comment, Post } from "../../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -78,6 +81,133 @@ function PostCard({ post, onClick }: { post: Post; onClick: () => void }) {
         </div>
       </div>
     </article>
+  );
+}
+
+// ── Commentaires ──────────────────────────────────────────────────────────────
+
+function CommentsSection({ postId }: { postId: number }) {
+  const { member } = useAuth();
+  const [mode, setMode] = useState<BlogCommentsMode>("disabled");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [content, setContent] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchPublicSettings()
+      .then((s) => setMode((s.blog_comments_mode as BlogCommentsMode) || "disabled"))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchComments(postId)
+      .then(setComments)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [postId]);
+
+  if (mode === "disabled") return null;
+
+  const isMember = !!member;
+  const needsGuestFields = mode === "public" && !isMember;
+  const blocked = mode === "members" && !isMember;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!content.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const created = await createComment(postId, {
+        content: content.trim(),
+        ...(needsGuestFields
+          ? { author_name: guestName.trim(), author_email: guestEmail.trim() }
+          : {}),
+      });
+      setComments((prev) => [...prev, created]);
+      setContent("");
+      setGuestName("");
+      setGuestEmail("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className={styles.commentsSection}>
+      <h2 className={styles.commentsTitle}>
+        Commentaires{comments.length > 0 ? ` (${comments.length})` : ""}
+      </h2>
+
+      {loading ? (
+        <p className={styles.stateMsg}>Chargement…</p>
+      ) : comments.length === 0 ? (
+        <p className={styles.empty}>Aucun commentaire pour le moment.</p>
+      ) : (
+        <ul className={styles.commentsList}>
+          {comments.map((c) => (
+            <li key={c.id} className={styles.commentItem}>
+              <span className={styles.commentAvatar}>{initials(c.author_name)}</span>
+              <div className={styles.commentBody}>
+                <div className={styles.commentMeta}>
+                  <span className={styles.commentAuthor}>{c.author_name}</span>
+                  <span className={styles.commentDate}>{formatDate(c.created_at)}</span>
+                </div>
+                <p className={styles.commentContent}>{c.content}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {blocked ? (
+        <p className={styles.commentsNotice}>Connectez-vous en tant que membre pour commenter cet article.</p>
+      ) : (
+        <form className={styles.commentForm} onSubmit={handleSubmit}>
+          {needsGuestFields && (
+            <div className={styles.commentGuestFields}>
+              <input
+                className={styles.commentInput}
+                placeholder="Votre nom"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                required
+              />
+              <input
+                className={styles.commentInput}
+                type="email"
+                placeholder="Votre courriel"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                required
+              />
+            </div>
+          )}
+          <textarea
+            className={styles.commentTextarea}
+            placeholder="Votre commentaire…"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={3}
+            required
+          />
+          <button
+            type="submit"
+            className={styles.commentSubmit}
+            disabled={submitting || !content.trim()}
+          >
+            {submitting ? "Envoi…" : "Publier"}
+          </button>
+          {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        </form>
+      )}
+    </section>
   );
 }
 
@@ -168,6 +298,7 @@ function PostDetail({ postId, onBack }: { postId: number; onBack: () => void }) 
         />
 
         <div className={styles.detailDivider} />
+        <CommentsSection postId={post.id} />
         <button className={styles.detailBottomBack} onClick={onBack}>← Retour au blog</button>
       </main>
 
