@@ -72,6 +72,79 @@ function IntegrationsPanel() {
     );
 }
 
+// ── Commentaires du blog ──────────────────────────────────────────────────────
+
+const COMMENTS_MODE_OPTIONS: { value: string; label: string; hint: string }[] = [
+    { value: "disabled", label: "Désactivés", hint: "Personne ne peut commenter les articles." },
+    { value: "members", label: "Membres uniquement", hint: "Seuls les membres connectés peuvent commenter." },
+    { value: "public", label: "Public", hint: "Membres et visiteurs (nom + courriel) peuvent commenter." },
+];
+
+function BlogCommentsPanel() {
+    const [mode, setMode] = useState("disabled");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchSettings()
+            .then((list) => setMode(list.find((s) => s.key === "blog_comments_mode")?.value ?? "disabled"))
+            .catch(() => {});
+    }, []);
+
+    async function handleChange(value: string) {
+        setSaving(true);
+        setError("");
+        setSaved(false);
+        try {
+            await updateSetting("blog_comments_mode", value);
+            setMode(value);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Commentaires du blog</h3>
+            <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+                Choisissez qui peut commenter les articles publiés.
+            </p>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".6rem" }}>
+                {COMMENTS_MODE_OPTIONS.map((opt) => (
+                    <li key={opt.value}>
+                        <label style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", cursor: saving ? "not-allowed" : "pointer" }}>
+                            <input
+                                type="radio"
+                                name="blog_comments_mode"
+                                value={opt.value}
+                                checked={mode === opt.value}
+                                disabled={saving}
+                                onChange={() => handleChange(opt.value)}
+                                style={{ marginTop: ".2rem" }}
+                            />
+                            <span>
+                                <span style={{ display: "block", fontWeight: 600, fontSize: ".9rem", color: "var(--text-main)" }}>
+                                    {opt.label}
+                                </span>
+                                <span style={{ display: "block", fontSize: ".78rem", color: "var(--text-muted)" }}>
+                                    {opt.hint}
+                                </span>
+                            </span>
+                        </label>
+                    </li>
+                ))}
+            </ul>
+            {saved && <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".75rem" }}>Enregistré ✓</p>}
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        </section>
+    );
+}
+
 // ── Listes de valeurs (sexe / statut matrimonial / districts) ────────────────
 
 const SECTIONS = [
@@ -304,6 +377,7 @@ export function ParametresPanel() {
     return (
         <div className={styles.rbacWrapper}>
             <OptionsPanel />
+            <BlogCommentsPanel />
             <IntegrationsPanel />
             <p style={{ color: "var(--text-muted)", fontSize: ".875rem", margin: "0 0 1rem" }}>
                 Ces valeurs alimentent les menus déroulants des formulaires (adhésion, profil, églises).

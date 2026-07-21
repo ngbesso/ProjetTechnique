@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.setting import (
+    BLOG_COMMENTS_MODES,
     PUBLIC_SETTINGS,
     SETTING_META,
     AppSettingRead,
@@ -59,6 +60,8 @@ def update_setting(
     _require_admin(current_user)
     if key not in SETTING_META:
         raise HTTPException(400, f"Paramètre inconnu : {key}")
+    if key == "blog_comments_mode" and data.value not in BLOG_COMMENTS_MODES:
+        raise HTTPException(400, f"Valeur invalide pour {key}")
     setting = db.get(AppSetting, key)
     if setting is None:
         setting = AppSetting(key=key, value=data.value)
