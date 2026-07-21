@@ -17,7 +17,13 @@ ADMIN_SYSTEM_PROMPT = (
     "représente d'après son nom (ex. un champ 'total_cad'/'total_usd' est un MONTANT "
     "en dollars, jamais un nombre d'éléments ; un champ 'count' ou 'total' sans devise "
     "est un DÉNOMBREMENT). Ne confonds jamais un montant monétaire avec un nombre de "
-    "dons, de membres ou d'événements. Réponds en français, de façon concise et "
+    "dons, de membres ou d'événements. Les listes commençant par 'top_' (top_sermons, "
+    "top_posts, top_donors, top_churches, top_events) sont DÉJÀ TRIÉES par la "
+    "plateforme, du plus élevé au plus faible (vues, montant, etc.) : le premier "
+    "élément de la liste est donc toujours celui qui a la valeur la plus élevée. Pour "
+    "une question sur le maximum ('le plus vu', 'le plus gros donateur', etc.), prends "
+    "toujours le PREMIER élément de la liste correspondante, ne recalcule pas et ne "
+    "compare pas les valeurs toi-même. Réponds en français, de façon concise et "
     "factuelle."
 )
 
