@@ -8,7 +8,13 @@ from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member
-from app.schemas.church import ChurchCreate, ChurchRead, ChurchUpdate
+from app.schemas.church import (
+    ChurchAdminStats,
+    ChurchCreate,
+    ChurchRead,
+    ChurchUpdate,
+    DistrictCount,
+)
 
 
 def _check_email_unique(
@@ -62,6 +68,29 @@ def get_church(church_id: int, db: Annotated[Session, Depends(get_db)]):
     if not church:
         raise HTTPException(404, "Église introuvable")
     return church
+
+
+@router.get("/admin/stats", response_model=ChurchAdminStats, dependencies=[can_manage])
+def get_churches_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre total d'Églises, actives/inactives et répartition par district."""
+    total = db.scalar(select(func.count()).select_from(Church)) or 0
+    active = (
+        db.scalar(
+            select(func.count()).select_from(Church).where(Church.is_active.is_(True))
+        )
+        or 0
+    )
+    rows = db.execute(
+        select(Church.district, func.count(Church.id))
+        .where(Church.district.isnot(None))
+        .group_by(Church.district)
+    ).all()
+    return ChurchAdminStats(
+        total=total,
+        active=active,
+        inactive=total - active,
+        by_district=[DistrictCount(district=d, count=c) for d, c in rows],
+    )
 
 
 @router.post("", response_model=ChurchRead, status_code=201, dependencies=[can_manage])

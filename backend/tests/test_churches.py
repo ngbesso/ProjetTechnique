@@ -45,6 +45,36 @@ def test_get_church_not_found(client):
     assert r.status_code == 404
 
 
+# ── stats ─────────────────────────────────────────────────────────────────────
+
+
+def test_stats_requires_permission(client, make_user, auth_header):
+    make_user("m@b.com", roles=["membre"])
+    r = client.get("/churches/admin/stats", headers=auth_header("m@b.com"))
+    assert r.status_code == 403
+
+
+def test_stats_totals_and_by_district(client, make_user, auth_header, db_session):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    _create_affiliate(client, h, "Église Nord A", "Nord")
+    _create_affiliate(client, h, "Église Nord B", "Nord")
+    aff3 = _create_affiliate(client, h, "Église Sud", "Sud")
+    client.patch(f"/churches/{aff3}", json={"is_active": False}, headers=h)
+
+    r = client.get("/churches/admin/stats", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+
+    assert body["total"] >= 4  # + église mère
+    assert body["inactive"] >= 1
+    assert body["active"] == body["total"] - body["inactive"]
+
+    by_district = {d["district"]: d["count"] for d in body["by_district"]}
+    assert by_district["Nord"] == 2
+    assert by_district["Sud"] == 1
+
+
 # ── create ────────────────────────────────────────────────────────────────────
 
 
