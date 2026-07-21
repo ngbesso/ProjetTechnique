@@ -535,6 +535,159 @@
   border-color: #7c3aed;
 }
 
+/* ── Comments ──────────────────────────────────────────────────────────────── */
+
+.commentsSection {
+  margin-bottom: 2.5rem;
+}
+
+.commentsTitle {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1040;
+  margin: 0 0 1.25rem;
+}
+
+.empty {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  padding: 0.5rem 0 1.5rem;
+}
+
+.commentsList {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.commentItem {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.commentAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.commentBody {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.commentMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.commentAuthor {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1040;
+}
+
+.commentDate {
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+.commentContent {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #1f2937;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.commentsNotice {
+  font-size: 0.88rem;
+  color: #5b21b6;
+  background: #f5f3ff;
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.commentGuestFields {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.commentInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #e5e0f9;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: inherit;
+}
+
+.commentInput:focus {
+  outline: none;
+  border-color: #7c3aed;
+}
+
+.commentTextarea {
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid #e5e0f9;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.commentTextarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+}
+
+.commentSubmit {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
+  color: #fff;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.6rem 1.4rem;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.commentSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.commentSubmit:not(:disabled):hover {
+  opacity: 0.9;
+}
+
 /* ── State messages ───────────────────────────────────────────────────────── */
 
 .stateMsg {

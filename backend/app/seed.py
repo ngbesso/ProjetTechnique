@@ -177,6 +177,7 @@ def seed_settings(db: Session) -> None:
     defaults = {
         "auto_approve_members": "false",
         "zeffy_embed_path": "",
+        "blog_comments_mode": "disabled",
     }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:

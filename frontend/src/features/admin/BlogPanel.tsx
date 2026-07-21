@@ -6,8 +6,9 @@ import { usePosts } from "../../hooks/usePosts";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchPostCategories, fetchPostsStats, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
+import { fetchComments, deleteComment } from "../../lib/api/comments";
 import { KpiCard } from "../../components/ui/KpiCard";
-import type { Post, PostAdminStats, PostInput, PostStatus } from "../../types";
+import type { Comment, Post, PostAdminStats, PostInput, PostStatus } from "../../types";
 
 // ── Icônes KPI ────────────────────────────────────────────────────────────────
 
@@ -159,6 +160,8 @@ export function BlogPanel() {
   const [removeEditCover, setRemoveEditCover] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
+  const [editComments, setEditComments] = useState<Comment[]>([]);
+  const [editCommentsLoading, setEditCommentsLoading] = useState(false);
 
   // Filters
   const [filterQ, setFilterQ] = useState("");
@@ -231,6 +234,29 @@ export function BlogPanel() {
     setEditCover(null);
     setRemoveEditCover(false);
     setEditError("");
+    setEditComments([]);
+    setEditCommentsLoading(true);
+    fetchComments(p.id)
+      .then(setEditComments)
+      .catch(() => setEditComments([]))
+      .finally(() => setEditCommentsLoading(false));
+  }
+
+  async function handleDeleteComment(commentId: number, authorName: string) {
+    if (!editingPost) return;
+    const ok = await confirm({
+      title: `Supprimer le commentaire de « ${authorName} » ?`,
+      description: "Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteComment(editingPost.id, commentId);
+      setEditComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Suppression impossible");
+    }
   }
 
   async function handleEditSubmit(e: React.FormEvent) {
@@ -517,6 +543,34 @@ export function BlogPanel() {
                 {editError && (
                   <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{editError}</p>
                 )}
+
+                <div style={{ marginTop: "1.5rem", borderTop: "1px solid #ede9fe", paddingTop: "1rem" }}>
+                  <h4 style={{ margin: "0 0 0.75rem", fontSize: ".9rem", fontWeight: 700, color: "var(--text-main)" }}>
+                    Commentaires {editComments.length > 0 && `(${editComments.length})`}
+                  </h4>
+                  {editCommentsLoading ? (
+                    <p className={styles.stateMsg}>Chargement…</p>
+                  ) : editComments.length === 0 ? (
+                    <p className={styles.empty}>Aucun commentaire sur cet article.</p>
+                  ) : (
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".6rem", maxHeight: "220px", overflowY: "auto" }}>
+                      {editComments.map((c) => (
+                        <li key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: ".75rem", padding: ".6rem .75rem", background: "#f8f7ff", borderRadius: "10px" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontWeight: 700, fontSize: ".82rem", color: "var(--text-main)" }}>
+                              {c.author_name} <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>· {formatDate(c.created_at)}</span>
+                            </p>
+                            <p style={{ margin: ".25rem 0 0", fontSize: ".82rem", color: "var(--text-main)", whiteSpace: "pre-wrap" }}>{c.content}</p>
+                          </div>
+                          <button type="button" className={styles.btnDanger}
+                            onClick={() => handleDeleteComment(c.id, c.author_name)}>
+                            Supprimer
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
               <div className={styles.modalFooter}>
                 <button type="button" className={styles.btnGhost}
