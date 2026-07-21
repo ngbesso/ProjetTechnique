@@ -15,6 +15,7 @@ import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
 import {EspacePage} from "./features/espace/EspacePage";
 import {PrivacyPage} from "./features/legal/PrivacyPage";
+import { ChatWidget } from "./components/chat/ChatWidget";
 
 export default function App() {
   const page = usePage();
@@ -31,17 +32,11 @@ export default function App() {
 
   if (loading) return <div className="loading">Chargement…</div>;
 
-  if (page === "login") return <LoginPage />;
-  if (page === "mot-de-passe-oublie") return <ForgotPasswordPage />;
   /*if (page === "register") return <RegisterPage />;*/
-  if (page === "adhesion") return <MembershipPage />;
-  if (page === "donation") return <DonationPage />;
-  if (page === "sermons") return <SermonsPage />;
   if (page === "evenements") {
     const eventId = routeParams.event;
     return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
   }
-  if (page === "blog") return <BlogPage />;
   if (page === "confidentialite") return <PrivacyPage />;
 
   // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"
@@ -53,5 +48,19 @@ export default function App() {
     return <AdminPage />;
   }
 
-  return <HomePage />;
+  let content: React.ReactNode;
+  if (page === "login") content = <LoginPage />;
+  else if (page === "mot-de-passe-oublie") content = <ForgotPasswordPage />;
+  else if (page === "adhesion") content = <MembershipPage />;
+  else if (page === "donation") content = <DonationPage />;
+  else if (page === "sermons") content = <SermonsPage />;
+  else if (page === "blog") content = <BlogPage />;
+  else content = <HomePage />;
+
+  return (
+    <>
+      {content}
+      <ChatWidget />
+    </>
+  );
 }

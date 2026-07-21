@@ -39,6 +39,41 @@ Services exposés :
 - PostgreSQL : localhost:5432
 - Redis : localhost:6379
 
+## Module IA (chatbot RAG)
+
+Le `ai-service` expose un assistant conversationnel (widget flottant sur le site
+public) qui répond aux questions des visiteurs à partir du contenu déjà publié
+(articles de blog et sermons), via retrieval-augmented generation :
+
+1. Synchronisation périodique du contenu publié depuis l'API backend (`GET /posts`,
+   `GET /sermons`).
+2. Indexation vectorielle en mémoire (embeddings `sentence-transformers`, similarité
+   cosinus).
+3. Recherche des extraits les plus pertinents pour la question posée, puis génération
+   de la réponse par un LLM auto-hébergé (Ollama) à partir de ces seuls extraits.
+
+Le LLM tourne dans un conteneur `ollama` du docker-compose (pas de clé API, pas de
+coût par requête). Après le premier `docker compose up`, télécharger le modèle une
+fois :
+
+```bash
+docker compose exec ollama ollama pull llama3.2:3b
+```
+
+Configuration (dans `.env`, voir `.env.example`) :
+
+- `OLLAMA_URL` / `OLLAMA_MODEL` — service et modèle Ollama utilisés. Si Ollama est
+  injoignable ou le modèle absent, le service répond avec un message dégradé plutôt
+  que d'échouer.
+- `BACKEND_URL` — URL interne du backend, utilisée par `ai-service` pour récupérer
+  le contenu à indexer.
+
+Endpoints principaux (docs complètes : http://localhost:8001/docs) :
+
+- `POST /chat` — pose une question, retourne une réponse et ses sources.
+- `POST /refresh` — force une réindexation immédiate du contenu (sinon automatique,
+  à intervalle régulier).
+
 ## Équipe
 
 | Membre   | Responsabilité principale                                   |
