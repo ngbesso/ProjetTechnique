@@ -52,8 +52,8 @@ export function ChatWidget() {
         <div className={styles.panel}>
           <div className={styles.header}>
             <div>
-              <p className={styles.headerTitle}>Assistant Mission Évangélique</p>
-              <p className={styles.headerSubtitle}>Questions sur nos sermons et articles</p>
+              <p className={styles.headerTitle}>Bienvenue sur Mission Évangélique</p>
+              <p className={styles.headerSubtitle}>Sermons, articles, événements, Églises et plus</p>
             </div>
             <button
               type="button"
@@ -68,8 +68,9 @@ export function ChatWidget() {
           <div className={styles.messages}>
             {messages.length === 0 && (
               <p className={styles.emptyState}>
-                Posez une question sur nos sermons ou nos articles de blog — l'assistant
-                répond à partir du contenu déjà publié sur le site.
+                Posez-moi une question sur nos sermons, nos articles, nos événements et
+                formations, nos Églises affiliées, l'adhésion ou les dons — je réponds à
+                partir du contenu déjà publié sur le site.
               </p>
             )}
             {messages.map((m, i) => (
