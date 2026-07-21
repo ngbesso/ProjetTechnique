@@ -15,6 +15,7 @@ from app.api.routes import (
     parameters,
     posts,
     prayer_requests,
+    reports,
     sermons,
     settings as settings_routes,
     volunteer_requests,
@@ -59,6 +60,7 @@ app.include_router(settings_routes.router)
 app.include_router(dashboard.router)
 app.include_router(prayer_requests.router)
 app.include_router(volunteer_requests.router)
+app.include_router(reports.router)
 
 
 @app.get("/")

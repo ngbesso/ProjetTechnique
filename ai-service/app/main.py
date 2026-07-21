@@ -2,12 +2,12 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.core.config import settings
-from app.services import rag
+from app.services import admin_auth, admin_chat, rag
 
 logger = logging.getLogger(__name__)
 
@@ -86,3 +86,24 @@ async def refresh():
             status_code=503, detail="Échec du rafraîchissement de l'index"
         )
     return {"documents_indexed": count}
+
+
+class AdminChatRequest(BaseModel):
+    question: str
+
+
+class AdminChatResponse(BaseModel):
+    answer: str
+    used_stats: list[str]
+
+
+@app.post("/admin/chat", response_model=AdminChatResponse)
+async def admin_chat_endpoint(
+    payload: AdminChatRequest,
+    authorization: str | None = Header(default=None),
+):
+    try:
+        await admin_auth.verify_admin(authorization)
+    except admin_auth.AdminAuthError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+    return await admin_chat.answer(payload.question, authorization)
