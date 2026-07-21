@@ -69,8 +69,7 @@ export function ChatWidget() {
             {messages.length === 0 && (
               <p className={styles.emptyState}>
                 Posez-moi une question sur nos sermons, nos articles, nos événements et
-                formations, nos Églises affiliées, l'adhésion ou les dons — je réponds à
-                partir du contenu déjà publié sur le site.
+                formations, nos Églises affiliées, l'adhésion ou les dons
               </p>
             )}
             {messages.map((m, i) => (
