@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
@@ -31,7 +32,8 @@ export type Section =
   | "benevolat"
   | "pages"
   | "utilisateurs"
-  | "parametres";
+  | "parametres"
+  | "assistant";
 
 const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
@@ -46,6 +48,7 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
   { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
   { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
+  { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
 ];
 
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
@@ -417,6 +420,8 @@ export function AdminPage() {
               <BenevolatPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
+          ) : section === "assistant" ? (
+              <AssistantPanel />
           ) : (
               <PlaceholderPanel label={activeLabel} />
           )}

@@ -37,3 +37,15 @@ class ChurchRead(ChurchBase):
     is_mother: bool
     is_active: bool
     created_at: datetime
+
+
+class DistrictCount(BaseModel):
+    district: str
+    count: int
+
+
+class ChurchAdminStats(BaseModel):
+    total: int
+    active: int
+    inactive: int
+    by_district: list[DistrictCount]
