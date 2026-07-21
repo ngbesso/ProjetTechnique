@@ -47,6 +47,13 @@ services:
       redis:
         condition: service_started
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+
   ai-service:
     build: ./ai-service
     env_file: .env
@@ -55,7 +62,11 @@ services:
     volumes:
       - ./ai-service:/app
     depends_on:
+      backend:
+        condition: service_started
       redis:
+        condition: service_started
+      ollama:
         condition: service_started
 
   frontend:
