@@ -232,11 +232,13 @@ export function AdminPage() {
   const { count: pendingCount, refresh: refreshPending } = usePendingCount();
 
   const isGlobalAdmin = user?.is_global_admin ?? false;
-  const NAV_ITEMS = ALL_NAV_ITEMS.filter(
-    (item) => !item.globalOnly || isGlobalAdmin,
-  );
+  // Un utilisateur dont le seul rôle est « organisateur » n'a accès qu'aux Événements.
+  const isOrganisateurOnly = user?.roles.length === 1 && user.roles[0] === "organisateur";
+  const NAV_ITEMS = isOrganisateurOnly
+    ? ALL_NAV_ITEMS.filter((item) => item.id === "evenements")
+    : ALL_NAV_ITEMS.filter((item) => !item.globalOnly || isGlobalAdmin);
 
-  const [section, setSection] = useState<Section>("dashboard");
+  const [section, setSection] = useState<Section>(isOrganisateurOnly ? "evenements" : "dashboard");
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");

@@ -9,7 +9,7 @@ import type { UserAdmin } from "../../types";
 const col = createColumnHelper<UserAdmin>();
 
 export function UsersPanel() {
-    const { users, loading, error, load, toggleActive, assign, revoke } = useUsers();
+    const { users, loading, error, load, toggleActive, assign, revoke, create } = useUsers();
     const { roles, load: loadRbac } = useRbac();
     const { churches, load: loadChurches } = useChurches();
     const [uId, setUId] = useState("");
@@ -18,8 +18,30 @@ export function UsersPanel() {
     const [assignError, setAssignError] = useState("");
     const [filterQ, setFilterQ] = useState("");
     const [filterActive, setFilterActive] = useState("");
+    const [newEmail, setNewEmail] = useState("");
+    const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState("");
+    const [createSuccess, setCreateSuccess] = useState("");
 
     useEffect(() => { load(); loadRbac(); loadChurches(); }, [load, loadRbac, loadChurches]);
+
+    async function handleCreate(e: React.FormEvent) {
+        e.preventDefault();
+        const email = newEmail.trim();
+        if (!email) return;
+        setCreating(true);
+        setCreateError("");
+        setCreateSuccess("");
+        try {
+            await create(email);
+            setNewEmail("");
+            setCreateSuccess(`Compte créé pour ${email} — un lien d'activation lui a été envoyé par courriel.`);
+        } catch (err) {
+            setCreateError(err instanceof Error ? err.message : "Erreur");
+        } finally {
+            setCreating(false);
+        }
+    }
 
     const filteredUsers = users.filter((u) => {
         if (filterQ && !u.email.toLowerCase().includes(filterQ.toLowerCase())) return false;
@@ -85,6 +107,34 @@ export function UsersPanel() {
 
     return (
         <>
+            <section className={styles.card}>
+                <h3 className={styles.cardTitle}>Créer un compte</h3>
+                <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+                    Crée un compte autonome (sans fiche membre associée) — utile par exemple pour un
+                    organisateur qui n'a besoin que d'un accès à l'administration. Un lien d'activation
+                    lui est envoyé par courriel.
+                </p>
+                <form onSubmit={handleCreate} className={styles.inlineForm}>
+                    <input
+                        className={styles.input}
+                        type="email"
+                        placeholder="courriel@exemple.com"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        required
+                    />
+                    <button type="submit" className={styles.btnPrimary} disabled={creating || !newEmail.trim()}>
+                        {creating ? "…" : "+ Créer le compte"}
+                    </button>
+                </form>
+                {createSuccess && (
+                    <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>
+                        ✓ {createSuccess}
+                    </p>
+                )}
+                {createError && <p className={styles.errorMsg} role="alert" style={{ marginTop: ".5rem" }}>{createError}</p>}
+            </section>
+
             <section className={styles.card}>
                 <h3 className={styles.cardTitle}>Attribuer un rôle</h3>
                 <form onSubmit={handleAssign} className={styles.formGrid}>

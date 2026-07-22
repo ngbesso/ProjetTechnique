@@ -3,6 +3,7 @@ import adminStyles from "./AdminPage.module.css";
 import styles from "./EvenementsPanel.module.css";
 import { Button } from "../../components/ui/Button";
 import { Field } from "../../components/ui/Field";
+import { KpiCard } from "../../components/ui/KpiCard";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -10,17 +11,27 @@ import { useEvents } from "../../hooks/useEvents";
 import { useParameters } from "../../hooks/useParameters";
 import { exportEventRegistrations, uploadEventImage } from "../../lib/api/events";
 import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
-import type { District, EventInput, EventItem, EventStatus } from "../../types";
+import type { District, EventFormat, EventInput, EventItem, EventStatus } from "../../types";
 
-type StepId = "info" | "date" | "details" | "images" | "review";
+type StepId = "info" | "date" | "details" | "messages" | "images" | "review";
 
 const STEPS: { id: StepId; label: string }[] = [
   { id: "info", label: "Informations" },
   { id: "date", label: "Date & Lieu" },
   { id: "details", label: "Détails" },
+  { id: "messages", label: "Rappels" },
   { id: "images", label: "Images" },
   { id: "review", label: "Révision" },
 ];
+
+const DEFAULT_CANCEL_DEADLINE_HOURS = 24;
+
+const DEFAULT_CONFIRMATION_MESSAGE =
+  "Bonjour {prenom}, nous avons bien reçu votre inscription à « {titre} » prévue le {date}. " +
+  "Vous pourrez annuler votre inscription jusqu'à {delai} heures avant l'événement.";
+
+const DEFAULT_REMINDER_MESSAGE =
+  "Bonjour {prenom}, petit rappel : « {titre} » a lieu le {date}. Au plaisir de vous y retrouver !";
 
 const EMPTY: EventInput = {
   title: "",
@@ -31,10 +42,43 @@ const EMPTY: EventInput = {
   location: "",
   instructor: "",
   price: 0,
+  zeffy_form_path: "",
   church_id: null,
   district: null,
   capacity: null,
+  show_registration_count: true,
   status: "draft",
+  format: "presentiel",
+  online_link: "",
+  intervenant_category: null,
+  cancel_deadline_hours: DEFAULT_CANCEL_DEADLINE_HOURS,
+  confirmation_message: DEFAULT_CONFIRMATION_MESSAGE,
+  reminder_message: DEFAULT_REMINDER_MESSAGE,
+};
+
+/** Substitue {prenom}/{titre}/{date}/{delai} avec des valeurs d'exemple, pour l'aperçu du message. */
+function renderMessagePreview(template: string, form: EventInput): string {
+  const demoDate = form.date_start
+    ? new Date(form.date_start).toLocaleDateString("fr-CA", {
+        day: "numeric", month: "long", year: "numeric",
+      })
+    : "15 août 2026";
+  const values: Record<string, string> = {
+    "{prenom}": "Jean",
+    "{titre}": form.title || "Titre de l'événement",
+    "{date}": demoDate,
+    "{delai}": String(form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS),
+  };
+  return Object.entries(values).reduce(
+    (acc, [token, value]) => acc.split(token).join(value),
+    template,
+  );
+}
+
+const FORMAT_LABELS: Record<EventFormat, string> = {
+  presentiel: "Présentiel",
+  en_ligne: "En ligne",
+  hybride: "Hybride",
 };
 
 const STATUS_LABELS: Record<EventStatus, string> = {
@@ -74,11 +118,19 @@ function eventToForm(e: EventItem): EventInput {
     date_end: toLocalInput(e.date_end),
     location: e.location ?? "",
     instructor: e.instructor ?? "",
+    intervenant_category: e.intervenant_category,
     price: e.price ?? 0,
+    zeffy_form_path: e.zeffy_form_path ?? "",
     church_id: e.church_id,
     district: e.district,
     capacity: e.capacity,
+    show_registration_count: e.show_registration_count,
     status: e.status,
+    format: e.format,
+    online_link: e.online_link ?? "",
+    cancel_deadline_hours: e.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS,
+    confirmation_message: e.confirmation_message ?? "",
+    reminder_message: e.reminder_message ?? "",
   };
 }
 
@@ -141,25 +193,6 @@ function IconXCircle() {
   );
 }
 
-interface KpiProps {
-  color: "violet" | "amber" | "emerald" | "rose";
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-}
-
-function KpiCard({ color, icon, value, label }: KpiProps) {
-  return (
-    <div className={`${styles.kpiCard} ${styles[color]}`}>
-      <div className={`${styles.kpiIcon} ${styles[color]}`}>{icon}</div>
-      <div className={styles.kpiBody}>
-        <div className={styles.kpiLabel}>{label}</div>
-        <div className={styles.kpiValue}>{value}</div>
-      </div>
-    </div>
-  );
-}
-
 function StepProgress({ current }: { current: number }) {
   return (
     <div className={styles.stepProgress}>
@@ -201,6 +234,8 @@ export function EvenementsPanel() {
   const { churches, load: loadChurches } = useChurches();
   const { values: districtValues, load: loadDistricts } = useParameters("district");
   const { values: categoryValues, load: loadCategories } = useParameters("event_category");
+  const { values: intervenantCategoryValues, load: loadIntervenantCategories } =
+    useParameters("intervenant_category");
   const { confirm, dialog } = useConfirm();
 
   const canManage =
@@ -237,7 +272,8 @@ export function EvenementsPanel() {
     loadChurches();
     loadDistricts();
     loadCategories();
-  }, [loadAdmin, loadChurches, loadDistricts, loadCategories]);
+    loadIntervenantCategories();
+  }, [loadAdmin, loadChurches, loadDistricts, loadCategories, loadIntervenantCategories]);
 
   function applyFilters(overrides?: { q?: string; category?: string; district?: string }) {
     const q = overrides?.q ?? filterQ;
@@ -303,6 +339,16 @@ export function EvenementsPanel() {
     if (currentStep === 0 && !form.title.trim()) return "Le titre est requis.";
     if (currentStep === 0 && !form.category) return "La catégorie est requise.";
     if (currentStep === 1 && !form.date_start) return "La date de début est requise.";
+    if (
+      currentStep === 1 &&
+      (form.format === "en_ligne" || form.format === "hybride") &&
+      !form.online_link?.trim()
+    ) {
+      return "Le lien de connexion est requis pour un événement en ligne ou hybride.";
+    }
+    if (currentStep === 1 && form.format === "hybride" && !form.location?.trim()) {
+      return "Le lieu est requis pour un événement hybride.";
+    }
     return null;
   }
 
@@ -474,6 +520,7 @@ export function EvenementsPanel() {
                       className={styles.input}
                       type="datetime-local"
                       required
+                      min={isEditing ? undefined : toLocalInput(new Date().toISOString())}
                       value={form.date_start}
                       onChange={(e) => setForm({ ...form, date_start: e.target.value })}
                     />
@@ -488,16 +535,44 @@ export function EvenementsPanel() {
                     />
                   </Field>
 
-                  <div className={styles.fullWidth}>
-                    <Field label="Lieu">
-                      <input
-                        className={styles.input}
-                        placeholder="ex. : Centre de plein air, Sainte-Adèle"
-                        value={form.location ?? ""}
-                        onChange={(e) => setForm({ ...form, location: e.target.value })}
-                      />
-                    </Field>
-                  </div>
+                  <Field label="Format">
+                    <select
+                      className={styles.select}
+                      value={form.format ?? "presentiel"}
+                      onChange={(e) =>
+                        setForm({ ...form, format: e.target.value as EventFormat })
+                      }
+                    >
+                      {(Object.keys(FORMAT_LABELS) as EventFormat[]).map((f) => (
+                        <option key={f} value={f}>{FORMAT_LABELS[f]}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  {(form.format === "en_ligne" || form.format === "hybride") && (
+                    <div className={form.format === "hybride" ? undefined : styles.fullWidth}>
+                      <Field label="Lien de connexion *">
+                        <input
+                          className={styles.input}
+                          placeholder="ex. : https://zoom.us/j/123456789"
+                          value={form.online_link ?? ""}
+                          onChange={(e) => setForm({ ...form, online_link: e.target.value })}
+                        />
+                      </Field>
+                    </div>
+                  )}
+                  {(form.format === "presentiel" || form.format === "hybride") && (
+                    <div className={form.format === "hybride" ? undefined : styles.fullWidth}>
+                      <Field label="Lieu *">
+                        <input
+                          className={styles.input}
+                          placeholder="ex. : Centre de plein air, Sainte-Adèle"
+                          value={form.location ?? ""}
+                          onChange={(e) => setForm({ ...form, location: e.target.value })}
+                        />
+                      </Field>
+                    </div>
+                  )}
 
                   <Field label="Église organisatrice">
                     <select
@@ -540,6 +615,21 @@ export function EvenementsPanel() {
                     />
                   </Field>
 
+                  <Field label="Catégorie d'intervenant">
+                    <select
+                      className={styles.select}
+                      value={form.intervenant_category ?? ""}
+                      onChange={(e) =>
+                        setForm({ ...form, intervenant_category: e.target.value || null })
+                      }
+                    >
+                      <option value="">Aucune</option>
+                      {intervenantCategoryValues.map((c) => (
+                        <option key={c.id} value={c.label}>{c.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+
                   <Field label="Prix (CAD) — 0 = gratuit">
                     <input
                       className={styles.input}
@@ -550,6 +640,23 @@ export function EvenementsPanel() {
                       onChange={(e) => setForm({ ...form, price: e.target.value ? Number(e.target.value) : 0 })}
                     />
                   </Field>
+
+                  {(form.price ?? 0) > 0 && (
+                    <div className={styles.fullWidth}>
+                      <Field label="Chemin du formulaire Zeffy *">
+                        <input
+                          className={styles.input}
+                          placeholder="ex. : /fr/donation-form/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                          value={form.zeffy_form_path ?? ""}
+                          onChange={(e) => setForm({ ...form, zeffy_form_path: e.target.value })}
+                        />
+                      </Field>
+                      <p className={styles.imageHint}>
+                        Requis pour un événement payant — sinon, les visiteurs verront un message
+                        indiquant que le paiement n'est pas encore configuré.
+                      </p>
+                    </div>
+                  )}
 
                   <Field label="Places maximum">
                     <input
@@ -567,6 +674,44 @@ export function EvenementsPanel() {
                     />
                   </Field>
 
+                  <Field label="Nombre d'inscrits visible publiquement">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={form.show_registration_count ?? true}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          show_registration_count: !(form.show_registration_count ?? true),
+                        })
+                      }
+                      style={{
+                        width: 48,
+                        height: 26,
+                        borderRadius: 999,
+                        border: "none",
+                        background: (form.show_registration_count ?? true) ? "var(--vivid-violet)" : "#d1d5db",
+                        cursor: "pointer",
+                        position: "relative",
+                        transition: "background .2s",
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 3,
+                          left: (form.show_registration_count ?? true) ? 25 : 3,
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          background: "#fff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,.3)",
+                          transition: "left .2s",
+                        }}
+                      />
+                    </button>
+                  </Field>
+
                   <Field label="Statut">
                     <select
                       className={styles.select}
@@ -578,6 +723,63 @@ export function EvenementsPanel() {
                       ))}
                     </select>
                   </Field>
+                </div>
+              )}
+
+              {STEPS[step].id === "messages" && (
+                <div className={styles.grid2}>
+                  <Field label="Délai d'annulation (heures avant l'événement)">
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min={0}
+                      value={form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          cancel_deadline_hours: e.target.value ? Number(e.target.value) : 0,
+                        })
+                      }
+                    />
+                  </Field>
+
+                  <div className={styles.fullWidth}>
+                    <Field label="Message de confirmation d'inscription">
+                      <textarea
+                        className={styles.textarea}
+                        placeholder={DEFAULT_CONFIRMATION_MESSAGE}
+                        value={form.confirmation_message ?? ""}
+                        onChange={(e) => setForm({ ...form, confirmation_message: e.target.value })}
+                      />
+                    </Field>
+                    <p className={styles.imageHint}>
+                      Variables disponibles : {"{prenom}"}, {"{titre}"}, {"{date}"}, {"{delai}"}
+                    </p>
+                    {form.confirmation_message && (
+                      <p className={styles.imageHint}>
+                        <strong>Aperçu :</strong> {renderMessagePreview(form.confirmation_message, form)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className={styles.fullWidth}>
+                    <Field label="Message de rappel">
+                      <textarea
+                        className={styles.textarea}
+                        placeholder={DEFAULT_REMINDER_MESSAGE}
+                        value={form.reminder_message ?? ""}
+                        onChange={(e) => setForm({ ...form, reminder_message: e.target.value })}
+                      />
+                    </Field>
+                    <p className={styles.imageHint}>
+                      Variables disponibles : {"{prenom}"}, {"{titre}"}, {"{date}"}, {"{delai}"}
+                    </p>
+                    {form.reminder_message && (
+                      <p className={styles.imageHint}>
+                        <strong>Aperçu :</strong> {renderMessagePreview(form.reminder_message, form)}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -635,9 +837,21 @@ export function EvenementsPanel() {
                     <span className={styles.reviewValue}>{formatLocalDateTime(form.date_end)}</span>
                   </div>
                   <div className={styles.reviewRow}>
-                    <span className={styles.reviewLabel}>Lieu</span>
-                    <span className={styles.reviewValue}>{form.location || "—"}</span>
+                    <span className={styles.reviewLabel}>Format</span>
+                    <span className={styles.reviewValue}>{FORMAT_LABELS[form.format ?? "presentiel"]}</span>
                   </div>
+                  {(form.format === "presentiel" || form.format === "hybride") && (
+                    <div className={styles.reviewRow}>
+                      <span className={styles.reviewLabel}>Lieu</span>
+                      <span className={styles.reviewValue}>{form.location || "—"}</span>
+                    </div>
+                  )}
+                  {(form.format === "en_ligne" || form.format === "hybride") && (
+                    <div className={styles.reviewRow}>
+                      <span className={styles.reviewLabel}>Lien de connexion</span>
+                      <span className={styles.reviewValue}>{form.online_link || "—"}</span>
+                    </div>
+                  )}
                   <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Église organisatrice</span>
                     <span className={styles.reviewValue}>{churchLabel(form.church_id ?? null)}</span>
@@ -651,16 +865,38 @@ export function EvenementsPanel() {
                     <span className={styles.reviewValue}>{form.instructor || "—"}</span>
                   </div>
                   <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Catégorie d'intervenant</span>
+                    <span className={styles.reviewValue}>{form.intervenant_category || "—"}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Prix</span>
                     <span className={styles.reviewValue}>{formatPrice(form.price ?? 0)}</span>
                   </div>
+                  {(form.price ?? 0) > 0 && (
+                    <div className={styles.reviewRow}>
+                      <span className={styles.reviewLabel}>Formulaire Zeffy</span>
+                      <span className={styles.reviewValue}>{form.zeffy_form_path || "—"}</span>
+                    </div>
+                  )}
                   <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Places maximum</span>
                     <span className={styles.reviewValue}>{form.capacity ?? "Illimité"}</span>
                   </div>
                   <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Nombre d'inscrits visible publiquement</span>
+                    <span className={styles.reviewValue}>
+                      {(form.show_registration_count ?? true) ? "Oui" : "Non"}
+                    </span>
+                  </div>
+                  <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Statut</span>
                     <span className={styles.reviewValue}>{STATUS_LABELS[form.status ?? "draft"]}</span>
+                  </div>
+                  <div className={styles.reviewRow}>
+                    <span className={styles.reviewLabel}>Délai d'annulation</span>
+                    <span className={styles.reviewValue}>
+                      {form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS} h avant l'événement
+                    </span>
                   </div>
                   <div className={styles.reviewRow}>
                     <span className={styles.reviewLabel}>Image de couverture</span>
@@ -819,7 +1055,16 @@ export function EvenementsPanel() {
                       <span className={styles.metaIcon}>🗓️</span>
                       <span className={styles.metaText}>{formatDateTime(e.date_start)}</span>
                     </div>
-                    {e.location && (
+                    {(e.format === "en_ligne" || e.format === "hybride") && (
+                      <div className={styles.eventMetaRow}>
+                        <span className={styles.metaIcon}>🌐</span>
+                        <span className={styles.metaText}>
+                          {e.format === "hybride" ? "Hybride" : "En ligne"}
+                          {e.online_link ? ` · ${e.online_link}` : ""}
+                        </span>
+                      </div>
+                    )}
+                    {(e.format === "presentiel" || e.format === "hybride") && e.location && (
                       <div className={styles.eventMetaRow}>
                         <span className={styles.metaIcon}>📍</span>
                         <span className={styles.metaText}>{e.location}</span>
@@ -828,7 +1073,9 @@ export function EvenementsPanel() {
                     {e.instructor && (
                       <div className={styles.eventMetaRow}>
                         <span className={styles.metaIcon}>👤</span>
-                        <span className={styles.metaText}>{e.instructor}</span>
+                        <span className={styles.metaText}>
+                          {e.instructor}{e.intervenant_category ? ` (${e.intervenant_category})` : ""}
+                        </span>
                       </div>
                     )}
                     <div className={styles.eventMetaRow}>

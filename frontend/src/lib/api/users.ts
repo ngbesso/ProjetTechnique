@@ -2,6 +2,9 @@ import { http } from "./client";
 import type { UserAdmin, RoleAssignmentInput } from "../../types";
 
 export function fetchUsers() { return http.get<UserAdmin[]>("/admin/users"); }
+export function createUser(email: string) {
+    return http.post<UserAdmin>("/admin/users", { email });
+}
 export function setUserActive(id: number, is_active: boolean) {
     return http.patch<UserAdmin>(`/admin/users/${id}`, { is_active });
 }

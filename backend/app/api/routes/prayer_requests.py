@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_member, require_global_permission
 from app.core.config import settings
-from app.core.email import EmailSender, get_email_sender, prayer_request_received
+from app.core.email import (
+    EmailSender,
+    get_email_sender,
+    prayer_request_handled,
+    prayer_request_received,
+)
 from app.db.session import get_db
 from app.models.member import Member
 from app.models.prayer_request import PrayerRequest, PrayerRequestStatus
@@ -101,11 +106,22 @@ def list_prayer_requests_admin(
 def update_prayer_request(
     request_id: int,
     payload: PrayerRequestUpdate,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
 ):
-    """Change le statut d'une demande de prière (ex. marquer traitée) — réservé aux gestionnaires."""
+    """Change le statut d'une demande de prière (ex. marquer traitée) — réservé
+    aux gestionnaires. Envoie un courriel au membre lorsqu'elle est marquée traitée."""
     req = _load(db, request_id)
     req.status = payload.status
     db.commit()
     db.refresh(req)
+
+    if req.member and payload.status == PrayerRequestStatus.handled:
+        background.add_task(
+            prayer_request_handled,
+            sender,
+            req.member.email,
+            req.member.full_name,
+        )
     return _to_admin_read(req)

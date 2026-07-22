@@ -27,6 +27,10 @@ DEFAULT_ROLES: dict[str, dict] = {
         "description": "Membre",
         "permissions": ["donation:create", "event:read", "sermon:read"],
     },
+    "organisateur": {
+        "description": "Organisateur d'événements",
+        "permissions": ["event:manage"],
+    },
 }
 
 # Permissions qui n'ont de sens qu'au niveau de l'organisation (église mère).

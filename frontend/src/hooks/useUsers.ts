@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import type { UserAdmin, RoleAssignmentInput } from "../types";
-import { fetchUsers, setUserActive, assignRole, revokeRole } from "../lib/api/users";
+import { fetchUsers, setUserActive, assignRole, revokeRole, createUser } from "../lib/api/users";
 
 export function useUsers() {
     const [users, setUsers] = useState<UserAdmin[]>([]);
@@ -26,6 +26,11 @@ export function useUsers() {
 
     const assign = useCallback(async (d: RoleAssignmentInput) => { await assignRole(d); await load(); }, [load]);
     const revoke = useCallback(async (d: RoleAssignmentInput) => { await revokeRole(d); await load(); }, [load]);
+    const create = useCallback(async (email: string) => {
+        const u = await createUser(email);
+        setUsers((prev) => [...prev, u]);
+        return u;
+    }, []);
 
-    return { users, loading, error, load, toggleActive, assign, revoke };
+    return { users, loading, error, load, toggleActive, assign, revoke, create };
 }

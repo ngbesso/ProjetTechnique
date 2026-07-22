@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from app.models.event import EventStatus, RegistrationStatus
+from app.models.event import EventFormat, EventStatus, RegistrationStatus
 
 
 class EventCreate(BaseModel):
@@ -13,11 +13,26 @@ class EventCreate(BaseModel):
     date_end: datetime | None = None
     location: str | None = None
     instructor: str | None = None
+    intervenant_category: str | None = None
     price: float | None = Field(default=0, ge=0)
+    zeffy_form_path: str | None = None
     church_id: int | None = None
     district: str | None = None
     capacity: int | None = Field(default=None, gt=0)
+    show_registration_count: bool = True
     status: EventStatus = EventStatus.draft
+    format: EventFormat = EventFormat.presentiel
+    online_link: str | None = None
+    cancel_deadline_hours: int | None = Field(default=None, ge=0)
+    confirmation_message: str | None = None
+    reminder_message: str | None = None
+
+    @field_validator("date_start")
+    @classmethod
+    def date_start_not_in_past(cls, v: datetime) -> datetime:
+        if v < datetime.now(timezone.utc):
+            raise ValueError("La date de début ne peut pas être dans le passé")
+        return v
 
     @field_validator("date_end")
     @classmethod
@@ -26,6 +41,16 @@ class EventCreate(BaseModel):
         if v is not None and start is not None and v < start:
             raise ValueError("La date de fin doit être postérieure à la date de début")
         return v
+
+    @model_validator(mode="after")
+    def format_requirements(self) -> "EventCreate":
+        if self.format in (EventFormat.en_ligne, EventFormat.hybride) and not (
+            self.online_link and self.online_link.strip()
+        ):
+            raise ValueError("Le lien de connexion est requis pour un événement en ligne ou hybride")
+        if self.format == EventFormat.hybride and not (self.location and self.location.strip()):
+            raise ValueError("Le lieu est requis pour un événement hybride")
+        return self
 
 
 class EventUpdate(BaseModel):
@@ -36,11 +61,29 @@ class EventUpdate(BaseModel):
     date_end: datetime | None = None
     location: str | None = None
     instructor: str | None = None
+    intervenant_category: str | None = None
     price: float | None = Field(default=None, ge=0)
+    zeffy_form_path: str | None = None
     church_id: int | None = None
     district: str | None = None
     capacity: int | None = Field(default=None, gt=0)
+    show_registration_count: bool | None = None
     status: EventStatus | None = None
+    format: EventFormat | None = None
+    online_link: str | None = None
+    cancel_deadline_hours: int | None = Field(default=None, ge=0)
+    confirmation_message: str | None = None
+    reminder_message: str | None = None
+
+    @model_validator(mode="after")
+    def format_requirements(self) -> "EventUpdate":
+        if self.format in (EventFormat.en_ligne, EventFormat.hybride) and not (
+            self.online_link and self.online_link.strip()
+        ):
+            raise ValueError("Le lien de connexion est requis pour un événement en ligne ou hybride")
+        if self.format == EventFormat.hybride and not (self.location and self.location.strip()):
+            raise ValueError("Le lieu est requis pour un événement hybride")
+        return self
 
 
 class EventRead(BaseModel):
@@ -52,11 +95,20 @@ class EventRead(BaseModel):
     date_end: datetime | None
     location: str | None
     instructor: str | None
+    intervenant_category: str | None
     price: float | None
+    zeffy_form_path: str | None
     church_id: int | None
     district: str | None
     capacity: int | None
+    show_registration_count: bool
     status: EventStatus
+    format: EventFormat
+    online_link: str | None
+    cancel_deadline_hours: int | None
+    confirmation_message: str | None
+    reminder_message: str | None
+    created_by: int | None
     created_at: datetime
     updated_at: datetime
     # Calculés à la volée par la route (pas des colonnes en base)
@@ -72,6 +124,10 @@ class EventList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class ResendCancelLinkRequest(BaseModel):
+    email: EmailStr
 
 
 class RegistrationCreate(BaseModel):
@@ -107,6 +163,8 @@ class RegistrationRead(BaseModel):
     email: str
     registered_at: datetime
     status: RegistrationStatus
+    # Renseigné uniquement pour un événement en ligne (inscription confirmée)
+    online_link: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -117,6 +175,8 @@ class EventSummary(BaseModel):
     category: str
     date_start: datetime
     location: str | None
+    format: EventFormat
+    online_link: str | None = None
 
     model_config = {"from_attributes": True}
 
