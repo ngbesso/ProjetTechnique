@@ -57,6 +57,14 @@ export function cancelRegistration(id: number): Promise<void> {
   return http.del(`/api/events/${id}/register`);
 }
 
+export function cancelRegistrationByToken(token: string): Promise<void> {
+  return http.del(`/api/events/registrations/cancel?token=${encodeURIComponent(token)}`);
+}
+
+export function resendCancelLink(eventId: number, email: string): Promise<void> {
+  return http.post<void>(`/api/events/${eventId}/registrations/resend-cancel-link`, { email });
+}
+
 export function fetchMyEventRegistrations(): Promise<MyEventRegistration[]> {
   return http.get<MyEventRegistration[]>("/api/events/registrations/me");
 }

@@ -191,7 +191,6 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
   const [fieldErrors, setFieldErrors] = useState<{ telephone?: string; address?: string }>({});
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  const { values: sexeOptions, load: loadSexe } = useParameters("sexe");
   const { values: familyOptions, load: loadFamily } = useParameters("family_status");
 
   useEffect(() => {
@@ -202,10 +201,9 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
       })
       .catch(() => setError("Aucune fiche membre n'est liée à votre compte."))
       .finally(() => setLoading(false));
-    loadSexe();
     loadFamily();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadSexe, loadFamily]);
+  }, [loadFamily]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -226,7 +224,6 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
       const payload: MemberSelfInput = {
         address: m.address,
         telephone: m.telephone,
-        sexe: m.sexe,
         family_status: m.family_status,
       };
       const updated = await updateMyProfile(payload);
@@ -276,6 +273,7 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
           <ReadOnlyField label="Nom" value={m.last_name} />
           <ReadOnlyField label="Date de naissance" value={m.birth_date ? formatLongDate(m.birth_date) : "—"} />
           <ReadOnlyField label="Courriel" value={m.email} />
+          <ReadOnlyField label="Sexe" value={m.sexe ?? "—"} />
         </div>
         <p className={styles.lockNote}>
           🔒 Pour modifier ces informations, contactez votre église.
@@ -327,21 +325,6 @@ function ProfilSection({ churchName }: { churchName: (id: number | null | undefi
                 }}
               />
               {fieldErrors.telephone && <p className={admin.fieldError}>{fieldErrors.telephone}</p>}
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="sexe">Sexe</label>
-              <select
-                id="sexe"
-                className={admin.select}
-                value={m.sexe ?? ""}
-                onChange={(e) => setM({ ...m, sexe: e.target.value || null })}
-              >
-                <option value="">—</option>
-                {sexeOptions.map((s) => (
-                  <option key={s.id} value={s.label}>{s.label}</option>
-                ))}
-              </select>
             </div>
 
             <div className={styles.fieldGroup}>
@@ -459,14 +442,25 @@ function DonsSection({ churchName }: { churchName: (id: number | null | undefine
 // ── Section : Mes inscriptions ───────────────────────────────────────────────
 
 function EventRegistrationCard({ reg, isPast }: { reg: MyEventRegistration; isPast?: boolean }) {
+  const format = reg.event.format;
+  const showLink = format === "en_ligne" || format === "hybride";
+  const showLocation = format !== "en_ligne" && reg.event.location;
   return (
     <div className={`${styles.regCard} ${isPast ? styles.pastReg : ""}`}>
       <div>
         <p className={styles.regTitle}>{reg.event.title}</p>
         <p className={styles.regMeta}>
           {formatEventDateTime(reg.event.date_start)}
-          {reg.event.location && ` · ${reg.event.location}`}
+          {format === "en_ligne" ? " · En ligne" : showLocation ? ` · ${reg.event.location}` : ""}
         </p>
+        {showLink && reg.event.online_link && !isPast && (
+          <p className={styles.regMeta}>
+            🌐{" "}
+            <a href={reg.event.online_link} target="_blank" rel="noreferrer">
+              {reg.event.online_link}
+            </a>
+          </p>
+        )}
       </div>
       <span className={styles.regPrice}>{reg.event.category}</span>
     </div>

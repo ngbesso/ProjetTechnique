@@ -22,6 +22,7 @@ def _apply_filters(
     upcoming_only: bool,
     q: str | None = None,
     status: EventStatus | None = None,
+    created_by: int | None = None,
 ):
     if published_only:
         query = query.where(Event.status == EventStatus.published)
@@ -38,11 +39,13 @@ def _apply_filters(
     if q:
         term = f"%{q}%"
         query = query.where(Event.title.ilike(term) | Event.location.ilike(term))
+    if created_by is not None:
+        query = query.where(Event.created_by == created_by)
     return query
 
 
-def create_event(db: Session, payload: EventCreate) -> Event:
-    event = Event(**payload.model_dump())
+def create_event(db: Session, payload: EventCreate, *, created_by: int | None = None) -> Event:
+    event = Event(**payload.model_dump(), created_by=created_by)
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -63,6 +66,7 @@ def list_events(
     upcoming_only: bool = True,
     q: str | None = None,
     status: EventStatus | None = None,
+    created_by: int | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[Event]:
@@ -75,6 +79,7 @@ def list_events(
         upcoming_only=upcoming_only,
         q=q,
         status=status,
+        created_by=created_by,
     )
     return list(
         db.scalars(query.order_by(Event.date_start.asc()).offset(skip).limit(limit)).all()
@@ -91,6 +96,7 @@ def count_events(
     upcoming_only: bool = True,
     q: str | None = None,
     status: EventStatus | None = None,
+    created_by: int | None = None,
 ) -> int:
     query = _apply_filters(
         select(func.count()).select_from(Event),
@@ -101,6 +107,7 @@ def count_events(
         upcoming_only=upcoming_only,
         q=q,
         status=status,
+        created_by=created_by,
     )
     return db.scalar(query) or 0
 
@@ -217,10 +224,11 @@ def list_all_registrations(db: Session, event_id: int) -> list[EventRegistration
     )
 
 
-def get_admin_stats(db: Session) -> EventStats:
+def get_admin_stats(db: Session, *, created_by: int | None = None) -> EventStats:
     """Top 5 des événements par nombre d'inscriptions confirmées, et répartition
-    du nombre d'événements par statut."""
-    top_rows = db.execute(
+    du nombre d'événements par statut. Restreint aux événements de created_by
+    si précisé (organisateur limité à ses propres événements)."""
+    top_query = (
         select(
             Event.id,
             Event.title,
@@ -229,7 +237,14 @@ def get_admin_stats(db: Session) -> EventStats:
         )
         .join(EventRegistration, EventRegistration.event_id == Event.id)
         .where(EventRegistration.status == RegistrationStatus.confirmed)
-        .group_by(Event.id, Event.title, Event.category)
+    )
+    status_query = select(Event.status, func.count())
+    if created_by is not None:
+        top_query = top_query.where(Event.created_by == created_by)
+        status_query = status_query.where(Event.created_by == created_by)
+
+    top_rows = db.execute(
+        top_query.group_by(Event.id, Event.title, Event.category)
         .order_by(func.count(EventRegistration.id).desc())
         .limit(5)
     ).all()
@@ -238,9 +253,7 @@ def get_admin_stats(db: Session) -> EventStats:
         for r in top_rows
     ]
 
-    status_rows = db.execute(
-        select(Event.status, func.count()).group_by(Event.status)
-    ).all()
+    status_rows = db.execute(status_query.group_by(Event.status)).all()
     counts_by_status = {s: 0 for s in EventStatus}
     for status_value, cnt in status_rows:
         counts_by_status[status_value] = cnt

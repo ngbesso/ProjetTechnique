@@ -72,6 +72,89 @@ function IntegrationsPanel() {
     );
 }
 
+// ── Réglages numériques (délais en heures) ────────────────────────────────────
+
+interface HoursSettingFieldProps {
+    settingKey: string;
+    title: string;
+    description: string;
+}
+
+function HoursSettingField({ settingKey, title, description }: HoursSettingFieldProps) {
+    const [value, setValue] = useState("");
+    const [draft, setDraft] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchSettings()
+            .then((list) => {
+                const val = list.find((s) => s.key === settingKey)?.value ?? "";
+                setValue(val);
+                setDraft(val);
+            })
+            .catch(() => {});
+    }, [settingKey]);
+
+    async function handleSave(e: React.FormEvent) {
+        e.preventDefault();
+        const trimmed = draft.trim();
+        const n = Number(trimmed);
+        if (!trimmed || !Number.isFinite(n) || n < 0) {
+            setError("Veuillez entrer un nombre d'heures valide (0 ou plus).");
+            return;
+        }
+        setSaving(true);
+        setError("");
+        setSaved(false);
+        try {
+            await updateSetting(settingKey, String(n));
+            setValue(String(n));
+            setDraft(String(n));
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>{title}</h3>
+            <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+                {description}
+            </p>
+            <form onSubmit={handleSave} className={styles.inlineForm}>
+                <input
+                    className={styles.input}
+                    style={{ maxWidth: 120 }}
+                    type="number"
+                    min={0}
+                    placeholder="Heures"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                />
+                <button
+                    type="submit"
+                    className={styles.btnPrimary}
+                    disabled={saving || draft.trim() === value}
+                >
+                    {saving ? "…" : "Enregistrer"}
+                </button>
+            </form>
+            {saved && (
+                <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>
+                    Enregistré ✓
+                </p>
+            )}
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        </section>
+    );
+}
+
 // ── Listes de valeurs (sexe / statut matrimonial / districts) ────────────────
 
 const SECTIONS = [
@@ -80,6 +163,7 @@ const SECTIONS = [
     { category: "district", label: "Districts" },
     { category: "donation_category", label: "Catégories de don" },
     { category: "event_category", label: "Catégories d'événement" },
+    { category: "intervenant_category", label: "Catégories d'intervenant" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];
@@ -305,6 +389,11 @@ export function ParametresPanel() {
         <div className={styles.rbacWrapper}>
             <OptionsPanel />
             <IntegrationsPanel />
+            <HoursSettingField
+                settingKey="event_reminder_hours_before"
+                title="Rappel avant un événement"
+                description="Nombre d'heures avant le début d'un événement pour l'envoi automatique d'un courriel de rappel aux inscrits."
+            />
             <p style={{ color: "var(--text-muted)", fontSize: ".875rem", margin: "0 0 1rem" }}>
                 Ces valeurs alimentent les menus déroulants des formulaires (adhésion, profil, églises).
             </p>

@@ -134,7 +134,7 @@ def test_forgot_password_unknown_email_still_204(client):
 def test_forgot_password_sends_email(client, fake_email, make_user):
     make_user("forgot@b.com")
     client.post("/auth/forgot-password", json={"email": "forgot@b.com"})
-    assert any("forgot@b.com" == to for to, _ in fake_email.sent)
+    assert any("forgot@b.com" == to for to, *_ in fake_email.sent)
 
 
 def test_forgot_password_unknown_email_no_email_sent(client, fake_email):

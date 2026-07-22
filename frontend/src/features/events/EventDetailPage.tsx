@@ -4,12 +4,48 @@ import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
-import { cancelRegistration, getEvent, registerToEvent } from "../../lib/api/events";
+import {
+  cancelRegistration,
+  cancelRegistrationByToken,
+  fetchMyEventRegistrations,
+  getEvent,
+  registerToEvent,
+  resendCancelLink,
+} from "../../lib/api/events";
 import { ApiError } from "../../lib/api/client";
 import type { EventItem } from "../../types";
 
 interface EventDetailPageProps {
   eventId: number;
+}
+
+const DEFAULT_CANCEL_DEADLINE_HOURS = 24;
+
+interface CancelDeadlineInfo {
+  passed: boolean;
+  label: string;
+}
+
+function cancelDeadlineInfo(dateStart: string, deadlineHours: number): CancelDeadlineInfo {
+  const deadline = new Date(dateStart).getTime() - deadlineHours * 3_600_000;
+  const now = Date.now();
+  if (now >= deadline) {
+    return {
+      passed: true,
+      label: `Le délai pour annuler votre inscription est dépassé (annulation possible jusqu'à ${deadlineHours} h avant l'événement).`,
+    };
+  }
+  const hoursRemaining = Math.max(Math.floor((deadline - now) / 3_600_000), 1);
+  const remaining =
+    hoursRemaining >= 48
+      ? `${Math.floor(hoursRemaining / 24)} jours`
+      : hoursRemaining >= 24
+      ? "1 jour"
+      : `${hoursRemaining} h`;
+  return {
+    passed: false,
+    label: `Vous pouvez encore annuler votre inscription (encore ${remaining}, jusqu'à ${deadlineHours} h avant l'événement).`,
+  };
 }
 
 function formatDateTime(iso: string): string {
@@ -27,8 +63,10 @@ function formatPrice(price: number | null): string {
   return `${price.toFixed(2)} $`;
 }
 
-// L'API n'expose pas de "suis-je inscrit ?" — l'état local suit uniquement les
-// actions faites pendant cette visite ; register est idempotent côté backend.
+// Pour un membre connecté, initialisé au chargement via /registrations/me.
+// Pour un invité, l'API n'expose pas de "suis-je inscrit ?" — l'état local
+// suit alors uniquement les actions faites pendant cette visite ; register
+// reste idempotent côté backend.
 type MyStatus = "unknown" | "confirmed" | "cancelled";
 
 const EMPTY_GUEST = { first_name: "", last_name: "", email: "" };
@@ -45,6 +83,18 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
   const [actionError, setActionError] = useState("");
   const [actionMsg, setActionMsg] = useState("");
   const [guestForm, setGuestForm] = useState(EMPTY_GUEST);
+  const [registeredOnlineLink, setRegisteredOnlineLink] = useState<string | null>(null);
+
+  // « Retrouver mon inscription » — invité ayant perdu son courriel de confirmation.
+  const [showResendForm, setShowResendForm] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendState, setResendState] = useState<"idle" | "submitting" | "done">("idle");
+
+  // Présent uniquement quand la page est ouverte depuis le lien d'annulation
+  // envoyé par courriel à un inscrit sans compte.
+  const [cancelToken] = useState(() => new URLSearchParams(window.location.search).get("cancel_token"));
+  const [tokenCancelState, setTokenCancelState] = useState<"idle" | "submitting" | "done" | "error">("idle");
+  const [tokenCancelError, setTokenCancelError] = useState("");
 
   function load() {
     setLoading(true);
@@ -57,8 +107,46 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
 
   useEffect(() => {
     load();
+    if (member) {
+      fetchMyEventRegistrations()
+        .then((regs) => {
+          const match = regs.find((r) => r.event_id === eventId);
+          setMyStatus(match ? "confirmed" : "unknown");
+          setRegisteredOnlineLink(match?.event.online_link ?? null);
+        })
+        .catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [eventId, member]);
+
+  async function handleCancelByToken() {
+    if (!cancelToken) return;
+    setTokenCancelState("submitting");
+    setTokenCancelError("");
+    try {
+      await cancelRegistrationByToken(cancelToken);
+      setTokenCancelState("done");
+    } catch (err) {
+      setTokenCancelError(
+        err instanceof ApiError ? err.message : "Impossible d'annuler l'inscription."
+      );
+      setTokenCancelState("error");
+    }
+  }
+
+  async function handleResendCancelLink(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resendEmail.trim()) return;
+    setResendState("submitting");
+    try {
+      await resendCancelLink(eventId, resendEmail.trim());
+    } catch {
+      // Réponse volontairement identique côté serveur : on ne distingue pas
+      // une inscription trouvée d'une inscription introuvable.
+    } finally {
+      setResendState("done");
+    }
+  }
 
   async function handleRegister(e?: React.FormEvent) {
     e?.preventDefault();
@@ -72,7 +160,7 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
     setActionError("");
     setActionMsg("");
     try {
-      await registerToEvent(
+      const registration = await registerToEvent(
         eventId,
         member
           ? undefined
@@ -84,6 +172,7 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
       );
       setMyStatus("confirmed");
       setActionMsg("Vous êtes inscrit à cet événement.");
+      setRegisteredOnlineLink(registration.online_link);
       load();
     } catch (err) {
       setActionError(
@@ -113,6 +202,25 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
   }
 
   const isFull = event ? event.capacity !== null && (event.spots_left ?? 0) <= 0 : false;
+  const deadline = event
+    ? cancelDeadlineInfo(event.date_start, event.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS)
+    : null;
+
+  const needsZeffyPayment = !!event && !!event.price && event.price > 0;
+  const zeffyBlock = event?.zeffy_form_path ? (
+    <div className={styles.zeffyWrapper}>
+      <iframe
+        title="Formulaire de paiement Zeffy"
+        src={`https://www.zeffy.com${event.zeffy_form_path}`}
+        className={styles.zeffyEmbed}
+        allowFullScreen
+      />
+    </div>
+  ) : (
+    <div className={styles.notConfigured}>
+      <p>Le paiement pour cet événement n'est pas encore configuré.</p>
+    </div>
+  );
 
   return (
     <div className={styles.page}>
@@ -133,6 +241,8 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
 
             <div className={styles.cardBadges}>
               <span className={styles.badge}>{event.category}</span>
+              {event.format === "en_ligne" && <span className={styles.badge}>🌐 En ligne</span>}
+              {event.format === "hybride" && <span className={styles.badge}>🌐 Hybride</span>}
               {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
             </div>
 
@@ -141,8 +251,14 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
               🗓️ {formatDateTime(event.date_start)}
               {event.date_end ? ` – ${formatDateTime(event.date_end)}` : ""}
             </p>
-            {event.location && (
+            {event.format !== "en_ligne" && event.location && (
               <p className={styles.detailMeta}>📍 {event.location}</p>
+            )}
+            {event.format !== "presentiel" && (
+              <p className={styles.detailMeta}>
+                🌐 {event.format === "hybride" ? "Aussi disponible en ligne" : "Cet événement se déroule en ligne"}{" "}
+                — le lien de connexion vous sera communiqué après votre inscription.
+              </p>
             )}
             {event.instructor && (
               <p className={styles.detailMeta}>👤 {event.instructor}</p>
@@ -150,13 +266,15 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
             {event.district && (
               <p className={styles.detailMeta}>🗺️ District {event.district}</p>
             )}
-            <p className={styles.detailMeta}>
-              {event.capacity !== null
-                ? (event.spots_left ?? 0) > 0
-                  ? `${event.spots_left} place(s) restante(s) sur ${event.capacity}`
-                  : "Événement complet"
-                : "Places illimitées"}
-            </p>
+            {event.show_registration_count && (
+              <p className={styles.detailMeta}>
+                {event.capacity !== null
+                  ? (event.spots_left ?? 0) > 0
+                    ? `${event.spots_left} place(s) restante(s) sur ${event.capacity}`
+                    : "Événement complet"
+                  : "Places illimitées"}
+              </p>
+            )}
 
             {event.description && (
               <p className={styles.detailDesc}>{event.description}</p>
@@ -168,17 +286,64 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
               </p>
             )}
             {actionMsg && <p className={styles.successMsg}>{actionMsg}</p>}
+            {registeredOnlineLink && (
+              <p className={styles.successMsg}>
+                Lien de connexion :{" "}
+                <a href={registeredOnlineLink} target="_blank" rel="noreferrer">
+                  {registeredOnlineLink}
+                </a>
+              </p>
+            )}
 
             <div className={styles.detailActions}>
-              {member ? (
+              {cancelToken ? (
+                tokenCancelState === "done" ? (
+                  <p className={styles.successMsg}>Votre inscription a été annulée.</p>
+                ) : (
+                  <>
+                    {deadline && (
+                      <p className={deadline.passed ? styles.errorMsg : styles.detailMeta}>
+                        {deadline.label}
+                      </p>
+                    )}
+                    {!deadline?.passed && (
+                      <button
+                        className={styles.btnCancel}
+                        onClick={handleCancelByToken}
+                        disabled={tokenCancelState === "submitting"}
+                      >
+                        {tokenCancelState === "submitting"
+                          ? "Traitement…"
+                          : "Confirmer l'annulation de mon inscription"}
+                      </button>
+                    )}
+                    {tokenCancelError && (
+                      <p className={styles.errorMsg} role="alert">
+                        {tokenCancelError}
+                      </p>
+                    )}
+                  </>
+                )
+              ) : member ? (
                 myStatus === "confirmed" ? (
-                  <button
-                    className={styles.btnCancel}
-                    onClick={handleCancel}
-                    disabled={submitting}
-                  >
-                    {submitting ? "Traitement…" : "Annuler mon inscription"}
-                  </button>
+                  <>
+                    {deadline && (
+                      <p className={deadline.passed ? styles.errorMsg : styles.detailMeta}>
+                        {deadline.label}
+                      </p>
+                    )}
+                    {!deadline?.passed && (
+                      <button
+                        className={styles.btnCancel}
+                        onClick={handleCancel}
+                        disabled={submitting}
+                      >
+                        {submitting ? "Traitement…" : "Annuler mon inscription"}
+                      </button>
+                    )}
+                  </>
+                ) : needsZeffyPayment ? (
+                  zeffyBlock
                 ) : (
                   <button
                     className={styles.btnRegister}
@@ -188,41 +353,81 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
                     {submitting ? "Traitement…" : "S'inscrire"}
                   </button>
                 )
-              ) : myStatus === "confirmed" ? null : (
-                <form className={styles.guestForm} onSubmit={handleRegister}>
-                  <p className={styles.guestFormLabel}>S'inscrire sans compte :</p>
-                  <div className={styles.guestFormGrid}>
-                    <input
-                      className={styles.input}
-                      placeholder="Prénom *"
-                      required
-                      value={guestForm.first_name}
-                      onChange={(e) => setGuestForm({ ...guestForm, first_name: e.target.value })}
-                    />
-                    <input
-                      className={styles.input}
-                      placeholder="Nom *"
-                      required
-                      value={guestForm.last_name}
-                      onChange={(e) => setGuestForm({ ...guestForm, last_name: e.target.value })}
-                    />
-                    <input
-                      className={styles.input}
-                      type="email"
-                      placeholder="Courriel *"
-                      required
-                      value={guestForm.email}
-                      onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className={styles.btnRegister}
-                    disabled={submitting || isFull}
-                  >
-                    {submitting ? "Traitement…" : "S'inscrire"}
-                  </button>
-                </form>
+              ) : myStatus === "confirmed" ? null : needsZeffyPayment ? (
+                zeffyBlock
+              ) : (
+                <>
+                  <form className={styles.guestForm} onSubmit={handleRegister}>
+                    <p className={styles.guestFormLabel}>S'inscrire sans compte :</p>
+                    <div className={styles.guestFormGrid}>
+                      <input
+                        className={styles.input}
+                        placeholder="Prénom *"
+                        required
+                        value={guestForm.first_name}
+                        onChange={(e) => setGuestForm({ ...guestForm, first_name: e.target.value })}
+                      />
+                      <input
+                        className={styles.input}
+                        placeholder="Nom *"
+                        required
+                        value={guestForm.last_name}
+                        onChange={(e) => setGuestForm({ ...guestForm, last_name: e.target.value })}
+                      />
+                      <input
+                        className={styles.input}
+                        type="email"
+                        placeholder="Courriel *"
+                        required
+                        value={guestForm.email}
+                        onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className={styles.btnRegister}
+                      disabled={submitting || isFull}
+                    >
+                      {submitting ? "Traitement…" : "S'inscrire"}
+                    </button>
+                  </form>
+
+                  {resendState === "done" ? (
+                    <p className={styles.successMsg}>
+                      Si ce courriel correspond à une inscription confirmée, un nouveau
+                      lien d'annulation vient de lui être envoyé.
+                    </p>
+                  ) : showResendForm ? (
+                    <form className={styles.guestForm} onSubmit={handleResendCancelLink}>
+                      <p className={styles.guestFormLabel}>Retrouver mon inscription :</p>
+                      <div className={styles.guestFormGrid}>
+                        <input
+                          className={styles.input}
+                          type="email"
+                          placeholder="Votre courriel *"
+                          required
+                          value={resendEmail}
+                          onChange={(e) => setResendEmail(e.target.value)}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className={styles.btnRegister}
+                        disabled={resendState === "submitting"}
+                      >
+                        {resendState === "submitting" ? "Envoi…" : "Envoyer le lien"}
+                      </button>
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.btnBack}
+                      onClick={() => setShowResendForm(true)}
+                    >
+                      Vous êtes déjà inscrit et avez perdu le courriel ?
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

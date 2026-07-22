@@ -133,7 +133,6 @@ export type ChurchUpdateInput = Partial<ChurchInput> & { is_active?: boolean };
 
 export interface MemberSelfInput {
   address?: string | null;
-  sexe?: string | null;
   telephone?: string | null;
   family_status?: string | null;
 }
@@ -288,6 +287,7 @@ export interface SermonInput {
 export type EventCategory = string;
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventRegistrationStatus = "confirmed" | "cancelled";
+export type EventFormat = "presentiel" | "en_ligne" | "hybride";
 
 export interface EventItem {
   id: number;
@@ -298,11 +298,20 @@ export interface EventItem {
   date_end: string | null;
   location: string | null;
   instructor: string | null;
+  intervenant_category: string | null;
   price: number | null;
+  zeffy_form_path: string | null;
   church_id: number | null;
   district: District | null;
   capacity: number | null;
+  show_registration_count: boolean;
   status: EventStatus;
+  format: EventFormat;
+  online_link: string | null;
+  cancel_deadline_hours: number | null;
+  confirmation_message: string | null;
+  reminder_message: string | null;
+  created_by: number | null;
   created_at: string;
   updated_at: string;
   registered_count: number;
@@ -325,11 +334,19 @@ export interface EventInput {
   date_end?: string | null;
   location?: string | null;
   instructor?: string | null;
+  intervenant_category?: string | null;
   price?: number | null;
+  zeffy_form_path?: string | null;
   church_id?: number | null;
   district?: District | null;
   capacity?: number | null;
+  show_registration_count?: boolean;
   status?: EventStatus;
+  format?: EventFormat;
+  online_link?: string | null;
+  cancel_deadline_hours?: number | null;
+  confirmation_message?: string | null;
+  reminder_message?: string | null;
 }
 
 export interface EventRegistrationInput {
@@ -347,6 +364,7 @@ export interface EventRegistration {
   email: string;
   registered_at: string;
   status: EventRegistrationStatus;
+  online_link: string | null;
 }
 
 export interface EventRegistrationSummary {
@@ -355,6 +373,8 @@ export interface EventRegistrationSummary {
   category: EventCategory;
   date_start: string;
   location: string | null;
+  format: EventFormat;
+  online_link: string | null;
 }
 
 export interface MyEventRegistration {

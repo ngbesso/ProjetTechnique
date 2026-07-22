@@ -129,12 +129,11 @@ class MemberImportResult(BaseModel):
 class MemberSelfUpdate(BaseModel):
     """Auto-service : un membre ne peut modifier que ses coordonnées.
 
-    Identité (nom, prénom, date de naissance) et courriel de connexion
+    Identité (nom, prénom, date de naissance), sexe et courriel de connexion
     restent réservés à la gestion administrative (contact avec l'église).
     """
 
     address: str | None = None
-    sexe: str | None = None
     telephone: str | None = None
     family_status: str | None = None
 

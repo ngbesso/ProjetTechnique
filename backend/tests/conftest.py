@@ -116,10 +116,10 @@ def make_member(db_session, make_user):
 
 class FakeSender:
     def __init__(self):
-        self.sent: list[tuple[str, str]] = []
+        self.sent: list[tuple[str, str, str]] = []
 
     def send(self, to, subject, body):
-        self.sent.append((to, subject))
+        self.sent.append((to, subject, body))
 
 
 @pytest.fixture
