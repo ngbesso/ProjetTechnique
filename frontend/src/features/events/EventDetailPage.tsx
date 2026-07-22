@@ -110,7 +110,9 @@ export function EventDetailPage({ eventId }: EventDetailPageProps) {
     if (member) {
       fetchMyEventRegistrations()
         .then((regs) => {
-          setMyStatus(regs.some((r) => r.event_id === eventId) ? "confirmed" : "unknown");
+          const match = regs.find((r) => r.event_id === eventId);
+          setMyStatus(match ? "confirmed" : "unknown");
+          setRegisteredOnlineLink(match?.event.online_link ?? null);
         })
         .catch(() => {});
     }

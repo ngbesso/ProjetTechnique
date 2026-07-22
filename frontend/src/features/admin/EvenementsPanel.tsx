@@ -3,6 +3,7 @@ import adminStyles from "./AdminPage.module.css";
 import styles from "./EvenementsPanel.module.css";
 import { Button } from "../../components/ui/Button";
 import { Field } from "../../components/ui/Field";
+import { KpiCard } from "../../components/ui/KpiCard";
 import { useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -189,25 +190,6 @@ function IconXCircle() {
       <line x1="15" y1="9" x2="9" y2="15" />
       <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
-  );
-}
-
-interface KpiProps {
-  color: "violet" | "amber" | "emerald" | "rose";
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-}
-
-function KpiCard({ color, icon, value, label }: KpiProps) {
-  return (
-    <div className={`${styles.kpiCard} ${styles[color]}`}>
-      <div className={`${styles.kpiIcon} ${styles[color]}`}>{icon}</div>
-      <div className={styles.kpiBody}>
-        <div className={styles.kpiLabel}>{label}</div>
-        <div className={styles.kpiValue}>{value}</div>
-      </div>
-    </div>
   );
 }
 
