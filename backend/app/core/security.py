@@ -81,3 +81,32 @@ def decode_reset_token(token: str) -> tuple[int, int]:
     if data.get("purpose") != _RESET_PURPOSE:
         raise ValueError("Mauvais type de jeton")
     return int(data["sub"]), int(data.get("ver", -1))
+
+
+_CANCEL_REGISTRATION_PURPOSE = "cancel_registration"
+
+
+def create_cancel_registration_token(registration_id: int, expires_at: datetime) -> str:
+    """Jeton d'annulation d'inscription (invité sans compte), envoyé par courriel.
+
+    Expire à la date de début de l'événement : au-delà, l'annulation n'a plus de sens.
+    """
+    return jwt.encode(
+        {
+            "sub": str(registration_id),
+            "purpose": _CANCEL_REGISTRATION_PURPOSE,
+            "exp": expires_at,
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def decode_cancel_registration_token(token: str) -> int:
+    """Décode le jeton d'annulation. Retourne l'id de l'inscription."""
+    data = jwt.decode(
+        token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+    )
+    if data.get("purpose") != _CANCEL_REGISTRATION_PURPOSE:
+        raise ValueError("Mauvais type de jeton")
+    return int(data["sub"])

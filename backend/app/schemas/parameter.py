@@ -1,6 +1,13 @@
 from pydantic import BaseModel, ConfigDict
 
-VALID_CATEGORIES = {"sexe", "family_status", "district", "donation_category", "event_category"}
+VALID_CATEGORIES = {
+    "sexe",
+    "family_status",
+    "district",
+    "donation_category",
+    "event_category",
+    "intervenant_category",
+}
 
 
 class ParameterValueRead(BaseModel):

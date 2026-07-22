@@ -1,6 +1,7 @@
 from sqlalchemy import select
 
 from app.models.church import Church
+from app.models.member import Member
 from app.models.rbac import Role
 
 
@@ -31,6 +32,58 @@ def test_list_users_contains_assignments(client, make_user, auth_header):
     r = client.get("/admin/users", headers=auth_header("admin@b.com"))
     admin_record = next(u for u in r.json() if u["email"] == "admin@b.com")
     assert len(admin_record["assignments"]) >= 1
+
+
+# ── POST /admin/users (compte autonome, sans fiche membre) ───────────────────
+
+
+def test_create_user_requires_auth(client):
+    r = client.post("/admin/users", json={"email": "new_orga@b.com"})
+    assert r.status_code == 401
+
+
+def test_create_user_requires_user_manage_permission(client, make_user, auth_header):
+    make_user("membre_cu@b.com", roles=["membre"])
+    r = client.post(
+        "/admin/users", json={"email": "new_orga@b.com"}, headers=auth_header("membre_cu@b.com")
+    )
+    assert r.status_code == 403
+
+
+def test_create_user_success(client, make_user, auth_header, fake_email, db_session):
+    make_user("admin_cu@b.com", roles=["admin"])
+    h = auth_header("admin_cu@b.com")
+    r = client.post("/admin/users", json={"email": "new_orga@b.com"}, headers=h)
+    assert r.status_code == 201
+    body = r.json()
+    assert body["email"] == "new_orga@b.com"
+    assert body["assignments"] == []
+    assert fake_email.sent
+    assert fake_email.sent[0][0] == "new_orga@b.com"
+
+
+def test_create_user_does_not_create_member(client, make_user, auth_header, db_session):
+    make_user("admin_cu3@b.com", roles=["admin"])
+    h = auth_header("admin_cu3@b.com")
+    client.post("/admin/users", json={"email": "no_member@b.com"}, headers=h)
+    member = db_session.scalar(select(Member).where(Member.email == "no_member@b.com"))
+    assert member is None
+
+
+def test_create_user_duplicate_email_rejected(client, make_user, auth_header):
+    make_user("admin_cu2@b.com", roles=["admin"])
+    h = auth_header("admin_cu2@b.com")
+    client.post("/admin/users", json={"email": "dup_orga@b.com"}, headers=h)
+    r = client.post("/admin/users", json={"email": "dup_orga@b.com"}, headers=h)
+    assert r.status_code == 409
+
+
+def test_create_user_appears_in_list(client, make_user, auth_header):
+    make_user("admin_cu4@b.com", roles=["admin"])
+    h = auth_header("admin_cu4@b.com")
+    client.post("/admin/users", json={"email": "listed_orga@b.com"}, headers=h)
+    emails = [u["email"] for u in client.get("/admin/users", headers=h).json()]
+    assert "listed_orga@b.com" in emails
 
 
 # ── PATCH /admin/users/{id} ───────────────────────────────────────────────────

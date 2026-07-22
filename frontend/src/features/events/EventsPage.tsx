@@ -93,11 +93,16 @@ export function EventsPage() {
         <div className={styles.cardBody}>
           <div className={styles.cardBadges}>
             <span className={styles.badge}>{event.category}</span>
+            {event.format === "en_ligne" && <span className={styles.badge}>🌐 En ligne</span>}
+            {event.format === "hybride" && <span className={styles.badge}>🌐 Hybride</span>}
             {event.district && <span className={styles.badge}>{event.district}</span>}
             {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
           </div>
           <h2 className={styles.cardTitle}>{event.title}</h2>
-          {event.location && <p className={styles.cardMeta}>📍 {event.location}</p>}
+          {event.format !== "en_ligne" && event.location && (
+            <p className={styles.cardMeta}>📍 {event.location}</p>
+          )}
+          {event.format === "hybride" && <p className={styles.cardMeta}>🌐 Aussi disponible en ligne</p>}
           {event.instructor && <p className={styles.cardMeta}>👤 {event.instructor}</p>}
           {!isPast && (
             <div className={styles.cardBadges}>

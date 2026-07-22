@@ -4,10 +4,16 @@ from pydantic import BaseModel, ConfigDict
 SETTING_META: dict[str, str] = {
     "auto_approve_members": "Approuver automatiquement les demandes d'adhésion",
     "zeffy_embed_path": "Chemin du formulaire Zeffy (ex: /fr/donation-form/xxx)",
+    "event_reminder_hours_before": (
+        "Délai (en heures) avant un événement pour l'envoi du courriel de rappel"
+    ),
 }
 
 # Clés retournées sans authentification
-PUBLIC_SETTINGS: set[str] = {"zeffy_embed_path", "auto_approve_members"}
+PUBLIC_SETTINGS: set[str] = {
+    "zeffy_embed_path",
+    "auto_approve_members",
+}
 
 
 class AppSettingRead(BaseModel):
