@@ -126,3 +126,37 @@ def test_update_not_found(client, make_user, auth_header):
     h = _admin_header(make_user, auth_header)
     r = client.patch(f"{BASE}/999999", json={"status": "handled"}, headers=h)
     assert r.status_code == 404
+
+
+def test_update_to_handled_sends_email_to_member(
+    client, make_user, make_member, auth_header, db_session, fake_email
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("prayf@test.com", church_id)
+    req_id = client.post(
+        BASE, json={"message": "C"}, headers=auth_header("prayf@test.com")
+    ).json()["id"]
+    fake_email.sent.clear()
+
+    h = _admin_header(make_user, auth_header)
+    r = client.patch(f"{BASE}/{req_id}", json={"status": "handled"}, headers=h)
+    assert r.status_code == 200
+    assert fake_email.sent
+    assert fake_email.sent[-1][0] == "prayf@test.com"
+
+
+def test_update_to_new_does_not_send_handled_email(
+    client, make_user, make_member, auth_header, db_session, fake_email
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("prayg@test.com", church_id)
+    req_id = client.post(
+        BASE, json={"message": "D"}, headers=auth_header("prayg@test.com")
+    ).json()["id"]
+    h = _admin_header(make_user, auth_header)
+    client.patch(f"{BASE}/{req_id}", json={"status": "handled"}, headers=h)
+    fake_email.sent.clear()
+
+    r = client.patch(f"{BASE}/{req_id}", json={"status": "new"}, headers=h)
+    assert r.status_code == 200
+    assert not fake_email.sent

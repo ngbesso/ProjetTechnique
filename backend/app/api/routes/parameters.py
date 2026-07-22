@@ -31,6 +31,7 @@ _USAGE_MAP: dict[str, list[tuple[type, str, str]]] = {
     "district": [(Church, "district", "église"), (Event, "district", "événement")],
     "donation_category": [(Donation, "category", "don")],
     "event_category": [(Event, "category", "événement")],
+    "intervenant_category": [(Event, "intervenant_category", "événement")],
 }
 
 

@@ -239,8 +239,14 @@ function EventsSection() {
               )}
               <div className={styles.eventBody}>
                 <span className={styles.eventCategoryBadge}>{evt.category}</span>
+                {evt.format === "en_ligne" && (
+                  <span className={styles.eventCategoryBadge}>🌐 En ligne</span>
+                )}
+                {evt.format === "hybride" && (
+                  <span className={styles.eventCategoryBadge}>🌐 Hybride</span>
+                )}
                 <p className={styles.eventCardTitle}>{evt.title}</p>
-                {evt.location && (
+                {evt.format !== "en_ligne" && evt.location && (
                   <p className={styles.eventCardMeta}>📍 {evt.location}</p>
                 )}
                 {evt.instructor && (

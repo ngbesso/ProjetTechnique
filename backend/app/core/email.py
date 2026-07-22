@@ -95,6 +95,28 @@ def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
     )
 
 
+def admin_account_created_invite(sender: EmailSender, to: str, link: str) -> None:
+    sender.send(
+        to,
+        "Un compte administrateur vous a été créé",
+        "Bonjour,\n\n"
+        "Un compte administrateur vous a été créé sur la plateforme Mission Évangélique.\n"
+        f"Définissez votre mot de passe pour y accéder (lien valable 48 h) :\n{link}\n\n"
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
+    )
+
+
+def render_event_message(template: str, *, prenom: str, titre: str, date: str, delai) -> str:
+    """Substitue les variables {prenom}/{titre}/{date}/{delai} dans un message
+    personnalisé (confirmation d'inscription / rappel). Utilise un simple
+    remplacement (pas str.format) pour ne jamais échouer sur une accolade
+    littérale laissée par l'admin dans le texte."""
+    result = template
+    for key, value in (("prenom", prenom), ("titre", titre), ("date", date), ("delai", delai)):
+        result = result.replace(f"{{{key}}}", str(value))
+    return result
+
+
 def event_registration_received(
     sender: EmailSender,
     to: str,
@@ -104,6 +126,9 @@ def event_registration_received(
     location: str | None,
     instructor: str | None,
     price_label: str | None,
+    cancel_link: str | None = None,
+    online_link: str | None = None,
+    custom_message: str | None = None,
 ) -> None:
     details = [f"  Date      : {event_date}"]
     if location:
@@ -112,16 +137,54 @@ def event_registration_received(
         details.append(f"  Formateur : {instructor}")
     if price_label:
         details.append(f"  Prix      : {price_label}")
+    extra = ""
+    if online_link:
+        extra += f"\n\nCet événement se déroule en ligne. Lien de connexion :\n{online_link}"
+    if cancel_link:
+        extra += f"\n\nPour annuler votre inscription :\n{cancel_link}"
+    intro = custom_message or (
+        f"Bonjour {name},\n\n"
+        "Nous avons bien reçu votre inscription à l'événement suivant :"
+    )
     sender.send(
         to,
         f"Inscription reçue — {event_title}",
-        f"Bonjour {name},\n\n"
-        f"Nous avons bien reçu votre inscription à l'événement suivant :\n\n"
+        f"{intro}\n\n"
         f"  Événement : {event_title}\n"
         + "\n".join(details)
+        + extra
         + "\n\n"
         "Nous avons hâte de vous y retrouver. Si vous avez des questions, "
         "répondez simplement à ce courriel.\n\n"
+        "Fraternellement,\nMission Évangélique",
+    )
+
+
+def event_reminder(
+    sender: EmailSender,
+    to: str,
+    name: str,
+    event_title: str,
+    event_date: str,
+    location_or_link: str | None,
+    is_online: bool,
+    custom_message: str | None = None,
+) -> None:
+    where_label = "Lien de connexion" if is_online else "Lieu"
+    details = [f"  Date      : {event_date}"]
+    if location_or_link:
+        details.append(f"  {where_label} : {location_or_link}")
+    intro = custom_message or (
+        f"Bonjour {name},\n\nPetit rappel : l'événement suivant approche."
+    )
+    sender.send(
+        to,
+        f"Rappel — {event_title}",
+        f"{intro}\n\n"
+        f"  Événement : {event_title}\n"
+        + "\n".join(details)
+        + "\n\n"
+        "Au plaisir de vous y retrouver.\n\n"
         "Fraternellement,\nMission Évangélique",
     )
 
@@ -132,6 +195,14 @@ def prayer_request_received(sender: EmailSender, to: str, member_name: str, mess
         "Nouvelle demande de prière",
         f"Une nouvelle demande de prière a été soumise par {member_name}.\n\n"
         f"Message :\n{message}",
+    )
+
+
+def prayer_request_handled(sender: EmailSender, to: str, name: str) -> None:
+    sender.send(
+        to,
+        "Votre demande de prière a été prise en charge",
+        f"Bonjour {name}, votre demande de prière a été prise en charge. Merci de votre confiance.",
     )
 
 

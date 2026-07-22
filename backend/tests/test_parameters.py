@@ -50,6 +50,18 @@ def test_list_district_contains_seeded_values(client):
     assert "Est" in labels
 
 
+def test_list_intervenant_category_is_public(client):
+    r = client.get("/parameters/intervenant_category")
+    assert r.status_code == 200
+
+
+def test_list_intervenant_category_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/intervenant_category").json()]
+    assert "Pasteur" in labels
+    assert "Conférencier" in labels
+    assert "Diacre" in labels
+
+
 def test_list_unknown_category_rejected(client):
     r = client.get("/parameters/foo")
     assert r.status_code == 400
@@ -269,6 +281,30 @@ def test_delete_blocked_when_used_by_event(client, make_user, auth_header, db_se
         Event(
             title="Événement pour test paramètre",
             category="CategorieEvenementUtilisee",
+            date_start=datetime.now(timezone.utc) + timedelta(days=1),
+            status=EventStatus.draft,
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 événement(s)" in r.json()["detail"]
+
+
+def test_delete_blocked_when_used_by_event_intervenant_category(
+    client, make_user, auth_header, db_session
+):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/intervenant_category", json={"label": "CategorieIntervenantUtilisee"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Event(
+            title="Événement avec intervenant",
+            intervenant_category="CategorieIntervenantUtilisee",
             date_start=datetime.now(timezone.utc) + timedelta(days=1),
             status=EventStatus.draft,
         )

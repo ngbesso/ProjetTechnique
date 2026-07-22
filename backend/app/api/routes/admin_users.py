@@ -1,10 +1,15 @@
+import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
+from app.core.config import settings
+from app.core.email import EmailSender, admin_account_created_invite, get_email_sender
+from app.core.security import create_setup_token, hash_password
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
@@ -19,6 +24,10 @@ from app.schemas.user import (
 router = APIRouter(prefix="/admin", tags=["admin-users"])
 manage_users = Depends(require_global_permission("user:manage"))
 manage_rbac = Depends(require_global_permission("rbac:manage"))
+
+
+class AdminUserCreate(BaseModel):
+    email: EmailStr
 
 
 def _to_read(u: User) -> UserAdminRead:
@@ -42,6 +51,32 @@ def _to_read(u: User) -> UserAdminRead:
 @router.get("/users", response_model=list[UserAdminRead], dependencies=[manage_users])
 def list_users(db: Annotated[Session, Depends(get_db)]):
     return [_to_read(u) for u in db.scalars(select(User).order_by(User.email)).all()]
+
+
+@router.post(
+    "/users", response_model=UserAdminRead, status_code=201, dependencies=[manage_users]
+)
+def create_user(
+    data: AdminUserCreate,
+    db: Annotated[Session, Depends(get_db)],
+    background: BackgroundTasks,
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+):
+    """Crée un compte autonome (sans fiche membre associée) — p. ex. pour un
+    organisateur qui n'a besoin que d'un accès à l'administration. N'utilise
+    jamais un compte membre existant, même si le courriel correspond déjà à
+    un membre : un compte séparé est toujours créé."""
+    if db.scalar(select(User).where(User.email == data.email)):
+        raise HTTPException(409, "Un compte existe déjà avec ce courriel")
+    user = User(email=data.email, hashed_password=hash_password(secrets.token_urlsafe(16)))
+    db.add(user)
+    db.flush()
+    token = create_setup_token(user.id, user.token_version)
+    link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
+    db.commit()
+    db.refresh(user)
+    background.add_task(admin_account_created_invite, sender, user.email, link)
+    return _to_read(user)
 
 
 @router.patch(

@@ -425,7 +425,7 @@ def test_me_shows_member_code(client, make_member, auth_header, db_session):
 # ── PATCH /members/me ─────────────────────────────────────────────────────────
 
 
-def test_patch_me_updates_sexe_and_telephone(
+def test_patch_me_updates_telephone(
     client, make_member, auth_header, db_session
 ):
     church_id = _mother_id(db_session)
@@ -433,12 +433,11 @@ def test_patch_me_updates_sexe_and_telephone(
     h = auth_header("patched@b.com")
     r = client.patch(
         "/members/me",
-        json={"sexe": "Féminin", "telephone": "+1 (514) 555-0101"},
+        json={"telephone": "+1 (514) 555-0101"},
         headers=h,
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["sexe"] == "Féminin"
     assert body["telephone"] == "+1 (514) 555-0101"
 
 
@@ -458,8 +457,8 @@ def test_patch_me_telephone_too_short_rejected(
 def test_patch_me_ignores_restricted_fields(
     client, make_member, auth_header, db_session
 ):
-    """first_name, last_name, email et birth_date sont réservés à la gestion
-    administrative : envoyés dans le PATCH libre-service, ils sont
+    """first_name, last_name, email, birth_date et sexe sont réservés à la
+    gestion administrative : envoyés dans le PATCH libre-service, ils sont
     silencieusement ignorés (schéma restreint), pas rejetés en erreur."""
     from datetime import timedelta
 
@@ -476,6 +475,7 @@ def test_patch_me_ignores_restricted_fields(
             "last_name": "Name",
             "email": "hijack@b.com",
             "birth_date": future,
+            "sexe": "Masculin",
             "address": "1 Rue Test",
         },
         headers=auth_header("restricted@b.com"),
@@ -485,4 +485,5 @@ def test_patch_me_ignores_restricted_fields(
     assert body["first_name"] == original_first_name
     assert body["email"] == original_email
     assert body["birth_date"] is None
+    assert body["sexe"] is None
     assert body["address"] == "1 Rue Test"

@@ -20,6 +20,7 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "district": ["Ouest", "Est", "Centre", "Sud", "Outremer"],
     "donation_category": ["Soutien spirituel", "Action communautaire", "Développement"],
     "event_category": ["Conférence", "Colloque", "Croisade", "Retraite", "Formation"],
+    "intervenant_category": ["Pasteur", "Conférencier", "Diacre"],
 }
 
 MOTHER_NAME = "Église mère (Mission)"
@@ -177,6 +178,7 @@ def seed_settings(db: Session) -> None:
     defaults = {
         "auto_approve_members": "false",
         "zeffy_embed_path": "",
+        "event_reminder_hours_before": "24",
     }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:
