@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./SiteFooter.module.css";
-import { useAuth } from "../../context/AuthContext";
+import {
+  adminActionLabel,
+  adminActionTarget,
+  hasAdminAccess,
+  useAuth,
+} from "../../context/AuthContext";
 import { Link, useGoToSection } from "../../context/RouterContext";
 import { fetchChurches } from "../../lib/api/churches";
 import type { Church } from "../../types";
@@ -73,7 +78,7 @@ export function SiteFooter() {
   const { user, logout } = useAuth();
   const goToSection = useGoToSection();
   const [motherChurch, setMotherChurch] = useState<Church | null>(null);
-  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const isAdmin = hasAdminAccess(user);
 
   useEffect(() => {
     fetchChurches()
@@ -127,7 +132,7 @@ export function SiteFooter() {
                 <>
                   <li>
                     {isAdmin ? (
-                      <Link page="admin">Administration</Link>
+                      <Link page={adminActionTarget(user)}>{adminActionLabel(user)}</Link>
                     ) : (
                       <Link page="espace">Mon espace</Link>
                     )}

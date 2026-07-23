@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./HomePage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import {
+  adminActionLabel,
+  adminActionTarget,
+  hasAdminAccess,
+  useAuth,
+} from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
@@ -58,7 +63,7 @@ function formatEventMonth(iso: string): string {
 function Hero() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const isAdmin = hasAdminAccess(user);
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
@@ -74,9 +79,9 @@ function Hero() {
           {user ? (
             <button
               className={styles.btnHeroPrimary}
-              onClick={() => navigate(isAdmin ? "admin" : "espace")}
+              onClick={() => navigate(isAdmin ? adminActionTarget(user) : "espace")}
             >
-              {isAdmin ? "Administration" : "Accéder à mon espace"}
+              {isAdmin ? adminActionLabel(user) : "Accéder à mon espace"}
             </button>
           ) : (
             <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>

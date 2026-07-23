@@ -11,3 +11,7 @@
   --radius: 8px;
   --sidebar-w: 240px;
 }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
