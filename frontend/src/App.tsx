@@ -14,6 +14,7 @@ import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
 import {EspacePage} from "./features/espace/EspacePage";
+import { OrganiserEvenementsPage } from "./features/organisateur/OrganiserEvenementsPage";
 import {PrivacyPage} from "./features/legal/PrivacyPage";
 import { ChatWidget } from "./components/chat/ChatWidget";
 
@@ -46,6 +47,10 @@ export default function App() {
   if (page === "admin") {
     if (!user) return <LoginPage />;
     return <AdminPage />;
+  }
+  if (page === "organiser-evenements") {
+    if (!user) return <LoginPage />;
+    return <OrganiserEvenementsPage />;
   }
 
   let content: React.ReactNode;
