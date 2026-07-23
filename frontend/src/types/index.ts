@@ -31,7 +31,7 @@ export interface UserCreate {
 }
 
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
+export type Page = "home" | "login" | "register" | "admin" | "organiser-evenements" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
 
 export type DonationCategory =
   | "soutien_spirituel"
