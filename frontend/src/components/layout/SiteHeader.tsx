@@ -1,5 +1,11 @@
 import styles from "./SiteHeader.module.css";
-import { useAuth } from "../../context/AuthContext";
+import {
+  adminActionLabel,
+  adminActionTarget,
+  hasAdminAccess,
+  isTrueAdmin,
+  useAuth,
+} from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import type { Page } from "../../types";
 
@@ -23,7 +29,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const isAdmin = hasAdminAccess(user);
   const displayName = member
     ? `${member.first_name} ${member.last_name}`
     : user?.email;
@@ -51,8 +57,11 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
           {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
               hors composant, sans accès à la session) — rendu conditionnel ici. */}
           {isAdmin && (
-            <Link page="admin" className={navClass(activePage === "admin")}>
-              Administration
+            <Link
+              page={adminActionTarget(user)}
+              className={navClass(activePage === "admin" || activePage === "organiser-evenements")}
+            >
+              {adminActionLabel(user)}
             </Link>
           )}
         </nav>
@@ -62,7 +71,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
           {user ? (
             <>
               <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {isAdmin ? "Admin" : displayName}
+                <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
               </span>
               {!isAdmin && (
                 <button className={styles.btnPrimary} onClick={() => navigate("espace")}>

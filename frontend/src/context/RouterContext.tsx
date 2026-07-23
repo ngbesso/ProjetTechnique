@@ -23,6 +23,7 @@ const PAGE_PATHS: Record<Page, string> = {
   login: "/connexion",
   register: "/inscription",
   admin: "/admin",
+  "organiser-evenements": "/organiser-evenements",
   adhesion: "/adhesion",
   donation: "/donation",
   sermons: "/sermons",

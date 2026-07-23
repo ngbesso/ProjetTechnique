@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import admin from "../admin/AdminPage.module.css";
 import styles from "./EspacePage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasAdminAccess, useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
@@ -82,7 +82,7 @@ export function EspacePage() {
   const [section, setSection] = useState<Section>("profil");
   const { churches, load: loadChurches } = useChurches();
 
-  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const isAdmin = hasAdminAccess(user);
   // Un admin n'a généralement pas de fiche membre : /espace serait vide pour
   // lui. On vérifie et on le renvoie vers son tableau de bord le cas échéant —
   // sauf s'il a effectivement une fiche membre (ex. pasteur aussi inscrit).
