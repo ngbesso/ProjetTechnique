@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -70,7 +70,7 @@ def get_report(
     build_fn, media_type, extension = _FORMATS[format]
     content = build_fn(f"Rapport — {domain_label}", summary, tables, ai_summary)
 
-    filename = f"rapport-{domain}-{date.today().isoformat()}.{extension}"
+    filename = f"rapport-{domain}-{datetime.now(timezone.utc).date().isoformat()}.{extension}"
     return StreamingResponse(
         iter([content]),
         media_type=media_type,

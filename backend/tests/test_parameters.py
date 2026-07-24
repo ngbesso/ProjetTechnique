@@ -42,6 +42,7 @@ def test_list_family_status_contains_seeded_values(client):
     labels = [v["label"] for v in client.get("/parameters/family_status").json()]
     assert "Célibataire" in labels
     assert "Marié(e)" in labels
+    assert "Séparé(e)" in labels
 
 
 def test_list_district_contains_seeded_values(client):

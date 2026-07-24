@@ -2,7 +2,6 @@ from sqlalchemy import select
 
 from app.models.rbac import Role
 
-
 # ── /admin/permissions ────────────────────────────────────────────────────────
 
 
