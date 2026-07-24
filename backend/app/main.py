@@ -4,9 +4,11 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.routes import (
-    auth,
     admin_rbac,
+    admin_users,
+    auth,
     churches,
     dashboard,
     donations,
@@ -14,14 +16,15 @@ from app.api.routes import (
     health,
     leaders,
     members,
-    admin_users,
     parameters,
     posts,
     prayer_requests,
     reports,
     sermons,
-    settings as settings_routes,
     volunteer_requests,
+)
+from app.api.routes import (
+    settings as settings_routes,
 )
 from app.core.config import settings
 from app.core.email import get_email_sender

@@ -22,6 +22,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.email import (
     EmailSender,
     get_email_sender,
@@ -29,7 +30,6 @@ from app.core.email import (
     membership_approved_invite,
     membership_received,
 )
-from app.core.config import settings
 from app.core.security import create_setup_token, hash_password
 from app.db.session import get_db
 from app.models.church import Church

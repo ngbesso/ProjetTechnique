@@ -1,9 +1,8 @@
 from unittest.mock import MagicMock, patch
 
-from sqlalchemy import select
-
 from app.models.church import Church
 from app.models.leader import Leader
+from sqlalchemy import select
 
 BASE = "/api/leaders"
 

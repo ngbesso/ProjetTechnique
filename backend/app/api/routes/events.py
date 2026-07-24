@@ -3,7 +3,16 @@ import io
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -15,10 +24,24 @@ from app.api.deps import (
     require_global_permission,
 )
 from app.core.config import settings
-from app.core.email import EmailSender, event_registration_received, get_email_sender, render_event_message
-from app.core.security import create_cancel_registration_token, decode_cancel_registration_token
+from app.core.email import (
+    EmailSender,
+    event_registration_received,
+    get_email_sender,
+    render_event_message,
+)
+from app.core.security import (
+    create_cancel_registration_token,
+    decode_cancel_registration_token,
+)
 from app.db.session import get_db
-from app.models.event import Event, EventFormat, EventRegistration, EventStatus, RegistrationStatus
+from app.models.event import (
+    Event,
+    EventFormat,
+    EventRegistration,
+    EventStatus,
+    RegistrationStatus,
+)
 from app.models.member import Member
 from app.models.user import User
 from app.schemas.event import (

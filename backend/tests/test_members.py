@@ -1,13 +1,10 @@
 import re
 from datetime import date
 
-
-from sqlalchemy import select
-
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
 from app.models.user import User
-
+from sqlalchemy import select
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

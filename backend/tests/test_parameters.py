@@ -2,10 +2,9 @@
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
-
 from app.models.church import Church
 from app.models.event import Event, EventStatus
+from sqlalchemy import select
 
 
 def _mother_id(db) -> int:
