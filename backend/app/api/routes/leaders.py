@@ -79,6 +79,43 @@ def list_leaders(
     )
 
 
+@router.get("/admin", response_model=LeaderList, dependencies=[requires_admin])
+def list_leaders_admin(
+    db: Annotated[Session, Depends(get_db)],
+    q: str | None = None,
+    role: LeaderRole | None = None,
+    district: str | None = None,
+    church_id: int | None = None,
+    is_published: bool | None = None,
+    limit: int = Query(100, ge=1, le=300),
+    offset: int = Query(0, ge=0),
+):
+    """Liste tous les membres du leadership (brouillons compris) — réservé aux administrateurs."""
+    leaders = leader_service.list_leaders(
+        db,
+        published_only=False,
+        role=role,
+        district=district,
+        church_id=church_id,
+        q=q,
+        is_published=is_published,
+        skip=offset,
+        limit=limit,
+    )
+    total = leader_service.count_leaders(
+        db,
+        published_only=False,
+        role=role,
+        district=district,
+        church_id=church_id,
+        q=q,
+        is_published=is_published,
+    )
+    return LeaderList(
+        items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
+    )
+
+
 @router.get("/{leader_id}", response_model=LeaderRead)
 def get_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
     """Détail public d'un membre du leadership publié."""

@@ -23,15 +23,26 @@ def _apply_filters(
     role: LeaderRole | None,
     district: str | None,
     church_id: int | None,
+    q: str | None = None,
+    is_published: bool | None = None,
 ):
     if published_only:
         query = query.where(Leader.is_published.is_(True))
+    elif is_published is not None:
+        query = query.where(Leader.is_published.is_(is_published))
     if role:
         query = query.where(Leader.role == role)
     if district:
         query = query.where(Leader.district == district)
     if church_id:
         query = query.where(Leader.church_id == church_id)
+    if q:
+        term = f"%{q}%"
+        query = query.where(
+            Leader.first_name.ilike(term)
+            | Leader.last_name.ilike(term)
+            | Leader.title.ilike(term)
+        )
     return query
 
 
@@ -54,6 +65,8 @@ def list_leaders(
     role: LeaderRole | None = None,
     district: str | None = None,
     church_id: int | None = None,
+    q: str | None = None,
+    is_published: bool | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[Leader]:
@@ -63,6 +76,8 @@ def list_leaders(
         role=role,
         district=district,
         church_id=church_id,
+        q=q,
+        is_published=is_published,
     )
     return list(
         db.scalars(
@@ -80,6 +95,8 @@ def count_leaders(
     role: LeaderRole | None = None,
     district: str | None = None,
     church_id: int | None = None,
+    q: str | None = None,
+    is_published: bool | None = None,
 ) -> int:
     query = _apply_filters(
         select(func.count()).select_from(Leader),
@@ -87,6 +104,8 @@ def count_leaders(
         role=role,
         district=district,
         church_id=church_id,
+        q=q,
+        is_published=is_published,
     )
     return db.scalar(query) or 0
 
