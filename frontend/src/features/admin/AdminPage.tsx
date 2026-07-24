@@ -12,6 +12,7 @@ import { DashboardPanel } from "./DashboardPanel";
 import { DonsPanel } from "./DonsPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
+import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
@@ -24,6 +25,7 @@ export type Section =
   | "dashboard"
   | "membres"
   | "eglises"
+  | "leadership"
   | "dons"
   | "sermons"
   | "blog"
@@ -39,6 +41,7 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
+  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "blog", label: "Blog", icon: "✍️" },
@@ -403,6 +406,8 @@ export function AdminPage() {
               </>
           ) : section === "eglises" ? (
               <EglisesPanel />
+          ) : section === "leadership" ? (
+              <LeadershipPanel />
           ) : section === "membres" ? (
               <MembresPanel
                 initialStatus={membresInitialStatus}
