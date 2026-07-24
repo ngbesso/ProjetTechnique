@@ -73,7 +73,7 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               <span className={styles.userName} title={user.email}>
                 <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
               </span>
-              {!isAdmin && (
+              {member && (
                 <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
                   Mon espace
                 </button>

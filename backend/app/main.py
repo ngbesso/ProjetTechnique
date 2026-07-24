@@ -15,6 +15,7 @@ from app.api.routes import (
     events,
     health,
     members,
+    ministry_affiliations,
     parameters,
     posts,
     prayer_requests,
@@ -115,6 +116,7 @@ app.include_router(auth.router)
 app.include_router(admin_rbac.router)
 app.include_router(churches.router)
 app.include_router(members.router)
+app.include_router(ministry_affiliations.router)
 app.include_router(donations.router)
 app.include_router(sermons.router)
 app.include_router(events.router)

@@ -10,6 +10,7 @@ from app.models.church import Church
 from app.models.donation import Donation
 from app.models.event import Event
 from app.models.member import Member
+from app.models.ministry_affiliation import MemberMinistryAffiliation
 from app.models.parameter import ParameterValue
 from app.models.user import User
 from app.schemas.parameter import (
@@ -32,6 +33,7 @@ _USAGE_MAP: dict[str, list[tuple[type, str, str]]] = {
     "donation_category": [(Donation, "category", "don")],
     "event_category": [(Event, "category", "événement")],
     "intervenant_category": [(Event, "intervenant_category", "événement")],
+    "ministry": [(MemberMinistryAffiliation, "ministry", "affiliation de membre")],
 }
 
 

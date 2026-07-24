@@ -62,7 +62,7 @@ function formatEventMonth(iso: string): string {
 
 function Hero() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, member } = useAuth();
   const isAdmin = hasAdminAccess(user);
   return (
     <section className={styles.hero}>
@@ -77,12 +77,21 @@ function Hero() {
         </p>
         <div className={styles.heroActions}>
           {user ? (
-            <button
-              className={styles.btnHeroPrimary}
-              onClick={() => navigate(isAdmin ? adminActionTarget(user) : "espace")}
-            >
-              {isAdmin ? adminActionLabel(user) : "Accéder à mon espace"}
-            </button>
+            <>
+              {member && (
+                <button className={styles.btnHeroPrimary} onClick={() => navigate("espace")}>
+                  Accéder à mon espace
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  className={member ? styles.btnOutlineWhite : styles.btnHeroPrimary}
+                  onClick={() => navigate(adminActionTarget(user))}
+                >
+                  {adminActionLabel(user)}
+                </button>
+              )}
+            </>
           ) : (
             <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
               Devenir membre
