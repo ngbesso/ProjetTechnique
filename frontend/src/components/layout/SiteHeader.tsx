@@ -48,27 +48,29 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               {item.label}
             </Link>
           ))}
-
-          {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
-              hors composant, sans accès à la session) — rendu conditionnel ici. */}
-          {isAdmin && (
-            <Link page="admin" className={navClass(activePage === "admin")}>
-              Administration
-            </Link>
-          )}
         </nav>
 
         {/* Actions */}
         <div className={styles.actions}>
           {user ? (
             <>
-              <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {isAdmin ? "Admin" : displayName}
-              </span>
-              {!isAdmin && (
-                <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
-                  Mon espace
+              {isAdmin ? (
+                <button
+                  className={`${styles.userName} ${styles.userNameClickable}`}
+                  title="Aller à l'administration"
+                  onClick={() => navigate("admin")}
+                >
+                  <span aria-hidden>&#128100;</span> Admin
                 </button>
+              ) : (
+                <>
+                  <span className={styles.userName} title={user.email}>
+                    <span aria-hidden>&#128100;</span> {displayName}
+                  </span>
+                  <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
+                    Mon espace
+                  </button>
+                </>
               )}
               <button className={styles.linkMuted} onClick={logout}>
                 Se déconnecter
