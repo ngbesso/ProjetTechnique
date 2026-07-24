@@ -88,6 +88,29 @@ def test_list_filters_by_district(client, db_session):
     assert "District Ouest" not in names
 
 
+# ── Liste admin ────────────────────────────────────────────────────────────────
+
+
+def test_admin_list_requires_admin(client, make_member, auth_header, db_session):
+    from sqlalchemy import select
+    from app.models.church import Church
+
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("membre_admin_leaders@test.com", church_id)
+    r = client.get(f"{BASE}/admin", headers=auth_header("membre_admin_leaders@test.com"))
+    assert r.status_code == 403
+
+
+def test_admin_list_includes_drafts(client, make_user, auth_header, db_session):
+    _leader(db_session, "Brouillon", "Admin", is_published=False)
+    h = _admin_header(make_user, auth_header)
+
+    r = client.get(f"{BASE}/admin", headers=h)
+    assert r.status_code == 200
+    names = [f"{l['first_name']} {l['last_name']}" for l in r.json()["items"]]
+    assert "Brouillon Admin" in names
+
+
 def test_get_leader_detail(client, db_session):
     leader = _leader(db_session, "Détail", "Public")
     r = client.get(f"{BASE}/{leader.id}")
