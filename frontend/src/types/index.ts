@@ -524,3 +524,18 @@ export interface LeaderListResult {
   limit: number;
   offset: number;
 }
+
+export interface LeaderInput {
+  first_name: string;
+  last_name: string;
+  title: string;
+  role: LeaderRole;
+  district?: string | null;
+  church_id?: number | null;
+  bio?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  years_of_service?: number | null;
+  is_published?: boolean;
+  order_index?: number;
+}
