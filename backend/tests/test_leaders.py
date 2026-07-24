@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock, patch
 
+from sqlalchemy import select
+
+from app.models.church import Church
 from app.models.leader import Leader
 
 BASE = "/api/leaders"
@@ -58,7 +61,7 @@ def test_list_public_only_published(client, db_session):
 
     r = client.get(f"{BASE}/")
     assert r.status_code == 200
-    names = [f"{l['first_name']} {l['last_name']}" for l in r.json()["items"]]
+    names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Publié Un" in names
     assert "Brouillon Deux" not in names
 
@@ -69,7 +72,7 @@ def test_list_filters_by_role(client, db_session):
 
     r = client.get(f"{BASE}/?role=deacon")
     assert r.status_code == 200
-    names = [f"{l['first_name']} {l['last_name']}" for l in r.json()["items"]]
+    names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Le Diacre" in names
     assert "Le Pasteur" not in names
 
@@ -83,7 +86,7 @@ def test_list_filters_by_district(client, db_session):
 
     r = client.get(f"{BASE}/?district=Est")
     assert r.status_code == 200
-    names = [f"{l['first_name']} {l['last_name']}" for l in r.json()["items"]]
+    names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "District Est" in names
     assert "District Ouest" not in names
 
@@ -92,9 +95,6 @@ def test_list_filters_by_district(client, db_session):
 
 
 def test_admin_list_requires_admin(client, make_member, auth_header, db_session):
-    from sqlalchemy import select
-    from app.models.church import Church
-
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("membre_admin_leaders@test.com", church_id)
     r = client.get(f"{BASE}/admin", headers=auth_header("membre_admin_leaders@test.com"))
@@ -107,7 +107,7 @@ def test_admin_list_includes_drafts(client, make_user, auth_header, db_session):
 
     r = client.get(f"{BASE}/admin", headers=h)
     assert r.status_code == 200
-    names = [f"{l['first_name']} {l['last_name']}" for l in r.json()["items"]]
+    names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Brouillon Admin" in names
 
 
@@ -135,9 +135,6 @@ def test_get_leader_not_found(client, db_session):
 
 
 def test_create_leader_requires_admin(client, make_member, auth_header, db_session):
-    from sqlalchemy import select
-    from app.models.church import Church
-
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("membre_leader@test.com", church_id)
     r = client.post(f"{BASE}/", json=_payload(), headers=auth_header("membre_leader@test.com"))
@@ -177,9 +174,6 @@ def test_delete_leader_requires_auth(client, db_session):
 
 
 def test_upload_photo_requires_admin(client, make_member, auth_header, db_session):
-    from sqlalchemy import select
-    from app.models.church import Church
-
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("photo_member@test.com", church_id)
     leader = _leader(db_session, "Photo", "Test")
