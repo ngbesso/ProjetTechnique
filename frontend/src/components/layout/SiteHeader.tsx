@@ -9,6 +9,7 @@ interface SiteHeaderProps {
 
 const NAV_ITEMS: { label: string; page: Page }[] = [
   { label: "Accueil", page: "home" },
+  { label: "Leadership", page: "leadership" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
   { label: "Événements", page: "evenements" },
