@@ -12,6 +12,7 @@ from app.api.routes import (
     donations,
     events,
     health,
+    leaders,
     members,
     admin_users,
     parameters,
@@ -81,6 +82,7 @@ app.include_router(members.router)
 app.include_router(donations.router)
 app.include_router(sermons.router)
 app.include_router(events.router)
+app.include_router(leaders.router)
 app.include_router(posts.router)
 app.include_router(admin_users.router)
 app.include_router(parameters.router)
