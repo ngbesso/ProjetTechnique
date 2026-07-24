@@ -126,6 +126,23 @@ class MemberImportResult(BaseModel):
     errors: list[MemberImportRowError]
 
 
+class MemberBirthday(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    first_name: str
+    last_name: str
+    birth_date: date
+
+
+class BirthdaysOverview(BaseModel):
+    today: list[MemberBirthday]
+    this_month: list[MemberBirthday]
+
+
+class BirthdayGreetingsSendResult(BaseModel):
+    sent: int
+
+
 class MemberSelfUpdate(BaseModel):
     """Auto-service : un membre ne peut modifier que ses coordonnées.
 

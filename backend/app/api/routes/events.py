@@ -15,7 +15,7 @@ from app.api.deps import (
     require_global_permission,
 )
 from app.core.config import settings
-from app.core.email import EmailSender, event_registration_received, get_email_sender, render_event_message
+from app.core.email import EmailSender, event_registration_received, get_email_sender, render_template
 from app.core.security import create_cancel_registration_token, decode_cancel_registration_token
 from app.db.session import get_db
 from app.models.event import Event, EventFormat, EventRegistration, EventStatus, RegistrationStatus
@@ -115,7 +115,7 @@ def _send_registration_confirmation(
         event.online_link if event.format in (EventFormat.en_ligne, EventFormat.hybride) else None
     )
     custom_message = (
-        render_event_message(
+        render_template(
             event.confirmation_message,
             prenom=registration.first_name,
             titre=event.title,

@@ -7,6 +7,12 @@ SETTING_META: dict[str, str] = {
     "event_reminder_hours_before": (
         "Délai (en heures) avant un événement pour l'envoi du courriel de rappel"
     ),
+    "birthday_message_template": (
+        "Message d'anniversaire individuel (variables : {prenom}, {nom})"
+    ),
+    "birthday_monthly_message_template": (
+        "Message groupé mensuel d'anniversaire (variables : {prenom}, {nom})"
+    ),
 }
 
 # Clés retournées sans authentification

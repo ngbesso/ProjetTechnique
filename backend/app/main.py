@@ -27,6 +27,11 @@ from app.core.email import get_email_sender
 from app.db.session import SessionLocal
 from app.seed import run as seed_run
 from app.services import storage
+from app.services.birthday_service import (
+    eastern_today,
+    send_daily_birthday_greetings,
+    send_monthly_birthday_greetings,
+)
 from app.services.reminder_service import send_due_reminders
 
 _scheduler: BackgroundScheduler | None = None
@@ -36,6 +41,22 @@ def _run_reminder_job() -> None:
     db = SessionLocal()
     try:
         send_due_reminders(db, get_email_sender())
+    finally:
+        db.close()
+
+
+def _run_birthday_daily_job() -> None:
+    db = SessionLocal()
+    try:
+        send_daily_birthday_greetings(db, get_email_sender())
+    finally:
+        db.close()
+
+
+def _run_birthday_monthly_job() -> None:
+    db = SessionLocal()
+    try:
+        send_monthly_birthday_greetings(db, get_email_sender(), eastern_today().month)
     finally:
         db.close()
 
@@ -54,6 +75,19 @@ async def lifespan(app: FastAPI):
     if "pytest" not in sys.modules:
         _scheduler = BackgroundScheduler()
         _scheduler.add_job(_run_reminder_job, "interval", hours=1, id="event_reminders")
+        # Heure serveur (UTC) ~ matinée à l'Est ; la comparaison de date elle-même
+        # se fait toujours en heure de l'Est (zoneinfo) dans birthday_service.
+        _scheduler.add_job(
+            _run_birthday_daily_job, "cron", hour=13, minute=0, id="birthday_daily"
+        )
+        _scheduler.add_job(
+            _run_birthday_monthly_job,
+            "cron",
+            day=1,
+            hour=13,
+            minute=5,
+            id="birthday_monthly",
+        )
         _scheduler.start()
 
     yield

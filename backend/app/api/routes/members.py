@@ -21,7 +21,7 @@ from pydantic import ValidationError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_global_permission
 from app.core.email import (
     EmailSender,
     get_email_sender,
@@ -38,6 +38,9 @@ from app.models.rbac import Role, UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.member import (
+    BirthdayGreetingsSendResult,
+    BirthdaysOverview,
+    MemberBirthday,
     MemberCreate,
     MemberImportResult,
     MemberImportRowError,
@@ -47,6 +50,11 @@ from app.schemas.member import (
     MembershipRequest,
     MemberStatusStats,
     MemberUpdate,
+)
+from app.services.birthday_service import (
+    birthdays_this_month,
+    birthdays_today,
+    send_monthly_birthday_greetings,
 )
 
 _IMPORT_REQUIRED_COLUMNS = {"first_name", "last_name", "email"}
@@ -295,6 +303,7 @@ def list_members(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
     status: MemberStatus | None = None,
+    family_status: str | None = None,
     limit: int = Query(default=20, le=100),
     offset: int = 0,
 ):
@@ -315,6 +324,8 @@ def list_members(
         )
     if status:
         query = query.where(Member.status == status)
+    if family_status:
+        query = query.where(Member.family_status == family_status)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     rows = db.scalars(
         query.order_by(Member.created_at.desc()).limit(limit).offset(offset)
@@ -349,6 +360,51 @@ def get_members_stats(
         inactive=counts[MemberStatus.inactive],
         rejected=counts[MemberStatus.rejected],
     )
+
+
+@router.get("/admin/stats/family-status", response_model=dict[str, int])
+def get_members_family_status_stats(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Répartition des membres par statut matrimonial, dans le périmètre de l'utilisateur."""
+    scope = current_user.accessible_church_ids("member:read")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Aucun périmètre accessible")
+    query = select(Member.family_status, func.count(Member.id)).where(
+        Member.family_status.is_not(None)
+    )
+    if scope is not None:
+        query = query.where(Member.church_id.in_(scope))
+    rows = db.execute(query.group_by(Member.family_status)).all()
+    return {family_status: count for family_status, count in rows}
+
+
+@router.get("/admin/birthdays", response_model=BirthdaysOverview)
+def get_birthdays_overview(
+    current_user: Annotated[User, Depends(require_global_permission("member:update"))],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Anniversaires du jour et du mois en cours, pour la section « Anniversaires »
+    de l'administration."""
+    return BirthdaysOverview(
+        today=[MemberBirthday.model_validate(m) for m in birthdays_today(db)],
+        this_month=[MemberBirthday.model_validate(m) for m in birthdays_this_month(db)],
+    )
+
+
+@router.post("/admin/birthday-greetings/send", response_model=BirthdayGreetingsSendResult)
+def send_birthday_greetings(
+    current_user: Annotated[User, Depends(require_global_permission("member:update"))],
+    db: Annotated[Session, Depends(get_db)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+    month: Annotated[int, Query(ge=1, le=12)],
+):
+    """Envoie manuellement le message groupé mensuel aux membres actifs nés le
+    mois donné. Coexiste avec le job automatique du 1er de chaque mois — les
+    deux modes peuvent envoyer pour le même mois sans se bloquer."""
+    sent = send_monthly_birthday_greetings(db, sender, month)
+    return BirthdayGreetingsSendResult(sent=sent)
 
 
 @router.post("", response_model=MemberRead, status_code=201)

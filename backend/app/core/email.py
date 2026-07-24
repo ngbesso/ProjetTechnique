@@ -106,13 +106,13 @@ def admin_account_created_invite(sender: EmailSender, to: str, link: str) -> Non
     )
 
 
-def render_event_message(template: str, *, prenom: str, titre: str, date: str, delai) -> str:
-    """Substitue les variables {prenom}/{titre}/{date}/{delai} dans un message
-    personnalisé (confirmation d'inscription / rappel). Utilise un simple
-    remplacement (pas str.format) pour ne jamais échouer sur une accolade
-    littérale laissée par l'admin dans le texte."""
+def render_template(template: str, **variables) -> str:
+    """Substitue des variables {nom} dans un message personnalisé (messages
+    d'événement, messages d'anniversaire…). Utilise un simple remplacement
+    (pas str.format) pour ne jamais échouer sur une accolade littérale laissée
+    par l'admin dans le texte."""
     result = template
-    for key, value in (("prenom", prenom), ("titre", titre), ("date", date), ("delai", delai)):
+    for key, value in variables.items():
         result = result.replace(f"{{{key}}}", str(value))
     return result
 
@@ -239,6 +239,10 @@ def volunteer_request_reviewed(
             f"Bonjour {name}, votre demande de bénévolat pour « {event_title} » "
             "n'a pas été retenue cette fois-ci. Merci de votre intérêt.",
         )
+
+
+def birthday_greeting(sender: EmailSender, to: str, message: str) -> None:
+    sender.send(to, "Joyeux anniversaire !", message)
 
 
 def password_reset_email(sender: EmailSender, to: str, link: str) -> None:
