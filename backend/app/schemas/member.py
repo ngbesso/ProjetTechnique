@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 def _no_future_date(v: date | None, field_name: str) -> date | None:
-    if v is not None and v > date.today():
+    if v is not None and v > datetime.now(timezone.utc).date():
         raise ValueError(f"La {field_name} ne peut pas être une date future.")
     return v
 
