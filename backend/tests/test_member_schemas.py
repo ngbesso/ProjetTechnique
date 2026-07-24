@@ -3,17 +3,16 @@
 Aucune base de données, aucun HTTP — uniquement la logique de validation.
 """
 
-import pytest
 from datetime import date, timedelta
-from pydantic import ValidationError
 
+import pytest
 from app.schemas.member import (
     MemberCreate,
-    MembershipRequest,
     MemberSelfUpdate,
+    MembershipRequest,
     MemberUpdate,
 )
-
+from pydantic import ValidationError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

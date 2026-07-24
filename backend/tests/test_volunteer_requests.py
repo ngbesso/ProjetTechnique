@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
-
 from app.core.config import settings
 from app.models.church import Church
 from app.models.event import Event, EventStatus
+from sqlalchemy import select
 
 BASE = "/volunteer-requests"
 

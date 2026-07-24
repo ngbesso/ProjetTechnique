@@ -8,14 +8,14 @@ Revises: e3f4g5h6i7j8, c3d4e5f6a7b8
 Create Date: 2026-07-05
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "g1h2i3j4k5l6"
-down_revision: Union[str, Sequence[str], None] = ("e3f4g5h6i7j8", "c3d4e5f6a7b8")
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = ("e3f4g5h6i7j8", "c3d4e5f6a7b8")
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

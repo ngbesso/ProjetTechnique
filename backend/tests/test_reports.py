@@ -2,7 +2,6 @@ import io
 
 import openpyxl
 import pytest
-
 from app.services import report_builder
 
 

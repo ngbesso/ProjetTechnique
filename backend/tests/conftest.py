@@ -1,10 +1,6 @@
 import os
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.core.email import get_email_sender
 from app.core.security import hash_password
@@ -12,7 +8,7 @@ from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.church import Church
-from app.models.member import Member, MemberStatus  # noqa: F401
+from app.models.member import Member, MemberStatus
 from app.models.parameter import ParameterValue  # noqa: F401
 from app.models.rbac import Role, UserRole
 from app.models.setting import AppSetting  # noqa: F401
@@ -23,6 +19,9 @@ from app.seed import (
     seed_roles_permissions,
     seed_settings,
 )
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or (
     settings.database_url.rsplit("/", 1)[0] + "/obnl_test"

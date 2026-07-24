@@ -1,9 +1,7 @@
-from sqlalchemy import select
-
 from app.models.church import Church
 from app.models.member import Member
 from app.models.rbac import Role
-
+from sqlalchemy import select
 
 # ── GET /admin/users ──────────────────────────────────────────────────────────
 

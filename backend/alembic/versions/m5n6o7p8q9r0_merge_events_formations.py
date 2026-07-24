@@ -8,12 +8,12 @@ Revises: j1k2l3m4n5o6, l4m5n6o7p8q9
 Create Date: 2026-07-13
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 revision: str = "m5n6o7p8q9r0"
-down_revision: Union[str, Sequence[str], None] = ("j1k2l3m4n5o6", "l4m5n6o7p8q9")
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = ("j1k2l3m4n5o6", "l4m5n6o7p8q9")
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
