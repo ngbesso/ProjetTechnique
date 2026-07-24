@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { AnniversairesPanel } from "./AnniversairesPanel";
 import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
@@ -23,6 +24,7 @@ import { UsersPanel } from "./UsersPanel";
 export type Section =
   | "dashboard"
   | "membres"
+  | "anniversaires"
   | "eglises"
   | "dons"
   | "sermons"
@@ -38,6 +40,7 @@ export type Section =
 const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
+  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
@@ -408,6 +411,8 @@ export function AdminPage() {
                 initialStatus={membresInitialStatus}
                 key={membresInitialStatus ?? "all"}
               />
+          ) : section === "anniversaires" ? (
+              <AnniversairesPanel />
           ) : section === "dons" ? (
               <DonsPanel />
           ) : section === "sermons" ? (
