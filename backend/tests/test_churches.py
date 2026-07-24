@@ -4,7 +4,6 @@ from app.models.church import Church
 from app.models.member import Member, MemberStatus
 from app.models.rbac import Role, UserRole
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 

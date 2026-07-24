@@ -1,13 +1,11 @@
 import re
 from datetime import date
 
-
 from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
 from app.models.user import User
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -168,6 +166,23 @@ def test_list_with_status_filter(
     assert all(m["status"] == "pending" for m in r_pending.json()["items"])
 
 
+def test_list_with_family_status_filter(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    mother = _mother_id(db_session)
+    _request(client, mother, "fs1@b.com", "F", "1", family_status="Marié(e)")
+    _request(client, mother, "fs2@b.com", "F", "2", family_status="Célibataire")
+    h = auth_header("admin@b.com")
+
+    r = client.get("/members?family_status=Marié(e)", headers=h)
+
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert items
+    assert all(m["family_status"] == "Marié(e)" for m in items)
+
+
 def test_affiliate_admin_sees_only_own(client, make_user, auth_header, db_session):
     make_user("boss@b.com", roles=["admin"])
     h = auth_header("boss@b.com")
@@ -226,6 +241,33 @@ def test_stats_scoped_to_affiliate_admin(client, make_user, auth_header, db_sess
     r = client.get("/members/admin/stats", headers=auth_header("chef@b.com"))
     assert r.status_code == 200
     assert r.json()["pending"] == 1
+
+
+# ── GET /members/admin/stats/family-status ────────────────────────────────────
+
+
+def test_family_status_stats_requires_auth(client):
+    assert client.get("/members/admin/stats/family-status").status_code == 401
+
+
+def test_family_status_stats_counts_by_value(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    mother = _mother_id(db_session)
+    _request(client, mother, "m1@b.com", "M", "1", family_status="Marié(e)")
+    _request(client, mother, "m2@b.com", "M", "2", family_status="Marié(e)")
+    _request(client, mother, "m3@b.com", "M", "3", family_status="Célibataire")
+    _request(client, mother, "m4@b.com", "M", "4")
+    h = auth_header("admin@b.com")
+
+    r = client.get("/members/admin/stats/family-status", headers=h)
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["Marié(e)"] == 2
+    assert body["Célibataire"] == 1
+    assert None not in body
 
 
 # ── GET /members/{id} ─────────────────────────────────────────────────────────

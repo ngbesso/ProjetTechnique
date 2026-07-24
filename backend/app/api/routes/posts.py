@@ -9,7 +9,14 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.post import Post, PostStatus
-from app.schemas.post import PostAdminStats, PostCreate, PostList, PostRead, PostUpdate, TopPostItem
+from app.schemas.post import (
+    PostAdminStats,
+    PostCreate,
+    PostList,
+    PostRead,
+    PostUpdate,
+    TopPostItem,
+)
 from app.services import storage
 
 router = APIRouter(prefix="/posts", tags=["blog"])

@@ -5,7 +5,6 @@ from app.core.config import settings
 from app.models.church import Church
 from app.models.donation import Donation
 
-
 BASE = "/api/donations"
 WEBHOOK_SECRET = "test-zeffy-secret"
 

@@ -1,7 +1,7 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from datetime import datetime, timedelta, timezone
 
 from app.core.config import settings
 from app.core.permissions import DEFAULT_ROLES, PERMISSIONS
@@ -10,13 +10,17 @@ from app.db.session import SessionLocal
 from app.models.church import Church
 from app.models.parameter import ParameterValue
 from app.models.post import Post, PostStatus
-from app.models.setting import AppSetting
 from app.models.rbac import Permission, Role, UserRole
+from app.models.setting import AppSetting
 from app.models.user import User
+from app.services.birthday_service import (
+    DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
+    DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
+)
 
 DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "sexe": ["Masculin", "Féminin", "Autre"],
-    "family_status": ["Célibataire", "Marié(e)", "Veuf(ve)", "Divorcé(e)"],
+    "family_status": ["Célibataire", "Marié(e)", "Séparé(e)", "Veuf(ve)", "Divorcé(e)"],
     "district": ["Ouest", "Est", "Centre", "Sud", "Outremer"],
     "donation_category": ["Soutien spirituel", "Action communautaire", "Développement"],
     "event_category": ["Conférence", "Colloque", "Croisade", "Retraite", "Formation"],
@@ -179,6 +183,8 @@ def seed_settings(db: Session) -> None:
         "auto_approve_members": "false",
         "zeffy_embed_path": "",
         "event_reminder_hours_before": "24",
+        "birthday_message_template": DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
+        "birthday_monthly_message_template": DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
     }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:

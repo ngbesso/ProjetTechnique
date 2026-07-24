@@ -4,8 +4,10 @@ Usage : docker exec -it projet_backend python demo_seed.py
 """
 
 from datetime import date, datetime, timezone
+
 from sqlalchemy import select, text
 
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
@@ -13,8 +15,6 @@ from app.models.member import Member, MemberStatus
 from app.models.rbac import Role, UserRole
 from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.user import User
-from app.core.config import settings
-
 
 # ── 1. Données de démonstration ───────────────────────────────────────────────
 

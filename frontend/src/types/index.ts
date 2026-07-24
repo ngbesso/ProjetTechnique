@@ -200,6 +200,7 @@ export interface MemberListResult {
 export interface MemberQuery {
   q?: string;
   status?: MemberStatus;
+  family_status?: string;
   limit?: number;
   offset?: number;
 }
@@ -209,6 +210,18 @@ export interface MemberStatusStats {
   pending: number;
   inactive: number;
   rejected: number;
+}
+
+export interface MemberBirthday {
+  id: number;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+}
+
+export interface BirthdaysOverview {
+  today: MemberBirthday[];
+  this_month: MemberBirthday[];
 }
 
 export interface MemberImportRowError {
