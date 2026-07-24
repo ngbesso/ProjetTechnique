@@ -10,6 +10,7 @@ import { SermonsPage } from "./features/sermons/SermonsPage";
 import { EventsPage } from "./features/events/EventsPage";
 import { EventDetailPage } from "./features/events/EventDetailPage";
 import { BlogPage } from "./features/blog/BlogPage";
+import { NewsPage } from "./features/news/NewsPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
 import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
 import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
@@ -60,6 +61,7 @@ export default function App() {
   else if (page === "donation") content = <DonationPage />;
   else if (page === "sermons") content = <SermonsPage />;
   else if (page === "blog") content = <BlogPage />;
+  else if (page === "actualites") content = <NewsPage />;
   else content = <HomePage />;
 
   return (

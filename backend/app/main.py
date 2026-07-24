@@ -14,6 +14,7 @@ from app.api.routes import (
     health,
     members,
     admin_users,
+    news,
     parameters,
     posts,
     prayer_requests,
@@ -82,6 +83,7 @@ app.include_router(donations.router)
 app.include_router(sermons.router)
 app.include_router(events.router)
 app.include_router(posts.router)
+app.include_router(news.router)
 app.include_router(admin_users.router)
 app.include_router(parameters.router)
 app.include_router(settings_routes.router)

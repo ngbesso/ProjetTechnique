@@ -10,6 +10,7 @@ import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
 import { getEvents } from "../../lib/api/events";
+import { NewsCarousel } from "./NewsCarousel";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import type { EventItem } from "../../types";
@@ -341,6 +342,7 @@ export function HomePage() {
     <div className={styles.page}>
       <SiteHeader activePage="home" />
       <main>
+        <NewsCarousel />
         <Hero />
         <AboutSection />
         <SermonsSection />

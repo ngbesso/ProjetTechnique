@@ -17,6 +17,7 @@ const NAV_ITEMS: { label: string; page: Page }[] = [
   { label: "Accueil", page: "home" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
+  { label: "Actualités", page: "actualites" },
   { label: "Événements", page: "evenements" },
   { label: "Faire un don", page: "donation" },
 ];
