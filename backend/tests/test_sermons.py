@@ -1,8 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-
 from app.models.sermon import Sermon, SermonStatus
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 

@@ -11,7 +11,13 @@ from app.api.deps import get_current_user, require_global_permission
 from app.db.session import get_db
 from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.user import User
-from app.schemas.sermon import SermonAdminStats, SermonList, SermonRead, SermonUpdate, TopSermonItem
+from app.schemas.sermon import (
+    SermonAdminStats,
+    SermonList,
+    SermonRead,
+    SermonUpdate,
+    TopSermonItem,
+)
 from app.services import storage
 
 router = APIRouter(prefix="/sermons", tags=["sermons"])
