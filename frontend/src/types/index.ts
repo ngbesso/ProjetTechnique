@@ -224,6 +224,29 @@ export interface BirthdaysOverview {
   this_month: MemberBirthday[];
 }
 
+export interface MinistryAffiliation {
+  id: number;
+  member_id: number;
+  ministry: string;
+  joined_at: string;
+  left_at: string | null;
+  created_at: string;
+}
+
+export interface MinistryMember {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  affiliation_id: number;
+  joined_at: string;
+}
+
+export interface MinistryBulkAddResult {
+  added: number[];
+  skipped: number[];
+}
+
 export interface MemberImportRowError {
   row: number;
   email: string | null;

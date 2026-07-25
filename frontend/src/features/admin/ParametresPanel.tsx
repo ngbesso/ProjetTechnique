@@ -241,6 +241,7 @@ const SECTIONS = [
     { category: "donation_category", label: "Catégories de don" },
     { category: "event_category", label: "Catégories d'événement" },
     { category: "intervenant_category", label: "Catégories d'intervenant" },
+    { category: "ministry", label: "Ministères" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];
