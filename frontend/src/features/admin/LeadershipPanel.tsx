@@ -156,9 +156,12 @@ export function LeadershipPanel() {
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
         title: form.title.trim(),
-        bio: form.bio || undefined,
-        email: form.email || undefined,
-        phone: form.phone || undefined,
+        // null (pas undefined) : un champ vidé doit être effacé côté serveur.
+        // undefined disparaît de JSON.stringify, et exclude_unset="non fourni"
+        // ferait que le backend ignore silencieusement l'effacement voulu.
+        bio: form.bio || null,
+        email: form.email || null,
+        phone: form.phone || null,
       };
       if (editingId !== null) {
         await edit(editingId, payload);
