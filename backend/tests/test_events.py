@@ -4,10 +4,16 @@ from unittest.mock import MagicMock, patch
 
 from sqlalchemy import select
 
-from app.models.church import Church
-from app.models.event import Event, EventFormat, EventRegistration, EventStatus, RegistrationStatus
-from app.models.rbac import Permission, Role, UserRole
 from app.core.security import create_cancel_registration_token
+from app.models.church import Church
+from app.models.event import (
+    Event,
+    EventFormat,
+    EventRegistration,
+    EventStatus,
+    RegistrationStatus,
+)
+from app.models.rbac import Permission, Role, UserRole
 
 BASE = "/api/events"
 

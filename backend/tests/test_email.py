@@ -12,7 +12,6 @@ from app.core.email import (
     membership_received,
 )
 
-
 # ── ConsoleEmailSender ────────────────────────────────────────────────────────
 
 

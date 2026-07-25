@@ -78,6 +78,6 @@ export const http = {
       request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) =>
       request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
-  del: (path: string) => request<void>(path, { method: "DELETE" }),
+  del: <T = void>(path: string) => request<T>(path, { method: "DELETE" }),
   getBlob: (path: string) => requestBlob(path),
 };

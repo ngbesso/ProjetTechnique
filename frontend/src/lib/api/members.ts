@@ -1,15 +1,28 @@
 // members.ts
 import { http, BASE_URL, getToken, ApiError } from "./client";
-import type {Member, MemberImportResult, MemberListResult, MemberQuery, MemberSelfInput, MemberStatusStats, MemberUpdateInput, MembershipInput} from "../../types";
+import type {BirthdaysOverview, Member, MemberImportResult, MemberListResult, MemberQuery, MemberSelfInput, MemberStatusStats, MemberUpdateInput, MembershipInput} from "../../types";
 
 export function fetchMembersStats(): Promise<MemberStatusStats> {
     return http.get<MemberStatusStats>("/members/admin/stats");
+}
+
+export function fetchFamilyStatusStats(): Promise<Record<string, number>> {
+    return http.get<Record<string, number>>("/members/admin/stats/family-status");
+}
+
+export function fetchBirthdaysOverview(): Promise<BirthdaysOverview> {
+    return http.get<BirthdaysOverview>("/members/admin/birthdays");
+}
+
+export function sendBirthdayGreetings(month: number): Promise<{ sent: number }> {
+    return http.post<{ sent: number }>(`/members/admin/birthday-greetings/send?month=${month}`, {});
 }
 
 export function fetchMembers(query: MemberQuery = {}): Promise<MemberListResult> {
     const params = new URLSearchParams();
     if (query.q) params.set("q", query.q);
     if (query.status) params.set("status", query.status);
+    if (query.family_status) params.set("family_status", query.family_status);
     if (query.limit != null) params.set("limit", String(query.limit));
     if (query.offset != null) params.set("offset", String(query.offset));
     const qs = params.toString();
