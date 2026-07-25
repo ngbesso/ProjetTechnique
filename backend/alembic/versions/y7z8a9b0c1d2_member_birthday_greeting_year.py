@@ -1,7 +1,7 @@
 """add last_birthday_greeting_year column to members (anniversaires automatisés)
 
 Revision ID: y7z8a9b0c1d2
-Revises: x6y7z8a9b0c1
+Revises: c47e91a2f5b3
 Create Date: 2026-07-24
 """
 
@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 
 revision: str = "y7z8a9b0c1d2"
-down_revision: Union[str, None] = "x6y7z8a9b0c1"
+down_revision: Union[str, None] = "c47e91a2f5b3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

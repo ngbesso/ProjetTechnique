@@ -49,6 +49,7 @@ export function LeadershipPage() {
           <h1 className={styles.heroTitle}>Corps de Leadership</h1>
           <p className={styles.heroSubtitle}>Nos pasteurs et responsables</p>
         </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
       </section>
 
       <main className={styles.main}>
