@@ -18,6 +18,7 @@ const NAV_ITEMS: { label: string; page: Page }[] = [
   { label: "Leadership", page: "leadership" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
+  { label: "Actualités", page: "actualites" },
   { label: "Événements", page: "evenements" },
   { label: "Faire un don", page: "donation" },
 ];

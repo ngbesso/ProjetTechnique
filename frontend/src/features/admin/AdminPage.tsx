@@ -15,6 +15,7 @@ import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
+import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
@@ -33,6 +34,7 @@ export type Section =
   | "dons"
   | "sermons"
   | "blog"
+  | "actualites"
   | "evenements"
   | "prieres"
   | "benevolat"
@@ -51,6 +53,7 @@ const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: bo
   { id: "dons", label: "Dons", icon: "💝" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "blog", label: "Blog", icon: "✍️" },
+  { id: "actualites", label: "Actualités", icon: "📰" },
   { id: "evenements", label: "Événements", icon: "📅" },
   { id: "prieres", label: "Demandes de prière", icon: "🙏" },
   { id: "benevolat", label: "Bénévolat", icon: "🤝" },
@@ -431,6 +434,8 @@ export function AdminPage() {
               <EvenementsPanel />
           ) : section === "blog" ? (
               <BlogPanel />
+          ) : section === "actualites" ? (
+              <NewsPanel />
           ) : section === "prieres" ? (
               <PrieresPanel />
           ) : section === "benevolat" ? (

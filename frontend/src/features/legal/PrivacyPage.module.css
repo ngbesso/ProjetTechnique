@@ -10,36 +10,59 @@
 /* ── Hero ─────────────────────────────────────────────────────────────── */
 
 .hero {
-  background: var(--deep-violet);
-  padding: 3.5rem 2rem;
+  position: relative;
+  background: linear-gradient(135deg, #1e1458 0%, #3b2f8a 50%, #5b21b6 100%);
+  color: #fff;
+  padding: 5rem 2rem 5.5rem;
+  overflow: hidden;
 }
 
 .heroInner {
-  max-width: 720px;
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
   margin: 0 auto;
-  text-align: center;
-  color: #fff;
 }
 
 .heroEyebrow {
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.3rem 0.9rem;
+  border-radius: 99px;
+  margin-bottom: 1.25rem;
 }
 
 .heroTitle {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
-  font-weight: 700;
-  margin: 0.6rem 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  margin: 0 0 1rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .heroSubtitle {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.05rem;
+  opacity: 0.8;
+  max-width: 520px;
   margin: 0;
+  line-height: 1.6;
+}
+
+.heroDecor {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(139,92,246,0.35) 0%, transparent 40%),
+    radial-gradient(circle at 15% 80%, rgba(99,102,241,0.25) 0%, transparent 35%);
 }
 
 /* ── Contenu ──────────────────────────────────────────────────────────── */
@@ -106,7 +129,7 @@
 
 @media (max-width: 600px) {
   .hero {
-    padding: 2.5rem 1.25rem;
+    padding: 3rem 1.25rem 3.5rem;
   }
 
   .card {
