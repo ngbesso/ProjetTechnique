@@ -5,6 +5,7 @@ import { useNavigate } from "../../context/RouterContext";
 import { useRbac } from "../../hooks/useRbac";
 import { usePendingCount } from "../../hooks/usePendingCount";
 import type { MemberStatus, Role, Permission } from "../../types";
+import { AnniversairesPanel } from "./AnniversairesPanel";
 import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
@@ -14,6 +15,7 @@ import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
+import { MinisteresPanel } from "./MinisteresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
 import { SermonsPanel } from "./SermonsPanel";
@@ -24,6 +26,8 @@ import { UsersPanel } from "./UsersPanel";
 export type Section =
   | "dashboard"
   | "membres"
+  | "anniversaires"
+  | "ministeres"
   | "eglises"
   | "leadership"
   | "dons"
@@ -40,6 +44,8 @@ export type Section =
 const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
+  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
+  { id: "ministeres", label: "Ministères", icon: "🙌" },
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
   { id: "dons", label: "Dons", icon: "💝" },
@@ -413,6 +419,10 @@ export function AdminPage() {
                 initialStatus={membresInitialStatus}
                 key={membresInitialStatus ?? "all"}
               />
+          ) : section === "anniversaires" ? (
+              <AnniversairesPanel />
+          ) : section === "ministeres" ? (
+              <MinisteresPanel />
           ) : section === "dons" ? (
               <DonsPanel />
           ) : section === "sermons" ? (

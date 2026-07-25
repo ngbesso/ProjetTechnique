@@ -11,3 +11,18 @@ extend-immutable-calls = [
     "fastapi.File",
     "fastapi.Form",
 ]
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "DTZ"]
+# E501 (ligne trop longue) : pas de convention de largeur établie dans ce
+# projet et aucun formatteur (black/ruff format) en place — appliquer une
+# limite arbitraire ne ferait que produire du bruit sans intention réelle.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Les dates naïves dans les tests servent à construire des scénarios fixes
+# (ex. "le 24 juillet 2026") ; la rigueur fuseau horaire de DTZ n'y apporte
+# rien, contrairement au code applicatif où une date implicite est un bug.
+"tests/*" = ["DTZ"]

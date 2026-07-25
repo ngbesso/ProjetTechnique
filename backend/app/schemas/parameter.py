@@ -7,6 +7,7 @@ VALID_CATEGORIES = {
     "donation_category",
     "event_category",
     "intervenant_category",
+    "ministry",
 }
 
 

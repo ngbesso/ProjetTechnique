@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./HomePage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import {
+  adminActionLabel,
+  adminActionTarget,
+  hasAdminAccess,
+  useAuth,
+} from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
@@ -57,8 +62,8 @@ function formatEventMonth(iso: string): string {
 
 function Hero() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isAdmin = user?.is_global_admin || user?.roles.includes("admin");
+  const { user, member } = useAuth();
+  const isAdmin = hasAdminAccess(user);
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
@@ -72,12 +77,21 @@ function Hero() {
         </p>
         <div className={styles.heroActions}>
           {user ? (
-            <button
-              className={styles.btnHeroPrimary}
-              onClick={() => navigate(isAdmin ? "admin" : "espace")}
-            >
-              {isAdmin ? "Administration" : "Accéder à mon espace"}
-            </button>
+            <>
+              {member && (
+                <button className={styles.btnHeroPrimary} onClick={() => navigate("espace")}>
+                  Accéder à mon espace
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  className={member ? styles.btnOutlineWhite : styles.btnHeroPrimary}
+                  onClick={() => navigate(adminActionTarget(user))}
+                >
+                  {adminActionLabel(user)}
+                </button>
+              )}
+            </>
           ) : (
             <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
               Devenir membre

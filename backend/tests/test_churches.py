@@ -1,7 +1,10 @@
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
 from app.models.rbac import Role, UserRole
+<<<<<<< HEAD
 from sqlalchemy import select
+=======
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

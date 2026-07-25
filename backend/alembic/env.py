@@ -11,7 +11,10 @@ from app.models import (  # noqa: F401 (enregistre les tables)
     sermon,
     user,
 )
+<<<<<<< HEAD
 from sqlalchemy import engine_from_config, pool
+=======
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 config = context.config
 
