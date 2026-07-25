@@ -1,6 +1,10 @@
 import os
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
 from app.core.email import get_email_sender
 from app.core.security import hash_password
@@ -19,9 +23,6 @@ from app.seed import (
     seed_roles_permissions,
     seed_settings,
 )
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
 
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or (
     settings.database_url.rsplit("/", 1)[0] + "/obnl_test"

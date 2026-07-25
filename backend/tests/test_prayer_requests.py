@@ -1,6 +1,7 @@
+from sqlalchemy import select
+
 from app.core.config import settings
 from app.models.church import Church
-from sqlalchemy import select
 
 BASE = "/prayer-requests"
 

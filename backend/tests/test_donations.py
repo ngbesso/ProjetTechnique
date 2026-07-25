@@ -1,11 +1,9 @@
 import pytest
+from sqlalchemy import select
+
 from app.core.config import settings
 from app.models.church import Church
 from app.models.donation import Donation
-<<<<<<< HEAD
-from sqlalchemy import select
-=======
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 BASE = "/api/donations"
 WEBHOOK_SECRET = "test-zeffy-secret"
