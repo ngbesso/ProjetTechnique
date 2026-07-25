@@ -1,5 +1,8 @@
 from app.models.rbac import Role
+<<<<<<< HEAD
 from sqlalchemy import select
+=======
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 # ── /admin/permissions ────────────────────────────────────────────────────────
 

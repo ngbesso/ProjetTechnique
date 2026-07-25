@@ -31,7 +31,9 @@ export interface UserCreate {
 }
 
 
-export type Page = "home" | "login" | "register" | "admin" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "leadership" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
+
+export type Page = "home" | "login" | "register" | "admin" | "organiser-evenements" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "leadership" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
+
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -200,6 +202,7 @@ export interface MemberListResult {
 export interface MemberQuery {
   q?: string;
   status?: MemberStatus;
+  family_status?: string;
   limit?: number;
   offset?: number;
 }
@@ -209,6 +212,41 @@ export interface MemberStatusStats {
   pending: number;
   inactive: number;
   rejected: number;
+}
+
+export interface MemberBirthday {
+  id: number;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+}
+
+export interface BirthdaysOverview {
+  today: MemberBirthday[];
+  this_month: MemberBirthday[];
+}
+
+export interface MinistryAffiliation {
+  id: number;
+  member_id: number;
+  ministry: string;
+  joined_at: string;
+  left_at: string | null;
+  created_at: string;
+}
+
+export interface MinistryMember {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  affiliation_id: number;
+  joined_at: string;
+}
+
+export interface MinistryBulkAddResult {
+  added: number[];
+  skipped: number[];
 }
 
 export interface MemberImportRowError {

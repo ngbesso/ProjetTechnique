@@ -2,6 +2,11 @@ import re
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+<<<<<<< HEAD
+=======
+from sqlalchemy import select
+
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 from app.core.security import create_cancel_registration_token
 from app.models.church import Church
 from app.models.event import (
@@ -12,7 +17,10 @@ from app.models.event import (
     RegistrationStatus,
 )
 from app.models.rbac import Permission, Role, UserRole
+<<<<<<< HEAD
 from sqlalchemy import select
+=======
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 BASE = "/api/events"
 

@@ -2,7 +2,6 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  font-family: 'Segoe UI', system-ui, sans-serif;
   color: var(--text-main);
   background: var(--neutral-bg);
 }

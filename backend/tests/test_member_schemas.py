@@ -4,6 +4,12 @@ Aucune base de données, aucun HTTP — uniquement la logique de validation.
 """
 
 from datetime import date, timedelta
+<<<<<<< HEAD
+=======
+
+import pytest
+from pydantic import ValidationError
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 import pytest
 from app.schemas.member import (
@@ -12,7 +18,10 @@ from app.schemas.member import (
     MembershipRequest,
     MemberUpdate,
 )
+<<<<<<< HEAD
 from pydantic import ValidationError
+=======
+>>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -4,10 +4,15 @@ import { useAuth } from "../../context/AuthContext";
 import { useMembers } from "../../hooks/useMembers";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
-import { downloadImportTemplate, fetchMembersStats, importMembers } from "../../lib/api/members";
+import {
+    downloadImportTemplate,
+    fetchFamilyStatusStats,
+    fetchMembersStats,
+    importMembers,
+} from "../../lib/api/members";
 import { validatePhone, validateAddress } from "../../lib/validation";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import { KpiCard } from "../../components/ui/KpiCard";
+import { KpiCard, type KpiColor } from "../../components/ui/KpiCard";
 import type { Church, Member, MemberImportResult, MemberStatus, MemberStatusStats, MemberUpdateInput } from "../../types";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -51,6 +56,15 @@ function IconXCircle() {
     );
 }
 
+function IconRing() {
+    return (
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="14" r="6" />
+            <path d="M9 8l3-5 3 5" />
+        </svg>
+    );
+}
+
 const STATUS_META: Record<MemberStatus, { label: string; cls: string }> = {
     pending: { label: "En attente", cls: "badgePending" },
     active: { label: "Actif", cls: "badgeActive" },
@@ -63,6 +77,40 @@ function formatDate(d: string | null | undefined): string {
     return new Date(d).toLocaleDateString("fr-CA", {
         year: "numeric", month: "long", day: "numeric",
     });
+}
+
+// ── Répartition par statut matrimonial ────────────────────────────────────────
+
+const FAMILY_STATUS_COLORS: KpiColor[] = ["violet", "amber", "emerald", "blue", "rose"];
+
+function FamilyStatusBreakdown() {
+    const { values, load } = useParameters("family_status");
+    const [counts, setCounts] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        load();
+        fetchFamilyStatusStats().then(setCounts).catch(() => {});
+    }, [load]);
+
+    const entries = values.filter((v) => counts[v.label]);
+    if (entries.length === 0) return null;
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Répartition par statut matrimonial</h3>
+            <div className={styles.kpiGrid}>
+                {entries.map((v, i) => (
+                    <KpiCard
+                        key={v.id}
+                        color={FAMILY_STATUS_COLORS[i % FAMILY_STATUS_COLORS.length]}
+                        icon={<IconRing />}
+                        value={counts[v.label]}
+                        label={v.label}
+                    />
+                ))}
+            </div>
+        </section>
+    );
 }
 
 // ── Modale détail membre ──────────────────────────────────────────────────────
@@ -419,6 +467,8 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const { churches, load: loadChurches } = useChurches();
     const [q, setQ] = useState("");
     const [status, setStatus] = useState<MemberStatus | "">(initialStatus ?? "");
+    const [familyStatus, setFamilyStatus] = useState("");
+    const { values: familyStatusValues, load: loadFamilyStatusValues } = useParameters("family_status");
     const [selected, setSelected] = useState<Member | null>(null);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
     const [stats, setStats] = useState<MemberStatusStats | null>(null);
@@ -433,13 +483,15 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     useEffect(() => {
         load({ status: initialStatus });
         loadChurches();
+        loadFamilyStatusValues();
         fetchMembersStats().then(setStats).catch(() => {});
-    }, [load, loadChurches, initialStatus]);
+    }, [load, loadChurches, loadFamilyStatusValues, initialStatus]);
 
-    function applyFilters(overrides?: { q?: string; status?: string }) {
+    function applyFilters(overrides?: { q?: string; status?: string; family_status?: string }) {
         load({
             q: (overrides?.q ?? q).trim() || undefined,
             status: (overrides?.status ?? status) as MemberStatus | undefined,
+            family_status: (overrides?.family_status ?? familyStatus) || undefined,
         });
     }
 
@@ -516,6 +568,8 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                 </div>
             )}
 
+            <FamilyStatusBreakdown />
+
             {canImport && (
                 <MemberImportSection
                     churches={churches}
@@ -536,6 +590,13 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                         <option value="active">Actif</option>
                         <option value="inactive">Inactif</option>
                         <option value="rejected">Refusé</option>
+                    </select>
+                    <select className={styles.select} value={familyStatus}
+                        onChange={(e) => { setFamilyStatus(e.target.value); applyFilters({ family_status: e.target.value }); }}>
+                        <option value="">Tous les statuts matrimoniaux</option>
+                        {familyStatusValues.map((v) => (
+                            <option key={v.id} value={v.label}>{v.label}</option>
+                        ))}
                     </select>
                 </form>
 

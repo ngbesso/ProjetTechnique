@@ -155,6 +155,83 @@ function HoursSettingField({ settingKey, title, description }: HoursSettingField
     );
 }
 
+// ── Modèles de message (texte libre, variables de substitution) ──────────────
+
+interface TemplateSettingFieldProps {
+    settingKey: string;
+    title: string;
+    description: string;
+}
+
+export function TemplateSettingField({ settingKey, title, description }: TemplateSettingFieldProps) {
+    const [value, setValue] = useState("");
+    const [draft, setDraft] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchSettings()
+            .then((list) => {
+                const val = list.find((s) => s.key === settingKey)?.value ?? "";
+                setValue(val);
+                setDraft(val);
+            })
+            .catch(() => {});
+    }, [settingKey]);
+
+    async function handleSave(e: React.FormEvent) {
+        e.preventDefault();
+        const trimmed = draft.trim();
+        if (!trimmed) {
+            setError("Le message ne peut pas être vide.");
+            return;
+        }
+        setSaving(true);
+        setError("");
+        setSaved(false);
+        try {
+            await updateSetting(settingKey, trimmed);
+            setValue(trimmed);
+            setDraft(trimmed);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>{title}</h3>
+            <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+                {description}
+            </p>
+            <form onSubmit={handleSave}>
+                <textarea
+                    className={styles.input}
+                    style={{ width: "100%", minHeight: 90, resize: "vertical", fontFamily: "inherit" }}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                />
+                <div style={{ marginTop: ".75rem" }}>
+                    <button type="submit" className={styles.btnPrimary} disabled={saving || draft.trim() === value}>
+                        {saving ? "…" : "Enregistrer"}
+                    </button>
+                </div>
+            </form>
+            {saved && (
+                <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>
+                    Enregistré ✓
+                </p>
+            )}
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+        </section>
+    );
+}
+
 // ── Listes de valeurs (sexe / statut matrimonial / districts) ────────────────
 
 const SECTIONS = [
@@ -164,6 +241,7 @@ const SECTIONS = [
     { category: "donation_category", label: "Catégories de don" },
     { category: "event_category", label: "Catégories d'événement" },
     { category: "intervenant_category", label: "Catégories d'intervenant" },
+    { category: "ministry", label: "Ministères" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];
