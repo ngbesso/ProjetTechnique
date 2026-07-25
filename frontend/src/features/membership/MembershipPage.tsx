@@ -181,12 +181,10 @@ export function MembershipPage() {
       <main>
         {/* ── Hero ── */}
         <section className={styles.hero}>
-          <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>Rejoindre la mission</p>
-            <h1 className={styles.heroTitle}>
-              Devenez membre de<br />notre communauté
-            </h1>
-            <p className={styles.heroDesc}>
+          <div className={styles.heroInner}>
+            <span className={styles.heroEyebrow}>Rejoindre la mission</span>
+            <h1 className={styles.heroTitle}>Devenez membre de notre communauté</h1>
+            <p className={styles.heroSub}>
               Une famille de foi qui vous accueille, vous accompagne
               et vous envoie partout dans le monde.
             </p>
@@ -194,7 +192,7 @@ export function MembershipPage() {
               Remplir le formulaire ↓
             </a>
           </div>
-          <div className={styles.heroImg} aria-hidden="true" />
+          <div className={styles.heroDecor} aria-hidden="true" />
         </section>
 
         {/* ── Pourquoi rejoindre ── */}

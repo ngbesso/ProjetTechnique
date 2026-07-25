@@ -31,9 +31,7 @@ export interface UserCreate {
 }
 
 
-
-export type Page = "home" | "login" | "register" | "admin" | "organiser-evenements" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "leadership" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
-
+export type Page = "home" | "login" | "register" | "admin" | "organiser-evenements" | "adhesion" | "donation" | "sermons" | "blog"| "evenements" | "actualites" | "leadership" | "mon-profil" | "espace" | "mot-de-passe-oublie" | "confidentialite";
 
 export type DonationCategory =
   | "soutien_spirituel"
@@ -486,6 +484,45 @@ export interface PostInput {
   status?: PostStatus;
   category?: string;
   cover_image_url?: string;
+}
+
+// ── Actualités ────────────────────────────────────────────────────────────────
+
+export type NewsStatus = "draft" | "published" | "archived";
+
+export interface News {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  author: string;
+  status: NewsStatus;
+  category: string | null;
+  cover_image_url: string | null;
+  is_featured: boolean;
+  position: number;
+  views: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface NewsListResult {
+  items: News[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface NewsInput {
+  title: string;
+  content: string;
+  excerpt?: string;
+  author: string;
+  status?: NewsStatus;
+  category?: string;
+  cover_image_url?: string;
+  is_featured?: boolean;
+  position?: number;
 }
 
 // ── Demandes de prière ───────────────────────────────────────────────────────

@@ -1,0 +1,120 @@
+.wrap {
+  position: relative;
+  margin: 1.25rem 2rem;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px -20px rgba(30, 10, 60, 0.35);
+  z-index: 2;
+}
+
+.slide {
+  position: relative;
+  min-height: 500px;
+  display: flex;
+  align-items: flex-end;
+  padding: 2.5rem;
+  color: #fff;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+}
+
+.slideOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0.05) 100%);
+}
+
+.slideBody {
+  position: relative;
+  max-width: 640px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  line-height: 1.25;
+}
+
+.excerpt {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  margin: 0 0 1rem;
+  max-width: 520px;
+}
+
+.readMore {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.arrows {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 3;
+}
+
+.arrowBtn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+}
+
+.arrowBtn:hover { background: rgba(255, 255, 255, 0.35); }
+
+.dots {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 2.5rem;
+  display: flex;
+  gap: 0.4rem;
+  z-index: 3;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, width 0.15s;
+}
+
+.dotActive {
+  background: #fff;
+  width: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .wrap { margin: 1rem 1.25rem; }
+  .slide { min-height: 260px; padding: 1.75rem; }
+  .title { font-size: 1.25rem; }
+  .dots { left: 1.75rem; }
+}

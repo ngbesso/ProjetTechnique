@@ -15,6 +15,7 @@ export function PrivacyPage() {
             Comment nous recueillons et utilisons vos informations personnelles.
           </p>
         </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
       </section>
 
       <main className={styles.main}>
