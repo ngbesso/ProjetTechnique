@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock, patch
 
+from sqlalchemy import select
+
 from app.models.church import Church
 from app.models.leader import Leader
-from sqlalchemy import select
 
 BASE = "/api/leaders"
 
@@ -145,6 +146,20 @@ def test_create_leader_as_admin(client, make_user, auth_header, db_session):
     r = client.post(f"{BASE}/", json=_payload(), headers=h)
     assert r.status_code == 201
     assert r.json()["first_name"] == "Marie"
+
+
+def test_create_leader_unknown_church(client, make_user, auth_header, db_session):
+    h = _admin_header(make_user, auth_header)
+    payload = {**_payload(), "church_id": 999999}
+    r = client.post(f"{BASE}/", json=payload, headers=h)
+    assert r.status_code == 404
+
+
+def test_update_leader_unknown_church(client, make_user, auth_header, db_session):
+    leader = _leader(db_session, "Église", "Invalide")
+    h = _admin_header(make_user, auth_header)
+    r = client.put(f"{BASE}/{leader.id}", json={"church_id": 999999}, headers=h)
+    assert r.status_code == 404
 
 
 def test_update_leader_admin_only(client, make_user, auth_header, db_session):

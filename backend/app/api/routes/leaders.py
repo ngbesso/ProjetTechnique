@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin
 from app.db.session import get_db
+from app.models.church import Church
 from app.models.leader import Leader, LeaderRole
 from app.schemas.leader import LeaderCreate, LeaderList, LeaderRead, LeaderUpdate
 from app.services import leader_service, storage
@@ -18,6 +19,12 @@ def _load(db: Session, leader_id: int) -> Leader:
     if leader is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Membre du leadership introuvable")
     return leader
+
+
+def _check_church_exists(db: Session, church_id: int | None) -> None:
+    """Évite une IntegrityError brute (FK) si l'église fournie n'existe pas."""
+    if church_id is not None and db.get(Church, church_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Église introuvable")
 
 
 def _load_published(db: Session, leader_id: int) -> Leader:
@@ -127,6 +134,7 @@ def get_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
 )
 def create_leader(payload: LeaderCreate, db: Annotated[Session, Depends(get_db)]):
     """Crée un membre du leadership — réservé aux administrateurs."""
+    _check_church_exists(db, payload.church_id)
     leader = leader_service.create_leader(db, payload)
     return _to_read(leader)
 
@@ -136,6 +144,8 @@ def update_leader(
     leader_id: int, payload: LeaderUpdate, db: Annotated[Session, Depends(get_db)]
 ):
     """Modifie un membre du leadership — réservé aux administrateurs."""
+    if "church_id" in payload.model_fields_set:
+        _check_church_exists(db, payload.church_id)
     leader = leader_service.update_leader(db, _load(db, leader_id), payload)
     return _to_read(leader)
 
