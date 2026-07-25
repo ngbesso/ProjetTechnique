@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useMembers } from "../../hooks/useMembers";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
@@ -10,10 +10,12 @@ import {
     fetchMembersStats,
     importMembers,
 } from "../../lib/api/members";
+import { fetchMemberMinistryHistory } from "../../lib/api/ministryAffiliations";
 import { validatePhone, validateAddress } from "../../lib/validation";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard, type KpiColor } from "../../components/ui/KpiCard";
-import type { Church, Member, MemberImportResult, MemberStatus, MemberStatusStats, MemberUpdateInput } from "../../types";
+import { formatDate } from "../../lib/format";
+import type { Church, Member, MemberImportResult, MemberStatus, MemberStatusStats, MemberUpdateInput, MinistryAffiliation } from "../../types";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -72,13 +74,6 @@ const STATUS_META: Record<MemberStatus, { label: string; cls: string }> = {
     rejected: { label: "Refusé", cls: "badgeRejected" },
 };
 
-function formatDate(d: string | null | undefined): string {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("fr-CA", {
-        year: "numeric", month: "long", day: "numeric",
-    });
-}
-
 // ── Répartition par statut matrimonial ────────────────────────────────────────
 
 const FAMILY_STATUS_COLORS: KpiColor[] = ["violet", "amber", "emerald", "blue", "rose"];
@@ -110,6 +105,53 @@ function FamilyStatusBreakdown() {
                 ))}
             </div>
         </section>
+    );
+}
+
+// ── Historique des ministères d'un membre (lecture seule) ─────────────────────
+
+function MemberMinistryHistory({ memberId }: { memberId: number }) {
+    const [history, setHistory] = useState<MinistryAffiliation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchMemberMinistryHistory(memberId)
+            .then(setHistory)
+            .catch((e) => setError(e instanceof Error ? e.message : "Erreur"))
+            .finally(() => setLoading(false));
+    }, [memberId]);
+
+    return (
+        <div style={{ marginTop: "1.25rem", paddingTop: "1.25rem", borderTop: "1px solid var(--border)" }}>
+            <p style={{ margin: "0 0 .5rem", fontWeight: 600, fontSize: ".8rem", color: "var(--text-muted)" }}>
+                Historique des ministères
+            </p>
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+            {loading ? (
+                <p className={styles.stateMsg}>Chargement…</p>
+            ) : history.length === 0 ? (
+                <p className={styles.empty}>Aucune affiliation à un ministère.</p>
+            ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".4rem" }}>
+                    {history.map((a) => (
+                        <li key={a.id} style={{ display: "flex", justifyContent: "space-between", fontSize: ".85rem" }}>
+                            <span>
+                                {a.ministry}
+                                {!a.left_at && (
+                                    <span style={{ marginLeft: ".4rem", color: "var(--vivid-violet)", fontSize: ".75rem" }}>
+                                        (actif)
+                                    </span>
+                                )}
+                            </span>
+                            <span style={{ color: "var(--text-muted)" }}>
+                                {formatDate(a.joined_at)} → {a.left_at ? formatDate(a.left_at) : "—"}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }
 
@@ -188,6 +230,8 @@ function MemberDetailModal({ member, church, canApprove, onClose, onApprove, onR
                             </div>
                         ))}
                     </dl>
+
+                    <MemberMinistryHistory memberId={member.id} />
                 </div>
 
                 {showFooter && (
@@ -473,12 +517,9 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const [editingMember, setEditingMember] = useState<Member | null>(null);
     const [stats, setStats] = useState<MemberStatusStats | null>(null);
 
-    const canApprove =
-        user?.permissions.includes("*") || user?.permissions.includes("member:approve");
-    const canImport =
-        user?.permissions.includes("*") || user?.permissions.includes("member:create");
-    const canEdit =
-        user?.permissions.includes("*") || user?.permissions.includes("member:update");
+    const canApprove = hasPermission(user, "member:approve");
+    const canImport = hasPermission(user, "member:create");
+    const canEdit = hasPermission(user, "member:update");
 
     useEffect(() => {
         load({ status: initialStatus });

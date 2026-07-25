@@ -7,8 +7,8 @@ from app.core.config import settings
 
 STATS_ENDPOINTS = {
     "membres": "/members/admin/stats",
-    "dons": "/api/donations/admin/stats",
-    "evenements": "/api/events/admin/stats",
+    "dons": "/donations/admin/stats",
+    "evenements": "/events/admin/stats",
     "sermons": "/sermons/admin/stats",
     "articles": "/posts/admin/stats",
     "eglises": "/churches/admin/stats",

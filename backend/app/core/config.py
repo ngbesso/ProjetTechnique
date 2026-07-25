@@ -7,7 +7,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://obnl:changeme@postgres:5432/obnl"
     redis_url: str = "redis://redis:6379/0"
 
-    jwt_secret_key: str = "change-me"
+    # Aucune valeur par défaut : une clé faible codée en dur serait un secret
+    # de production trivial à deviner. Doit être fournie via l'environnement
+    # (voir .env.example) — l'application refuse de démarrer sans elle.
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
@@ -22,7 +25,8 @@ class Settings(BaseSettings):
     zeffy_webhook_secret: str = ""
 
     admin_email: str = "admin@obnl.org"
-    admin_password: str = "Admin1234!"
+    # Aucune valeur par défaut : voir jwt_secret_key ci-dessus, même raison.
+    admin_password: str
 
     cors_origins: list[str] = [
         "http://localhost:5173",

@@ -352,3 +352,65 @@ def test_rename_allowed_even_when_used(client, make_user, make_member, auth_head
     r = client.patch(f"/parameters/{pv_id}", json={"label": "StatutRenomme"}, headers=h)
     assert r.status_code == 200
     assert r.json()["label"] == "StatutRenomme"
+
+
+# ── restricted_to_sexe (catégorie ministry uniquement) ────────────────────────
+
+
+def test_create_ministry_value_with_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe hommes 2026", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 201
+    assert r.json()["restricted_to_sexe"] == "Masculin"
+
+
+def test_restricted_to_sexe_rejected_for_other_categories(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/district",
+        json={"label": "District test restriction", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 422
+
+
+def test_update_ministry_value_can_clear_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test clear", "restricted_to_sexe": "Féminin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(
+        f"/parameters/{created['id']}", json={"restricted_to_sexe": None}, headers=h
+    )
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] is None
+
+
+def test_update_without_restricted_to_sexe_leaves_it_unchanged(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test intact", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(f"/parameters/{created['id']}", json={"label": "Renommé"}, headers=h)
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] == "Masculin"

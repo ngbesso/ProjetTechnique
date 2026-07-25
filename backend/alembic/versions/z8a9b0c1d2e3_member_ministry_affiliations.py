@@ -1,7 +1,7 @@
 """create member_ministry_affiliations table (appartenance aux ministères)
 
 Revision ID: z8a9b0c1d2e3
-Revises: y7z8a9b0c1d2
+Revises: bf9c10b20e84
 Create Date: 2026-07-25
 """
 
@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 
 revision: str = "z8a9b0c1d2e3"
-down_revision: Union[str, None] = "y7z8a9b0c1d2"
+down_revision: Union[str, None] = "bf9c10b20e84"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

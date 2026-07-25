@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./LeadershipPanel.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useLeaders } from "../../hooks/useLeaders";
@@ -76,9 +76,7 @@ export function LeadershipPanel() {
   const { churches, load: loadChurches } = useChurches();
   const { confirm, dialog } = useConfirm();
 
-  // Le backend réserve la gestion du leadership aux administrateurs globaux
-  // (get_current_admin exige la permission "*"), pas de permission dédiée.
-  const canManage = user?.permissions.includes("*") ?? false;
+  const canManage = hasPermission(user, "leader:manage");
 
   const [form, setForm] = useState<LeaderInput>(EMPTY);
   const [editingId, setEditingId] = useState<number | null>(null);

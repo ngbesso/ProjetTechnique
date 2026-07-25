@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deps import get_current_admin, get_current_member
+from app.api.deps import get_current_member, require_permissions
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
@@ -18,7 +18,7 @@ from app.schemas.donation import (
 )
 from app.services import donation_service
 
-router = APIRouter(prefix="/api/donations", tags=["donations"])
+router = APIRouter(prefix="/donations", tags=["donations"])
 
 
 def _get_church_or_404(db: Session, church_id: int) -> Church:
@@ -98,6 +98,7 @@ def create_donation(
     payload: DonationCreate,
     db: Session = Depends(get_db),
     current_member=Depends(get_current_member),
+    _perm=Depends(require_permissions("donation:create")),
 ):
     """Crée un don direct (hors ligne de paiement). Nécessite d'être membre."""
     _get_church_or_404(db, payload.church_id)
@@ -120,7 +121,7 @@ def list_donations(
     category: str | None = None,
     currency: str | None = None,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _perm=Depends(require_permissions("donation:read")),
 ):
     """Liste tous les dons avec filtres — réservé aux administrateurs."""
     query = select(Donation)
@@ -147,7 +148,7 @@ def list_donations(
 @router.get("/admin/stats", response_model=DonationAdminStats)
 def get_donations_stats(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _perm=Depends(require_permissions("donation:read")),
 ):
     """Montant total, répartition par catégorie, top 5 donateurs et top 5 églises."""
     donations = db.scalars(

@@ -5,17 +5,10 @@ import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate, useRouteParams } from "../../context/RouterContext";
 import { usePosts } from "../../hooks/usePosts";
 import { coverUrl, fetchPost, fetchPostCategories } from "../../lib/api/posts";
+import { formatDate } from "../../lib/format";
 import type { Post } from "../../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function readTime(content: string): string {
   const words = content.trim().split(/\s+/).length;

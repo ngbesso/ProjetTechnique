@@ -1,7 +1,7 @@
 """create leaders table
 
-Revision ID: y7z8a9b0c1d2
-Revises: x6y7z8a9b0c1
+Revision ID: bf9c10b20e84
+Revises: y7z8a9b0c1d2
 Create Date: 2026-07-24
 """
 
@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "y7z8a9b0c1d2"
-down_revision: str | None = "x6y7z8a9b0c1"
+revision: str = "bf9c10b20e84"
+down_revision: str | None = "y7z8a9b0c1d2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

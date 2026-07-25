@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_admin
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.donation import Donation
@@ -64,9 +64,11 @@ def _check_category(category: str) -> None:
         )
 
 
-def _require_admin(user: User) -> None:
-    if not user.has_global_permission("*"):
-        raise HTTPException(403, "Réservé aux administrateurs globaux")
+def _check_restricted_to_sexe(category: str, restricted_to_sexe: str | None) -> None:
+    if restricted_to_sexe is not None and category != "ministry":
+        raise HTTPException(
+            422, "restricted_to_sexe n'est configurable que pour la catégorie ministry"
+        )
 
 
 @router.get("/{category}", response_model=list[ParameterValueRead])
@@ -83,14 +85,14 @@ def list_values(category: str, db: Annotated[Session, Depends(get_db)]):
 def create_value(
     category: str,
     data: ParameterValueCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
     _check_category(category)
-    _require_admin(current_user)
     label = data.label.strip()
     if not label:
         raise HTTPException(422, "Le libellé ne peut pas être vide")
+    _check_restricted_to_sexe(category, data.restricted_to_sexe)
     existing = db.scalar(
         select(ParameterValue).where(
             ParameterValue.category == category,
@@ -99,7 +101,12 @@ def create_value(
     )
     if existing:
         raise HTTPException(409, "Cette valeur existe déjà")
-    pv = ParameterValue(category=category, label=label, position=data.position)
+    pv = ParameterValue(
+        category=category,
+        label=label,
+        position=data.position,
+        restricted_to_sexe=data.restricted_to_sexe,
+    )
     db.add(pv)
     db.commit()
     db.refresh(pv)
@@ -110,10 +117,9 @@ def create_value(
 def update_value(
     id: int,
     data: ParameterValueUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    _require_admin(current_user)
     pv = db.get(ParameterValue, id)
     if not pv:
         raise HTTPException(404, "Valeur introuvable")
@@ -124,6 +130,9 @@ def update_value(
         pv.label = label
     if data.position is not None:
         pv.position = data.position
+    if "restricted_to_sexe" in data.model_fields_set:
+        _check_restricted_to_sexe(pv.category, data.restricted_to_sexe)
+        pv.restricted_to_sexe = data.restricted_to_sexe
     db.commit()
     db.refresh(pv)
     return pv
@@ -132,10 +141,9 @@ def update_value(
 @router.delete("/{id}", status_code=204)
 def delete_value(
     id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    _require_admin(current_user)
     pv = db.get(ParameterValue, id)
     if not pv:
         raise HTTPException(404, "Valeur introuvable")

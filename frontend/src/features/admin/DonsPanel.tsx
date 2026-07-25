@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Donation, DonationAdminStats } from "../../types";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { formatCurrency } from "../../lib/format";
 
 const CATEGORY_LABELS: Record<string, string> = {
   soutien_spirituel: "Soutien spirituel",
@@ -49,10 +50,6 @@ function IconTrendingUp() {
       <polyline points="17 6 23 6 23 12" />
     </svg>
   );
-}
-
-function formatCad(amount: number): string {
-  return amount.toLocaleString("fr-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 });
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -180,7 +177,7 @@ export function DonsPanel() {
             <KpiCard
               color="violet"
               icon={<IconDollar />}
-              value={formatCad(stats.total_cad)}
+              value={formatCurrency(stats.total_cad)}
               label="Montant total"
               sub={stats.total_usd > 0 ? `+ ${stats.total_usd.toFixed(2)} $ USD` : undefined}
             />
@@ -213,7 +210,7 @@ export function DonsPanel() {
                     <div className={styles.topListBody}>
                       <span className={styles.topListName}>{d.name}</span>
                       <span className={styles.topListValue}>
-                        {formatCad(d.total)} · {d.count} don{d.count > 1 ? "s" : ""}
+                        {formatCurrency(d.total)} · {d.count} don{d.count > 1 ? "s" : ""}
                       </span>
                     </div>
                   </div>
@@ -233,7 +230,7 @@ export function DonsPanel() {
                     </span>
                     <div className={styles.topListBody}>
                       <span className={styles.topListName}>{c.church_name}</span>
-                      <span className={styles.topListValue}>{formatCad(c.total)}</span>
+                      <span className={styles.topListValue}>{formatCurrency(c.total)}</span>
                     </div>
                   </div>
                 ))

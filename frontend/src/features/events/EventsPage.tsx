@@ -6,17 +6,14 @@ import { useNavigate } from "../../context/RouterContext";
 import { useParameters } from "../../hooks/useParameters";
 import { fetchChurches } from "../../lib/api/churches";
 import { getEvents } from "../../lib/api/events";
+import { formatDate } from "../../lib/format";
 import type { Church, District, EventItem } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
 
 function formatDateRange(startIso: string, endIso: string | null): string {
   const start = new Date(startIso);
-  const startLabel = start.toLocaleDateString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const startLabel = formatDate(startIso);
   const timeLabel = start.toLocaleTimeString("fr-CA", {
     hour: "2-digit",
     minute: "2-digit",
@@ -28,12 +25,7 @@ function formatDateRange(startIso: string, endIso: string | null): string {
     const endTime = end.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
     return `${startLabel} · ${timeLabel} – ${endTime}`;
   }
-  const endLabel = end.toLocaleDateString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  return `${startLabel} – ${endLabel}`;
+  return `${startLabel} – ${formatDate(endIso)}`;
 }
 
 function formatPrice(price: number | null): string {

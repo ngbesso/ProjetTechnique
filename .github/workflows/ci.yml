@@ -39,6 +39,10 @@ jobs:
           # L'app (seed au démarrage) et les tests pointent tous deux sur la base du service CI
           DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
           TEST_DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+          # jwt_secret_key/admin_password n'ont plus de valeur par défaut en code
+          # (secrets codés en dur) — la CI doit les fournir explicitement.
+          JWT_SECRET_KEY: ci-test-secret-key-not-for-production
+          ADMIN_PASSWORD: CiTestAdmin1234!
         run: pytest -q
 
   ai-service:
@@ -65,9 +69,15 @@ jobs:
       - name: Install deps
         working-directory: frontend
         run: npm install
+      - name: Lint (eslint)
+        working-directory: frontend
+        run: npm run lint
       - name: Typecheck
         working-directory: frontend
         run: npm run typecheck
+      - name: Tests (vitest)
+        working-directory: frontend
+        run: npm run test
       - name: Build
         working-directory: frontend
         run: npm run build

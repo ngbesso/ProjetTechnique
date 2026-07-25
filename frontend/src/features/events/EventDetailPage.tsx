@@ -13,6 +13,7 @@ import {
   resendCancelLink,
 } from "../../lib/api/events";
 import { ApiError } from "../../lib/api/client";
+import { formatDateTime } from "../../lib/format";
 import type { EventItem } from "../../types";
 
 interface EventDetailPageProps {
@@ -46,16 +47,6 @@ function cancelDeadlineInfo(dateStart: string, deadlineHours: number): CancelDea
     passed: false,
     label: `Vous pouvez encore annuler votre inscription (encore ${remaining}, jusqu'à ${deadlineHours} h avant l'événement).`,
   };
-}
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function formatPrice(price: number | null): string {

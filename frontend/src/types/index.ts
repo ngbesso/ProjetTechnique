@@ -96,6 +96,7 @@ export interface ParameterValue {
   category: string;
   label: string;
   position: number;
+  restricted_to_sexe: string | null;
 }
 
 export interface AppSetting {
@@ -247,6 +248,11 @@ export interface MinistryMember {
 export interface MinistryBulkAddResult {
   added: number[];
   skipped: number[];
+}
+
+export interface MinistryStatsItem {
+  ministry: string;
+  count: number;
 }
 
 export interface MemberImportRowError {

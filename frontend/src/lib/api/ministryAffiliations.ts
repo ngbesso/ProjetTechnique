@@ -1,5 +1,10 @@
 import { http } from "./client";
-import type { MinistryAffiliation, MinistryBulkAddResult, MinistryMember } from "../../types";
+import type {
+    MinistryAffiliation,
+    MinistryBulkAddResult,
+    MinistryMember,
+    MinistryStatsItem,
+} from "../../types";
 
 // ── Libre-service (membre connecté) ───────────────────────────────────────────
 
@@ -37,4 +42,16 @@ export function removeMinistryAffiliation(
     affiliationId: number,
 ): Promise<MinistryAffiliation> {
     return http.del<MinistryAffiliation>(`/members/${memberId}/ministries/${affiliationId}`);
+}
+
+export function fetchMemberMinistryHistory(memberId: number): Promise<MinistryAffiliation[]> {
+    return http.get<MinistryAffiliation[]>(`/members/${memberId}/ministries`);
+}
+
+export function fetchMinistriesStats(): Promise<MinistryStatsItem[]> {
+    return http.get<MinistryStatsItem[]>("/ministries/stats");
+}
+
+export function exportMinistryMembers(ministry: string): Promise<Blob> {
+    return http.getBlob(`/ministries/${encodeURIComponent(ministry)}/members/export`);
 }

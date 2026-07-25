@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styles from "./LoginPage.module.css";
 import { login } from "../../lib/api/auth";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
@@ -22,9 +22,7 @@ export function LoginPage() {
     try {
       const user = await login(email, password);
       setUser(user);
-      const isAdmin =
-        user.permissions.includes("*") ||
-        user.permissions.includes("rbac:manage");
+      const isAdmin = hasPermission(user, "rbac:manage");
       navigate(isAdmin ? "admin" : "home");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de connexion");
