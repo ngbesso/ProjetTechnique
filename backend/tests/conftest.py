@@ -12,7 +12,7 @@ from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.church import Church
-from app.models.member import Member, MemberStatus  # noqa: F401
+from app.models.member import Member, MemberStatus
 from app.models.parameter import ParameterValue  # noqa: F401
 from app.models.rbac import Role, UserRole
 from app.models.setting import AppSetting  # noqa: F401

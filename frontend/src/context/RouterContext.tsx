@@ -30,6 +30,7 @@ const PAGE_PATHS: Record<Page, string> = {
   blog: "/blog",
   evenements: "/evenements",
   actualites: "/actualites",
+  leadership: "/leadership",
   "mon-profil": "/mon-profil",
   espace: "/espace",
   "mot-de-passe-oublie": "/mot-de-passe-oublie",
@@ -45,6 +46,8 @@ function pathFor(page: Page, params?: Record<string, unknown>): string {
   }
   if (page === "actualites" && typeof params?.newsId === "number") {
     return `/actualites/${params.newsId}`;
+  if (page === "leadership" && (typeof params?.leader === "number" || typeof params?.leader === "string")) {
+    return `/leadership/${params.leader}`;
   }
   return PAGE_PATHS[page];
 }
@@ -61,6 +64,9 @@ function parsePath(pathname: string): { page: Page; params: Record<string, unkno
   const newsDetail = pathname.match(/^\/actualites\/(\d+)$/);
   if (newsDetail) {
     return { page: "actualites", params: { newsId: Number(newsDetail[1]) } };
+  const leaderDetail = pathname.match(/^\/leadership\/(\d+)$/);
+  if (leaderDetail) {
+    return { page: "leadership", params: { leader: Number(leaderDetail[1]) } };
   }
   const entry = (Object.entries(PAGE_PATHS) as [Page, string][]).find(
     ([, path]) => path === pathname,
