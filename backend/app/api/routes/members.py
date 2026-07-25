@@ -21,11 +21,7 @@ from pydantic import ValidationError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-<<<<<<< HEAD
-from app.api.deps import get_current_user
-=======
 from app.api.deps import get_current_user, require_global_permission
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 from app.core.config import settings
 from app.core.email import (
     EmailSender,

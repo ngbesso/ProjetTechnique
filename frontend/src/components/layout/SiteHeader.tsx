@@ -54,52 +54,29 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               {item.label}
             </Link>
           ))}
-<<<<<<< HEAD
-=======
-
-          {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
-              hors composant, sans accès à la session) — rendu conditionnel ici. */}
-          {isAdmin && (
-            <Link
-              page={adminActionTarget(user)}
-              className={navClass(activePage === "admin" || activePage === "organiser-evenements")}
-            >
-              {adminActionLabel(user)}
-            </Link>
-          )}
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
         </nav>
 
         {/* Actions */}
         <div className={styles.actions}>
           {user ? (
             <>
-<<<<<<< HEAD
               {isAdmin ? (
                 <button
                   className={`${styles.userName} ${styles.userNameClickable}`}
-                  title="Aller à l'administration"
-                  onClick={() => navigate("admin")}
+                  title={adminActionLabel(user)}
+                  onClick={() => navigate(adminActionTarget(user))}
                 >
-                  <span aria-hidden>&#128100;</span> Admin
-=======
-              <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
-              </span>
+                  <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
+                </button>
+              ) : (
+                <span className={styles.userName} title={user.email}>
+                  <span aria-hidden>&#128100;</span> {displayName}
+                </span>
+              )}
               {member && (
                 <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
                   Mon espace
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
                 </button>
-              ) : (
-                <>
-                  <span className={styles.userName} title={user.email}>
-                    <span aria-hidden>&#128100;</span> {displayName}
-                  </span>
-                  <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
-                    Mon espace
-                  </button>
-                </>
               )}
               <button className={styles.linkMuted} onClick={logout}>
                 Se déconnecter

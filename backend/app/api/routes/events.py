@@ -28,11 +28,7 @@ from app.core.email import (
     EmailSender,
     event_registration_received,
     get_email_sender,
-<<<<<<< HEAD
-    render_event_message,
-=======
     render_template,
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 )
 from app.core.security import (
     create_cancel_registration_token,

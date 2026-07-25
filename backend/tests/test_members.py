@@ -1,18 +1,11 @@
 import re
 from datetime import date
 
-<<<<<<< HEAD
-from app.models.church import Church
-from app.models.rbac import Role, UserRole
-from app.models.user import User
-from sqlalchemy import select
-=======
 from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
 from app.models.user import User
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

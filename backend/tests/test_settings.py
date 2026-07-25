@@ -3,13 +3,9 @@
 import re
 from datetime import date
 
-<<<<<<< HEAD
-=======
 from sqlalchemy import select
 
->>>>>>> 6bb759fa9ee1180c6532f0f6f013d025302e3c37
 from app.models.church import Church
-from sqlalchemy import select
 
 
 def _mother_id(db) -> int:
