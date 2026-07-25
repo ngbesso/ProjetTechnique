@@ -1,6 +1,6 @@
 """create news table (module actualités)
 
-Revision ID: y7z8a9b0c1d2
+Revision ID: c47e91a2f5b3
 Revises: x6y7z8a9b0c1
 Create Date: 2026-07-24
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "y7z8a9b0c1d2"
+revision: str = "c47e91a2f5b3"
 down_revision: Union[str, None] = "x6y7z8a9b0c1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
