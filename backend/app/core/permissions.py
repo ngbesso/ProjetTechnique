@@ -15,9 +15,9 @@ PERMISSIONS: dict[str, str] = {
     "sermon:read": "Consulter les sermons",
     "sermon:manage": "Gérer les sermons",
     "post:manage": "Gérer les articles de blog",
-    "content:manage": "Gérer les pages et le menu (CMS)",
     "prayer:manage": "Gérer les demandes de prière",
     "volunteer:manage": "Gérer les demandes de bénévolat",
+    "leader:manage": "Gérer les membres du leadership",
 }
 
 # Rôles initiaux et leurs permissions.
@@ -39,5 +39,5 @@ GLOBAL_PERMISSIONS: set[str] = {
     "rbac:manage",
     "user:manage",
     "church:manage",
-    "content:manage",
+    "leader:manage",
 }

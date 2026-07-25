@@ -6,7 +6,7 @@
 export function validatePhone(value: string): string | null {
   if (!value.trim()) return null; // champ optionnel
   const digits = value.replace(/\D/g, "");
-  if (!/^[+\d\s\-.()\[\]]+$/.test(value)) {
+  if (!/^[+\d\s\-.()[\]]+$/.test(value)) {
     return "Le téléphone ne peut contenir que des chiffres, espaces, tirets, parenthèses ou le signe +.";
   }
   if (digits.length < 7) {

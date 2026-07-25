@@ -3,7 +3,7 @@ import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
 import { fetchSettings, updateSetting } from "../../lib/api/settings";
-import type { AppSetting } from "../../types";
+import type { AppSetting, ParameterValue } from "../../types";
 
 // ── Intégrations (Zeffy, etc.) ────────────────────────────────────────────────
 
@@ -251,14 +251,24 @@ interface CategoryEditorProps {
     title: string;
 }
 
+const RESTRICTION_OPTIONS = [
+    { value: "", label: "Aucune restriction" },
+    { value: "Masculin", label: "Masculin" },
+    { value: "Féminin", label: "Féminin" },
+];
+
 function CategoryEditor({ category, title }: CategoryEditorProps) {
     const { values, loading, error, load, add, rename, remove } = useParameters(category);
     const { confirm, dialog } = useConfirm();
     const [newLabel, setNewLabel] = useState("");
+    const [newRestriction, setNewRestriction] = useState("");
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState("");
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editLabel, setEditLabel] = useState("");
+    const [editRestriction, setEditRestriction] = useState("");
+
+    const isMinistry = category === "ministry";
 
     useEffect(() => { load(); }, [load]);
 
@@ -269,8 +279,9 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
         setAdding(true);
         setAddError("");
         try {
-            await add(label);
+            await add(label, isMinistry ? (newRestriction || null) : undefined);
             setNewLabel("");
+            setNewRestriction("");
         } catch (err) {
             setAddError(err instanceof Error ? err.message : "Erreur");
         } finally {
@@ -278,9 +289,10 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
         }
     }
 
-    function startEdit(id: number, label: string) {
-        setEditingId(id);
-        setEditLabel(label);
+    function startEdit(v: ParameterValue) {
+        setEditingId(v.id);
+        setEditLabel(v.label);
+        setEditRestriction(v.restricted_to_sexe ?? "");
     }
 
     async function handleRename(e: React.FormEvent, id: number) {
@@ -288,7 +300,7 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
         const label = editLabel.trim();
         if (!label) return;
         try {
-            await rename(id, label);
+            await rename(id, label, isMinistry ? (editRestriction || null) : undefined);
             setEditingId(null);
         } catch (err) {
             setAddError(err instanceof Error ? err.message : "Erreur");
@@ -320,6 +332,17 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
                     value={newLabel}
                     onChange={(e) => setNewLabel(e.target.value)}
                 />
+                {isMinistry && (
+                    <select
+                        className={styles.select}
+                        value={newRestriction}
+                        onChange={(e) => setNewRestriction(e.target.value)}
+                    >
+                        {RESTRICTION_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                )}
                 <button type="submit" className={styles.btnPrimary} disabled={adding || !newLabel.trim()}>
                     {adding ? "…" : "+ Ajouter"}
                 </button>
@@ -345,13 +368,31 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
                                         autoFocus
                                         onChange={(e) => setEditLabel(e.target.value)}
                                     />
+                                    {isMinistry && (
+                                        <select
+                                            className={styles.select}
+                                            value={editRestriction}
+                                            onChange={(e) => setEditRestriction(e.target.value)}
+                                        >
+                                            {RESTRICTION_OPTIONS.map((o) => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                     <button type="submit" className={styles.btnPrimary}>Sauver</button>
                                     <button type="button" className={styles.btnGhost} onClick={() => setEditingId(null)}>Annuler</button>
                                 </form>
                             ) : (
                                 <>
-                                    <span style={{ flex: 1 }}>{v.label}</span>
-                                    <button className={styles.btnOutlineSm} onClick={() => startEdit(v.id, v.label)}>
+                                    <span style={{ flex: 1 }}>
+                                        {v.label}
+                                        {isMinistry && v.restricted_to_sexe && (
+                                            <span style={{ marginLeft: ".5rem", fontSize: ".75rem", color: "var(--text-muted)" }}>
+                                                ({v.restricted_to_sexe})
+                                            </span>
+                                        )}
+                                    </span>
+                                    <button className={styles.btnOutlineSm} onClick={() => startEdit(v)}>
                                         Renommer
                                     </button>
                                     <button className={styles.btnDanger} onClick={() => handleDelete(v.id, v.label)}>

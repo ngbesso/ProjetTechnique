@@ -25,14 +25,17 @@ export function useParameters(category: string) {
         }
     }, [category]);
 
-    async function add(label: string) {
+    async function add(label: string, restrictedToSexe?: string | null) {
         const next = values.length;
-        const created = await createParameterValue(category, label, next);
+        const created = await createParameterValue(category, label, next, restrictedToSexe);
         setValues((prev) => [...prev, created]);
     }
 
-    async function rename(id: number, label: string) {
-        const updated = await updateParameterValue(id, { label });
+    async function rename(id: number, label: string, restrictedToSexe?: string | null) {
+        const updated = await updateParameterValue(id, {
+            label,
+            ...(restrictedToSexe !== undefined ? { restricted_to_sexe: restrictedToSexe } : {}),
+        });
         setValues((prev) => prev.map((v) => (v.id === id ? updated : v)));
     }
 

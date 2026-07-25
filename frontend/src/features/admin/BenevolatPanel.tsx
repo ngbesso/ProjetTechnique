@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { fetchVolunteerRequestsAdmin, updateVolunteerRequestStatus } from "../../lib/api/volunteerRequests";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { formatDateTime } from "../../lib/format";
 import type { VolunteerRequestAdmin, VolunteerRequestStatus } from "../../types";
 
 const STATUS_LABELS: Record<VolunteerRequestStatus, string> = {
@@ -19,12 +20,6 @@ const STATUS_BADGE_CLASS: Record<VolunteerRequestStatus, string> = {
 
 const col = createColumnHelper<VolunteerRequestAdmin>();
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-CA", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-
 export function BenevolatPanel() {
   const { user } = useAuth();
   const [requests, setRequests] = useState<VolunteerRequestAdmin[]>([]);
@@ -32,8 +27,7 @@ export function BenevolatPanel() {
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("volunteer:manage");
+  const canManage = hasPermission(user, "volunteer:manage");
 
   function load(status?: string) {
     setLoading(true);

@@ -2,15 +2,15 @@ import { http } from "./client";
 import type { Donation, DonationAdminStats, DonationCreate } from "../../types";
 
 export function fetchDonationsStats(): Promise<DonationAdminStats> {
-  return http.get<DonationAdminStats>("/api/donations/admin/stats");
+  return http.get<DonationAdminStats>("/donations/admin/stats");
 }
 
 export function createDonation(data: DonationCreate): Promise<Donation> {
-  return http.post<Donation>("/api/donations/", data);
+  return http.post<Donation>("/donations/", data);
 }
 
 export function fetchMyDonations(): Promise<Donation[]> {
-  return http.get<Donation[]>("/api/donations/me");
+  return http.get<Donation[]>("/donations/me");
 }
 
 export function fetchAllDonations(params?: {
@@ -25,5 +25,5 @@ export function fetchAllDonations(params?: {
   if (params?.category) qs.set("category", params.category);
   if (params?.currency) qs.set("currency", params.currency);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return http.get<Donation[]>(`/api/donations/${suffix}`);
+  return http.get<Donation[]>(`/donations/${suffix}`);
 }

@@ -35,3 +35,8 @@ class MinistryBulkAddRequest(BaseModel):
 class MinistryBulkAddResult(BaseModel):
     added: list[int]
     skipped: list[int]
+
+
+class MinistryStatsItem(BaseModel):
+    ministry: str
+    count: int

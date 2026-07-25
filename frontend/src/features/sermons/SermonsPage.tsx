@@ -4,15 +4,8 @@ import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useSermons } from "../../hooks/useSermons";
 import { fetchSermon, fetchSermonSeries, sermonStreamUrl } from "../../lib/api/sermons";
+import { formatDate } from "../../lib/format";
 import type { Sermon } from "../../types";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function Player({ sermon, onClose }: { sermon: Sermon; onClose: () => void }) {
   const src = sermonStreamUrl(sermon.id);

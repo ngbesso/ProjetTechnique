@@ -11,6 +11,7 @@ import { fetchMyEventRegistrations, getEvents } from "../../lib/api/events";
 import { fetchMyMinistries, joinMinistry, leaveMinistry } from "../../lib/api/ministryAffiliations";
 import { createPrayerRequest, fetchMyPrayerRequests } from "../../lib/api/prayerRequests";
 import { createVolunteerRequest, fetchMyVolunteerRequests } from "../../lib/api/volunteerRequests";
+import { formatCurrency } from "../../lib/format";
 import { validatePhone, validateAddress } from "../../lib/validation";
 import type {
   EventItem,
@@ -391,7 +392,7 @@ function DonsSection({ churchName }: { churchName: (id: number | null | undefine
           <div className={styles.totalsRow}>
             {Object.entries(totalsByCurrency).map(([cur, amt]) => (
               <span key={cur} className={styles.totalBadge}>
-                {amt.toLocaleString("fr-CA", { style: "currency", currency: cur, maximumFractionDigits: 2 })}
+                {formatCurrency(amt, cur)}
               </span>
             ))}
           </div>
@@ -529,6 +530,7 @@ function InscriptionsSection() {
 // ── Section : Ministères ─────────────────────────────────────────────────────
 
 function MinisteresSection() {
+  const { member } = useAuth();
   const { values: ministries, load: loadMinistries } = useParameters("ministry");
   const [myMinistries, setMyMinistries] = useState<MinistryAffiliation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -577,7 +579,11 @@ function MinisteresSection() {
 
   const active = myMinistries.filter((a) => !a.left_at);
   const activeLabels = new Set(active.map((a) => a.ministry));
-  const available = ministries.filter((m) => !activeLabels.has(m.label));
+  const available = ministries.filter(
+    (m) =>
+      !activeLabels.has(m.label) &&
+      (!m.restricted_to_sexe || m.restricted_to_sexe === member?.sexe),
+  );
 
   return (
     <div className={admin.rbacWrapper}>

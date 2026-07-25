@@ -58,7 +58,7 @@ from app.schemas.event import (
 )
 from app.services import event_service, storage
 
-router = APIRouter(prefix="/api/events", tags=["événements"])
+router = APIRouter(prefix="/events", tags=["événements"])
 can_manage = Depends(require_global_permission("event:manage"))
 
 MONTHS_FR = [

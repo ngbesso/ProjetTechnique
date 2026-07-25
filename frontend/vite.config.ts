@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -10,5 +11,8 @@ export default defineConfig({
       usePolling: true,
       interval: 300,
     },
+  },
+  test: {
+    environment: "jsdom",
   },
 });
