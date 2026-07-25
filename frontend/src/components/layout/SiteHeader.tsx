@@ -15,6 +15,7 @@ interface SiteHeaderProps {
 
 const NAV_ITEMS: { label: string; page: Page }[] = [
   { label: "Accueil", page: "home" },
+  { label: "Leadership", page: "leadership" },
   { label: "Sermons", page: "sermons" },
   { label: "Blog", page: "blog" },
   { label: "Événements", page: "evenements" },
@@ -53,26 +54,25 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
               {item.label}
             </Link>
           ))}
-
-          {/* Session admin uniquement : ne peut pas vivre dans NAV_ITEMS (constante
-              hors composant, sans accès à la session) — rendu conditionnel ici. */}
-          {isAdmin && (
-            <Link
-              page={adminActionTarget(user)}
-              className={navClass(activePage === "admin" || activePage === "organiser-evenements")}
-            >
-              {adminActionLabel(user)}
-            </Link>
-          )}
         </nav>
 
         {/* Actions */}
         <div className={styles.actions}>
           {user ? (
             <>
-              <span className={styles.userName} title={user.email}>
-                <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
-              </span>
+              {isAdmin ? (
+                <button
+                  className={`${styles.userName} ${styles.userNameClickable}`}
+                  title={adminActionLabel(user)}
+                  onClick={() => navigate(adminActionTarget(user))}
+                >
+                  <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
+                </button>
+              ) : (
+                <span className={styles.userName} title={user.email}>
+                  <span aria-hidden>&#128100;</span> {displayName}
+                </span>
+              )}
               {member && (
                 <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
                   Mon espace
