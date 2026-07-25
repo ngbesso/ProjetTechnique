@@ -5,14 +5,14 @@ Revises: q9r0s1t2u3v4
 Create Date: 2026-07-21
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "r0s1t2u3v4w5"
-down_revision: Union[str, None] = "q9r0s1t2u3v4"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "q9r0s1t2u3v4"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

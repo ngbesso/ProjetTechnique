@@ -9,6 +9,8 @@ import { DonationPage } from "./features/donation/DonationPage";
 import { SermonsPage } from "./features/sermons/SermonsPage";
 import { EventsPage } from "./features/events/EventsPage";
 import { EventDetailPage } from "./features/events/EventDetailPage";
+import { LeadershipPage } from "./features/leadership/LeadershipPage";
+import { LeaderDetailPage } from "./features/leadership/LeaderDetailPage";
 import { BlogPage } from "./features/blog/BlogPage";
 import { NewsPage } from "./features/news/NewsPage";
 import {SetPasswordPage} from "./features/auth/SetPasswordPage";
@@ -38,6 +40,10 @@ export default function App() {
   if (page === "evenements") {
     const eventId = routeParams.event;
     return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
+  }
+  if (page === "leadership") {
+    const leaderId = routeParams.leader;
+    return leaderId ? <LeaderDetailPage leaderId={Number(leaderId)} /> : <LeadershipPage />;
   }
   if (page === "confidentialite") return <PrivacyPage />;
 
