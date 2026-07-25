@@ -54,7 +54,7 @@ def get_current_member_optional(
     user_id = _decode_user_id(token)
     if user_id is None:
         return None
-    from app.models.member import Member  # noqa: PLC0415
+    from app.models.member import Member
 
     return db.scalar(select(Member).where(Member.user_id == user_id))
 
