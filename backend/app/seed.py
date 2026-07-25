@@ -25,6 +25,14 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "donation_category": ["Soutien spirituel", "Action communautaire", "Développement"],
     "event_category": ["Conférence", "Colloque", "Croisade", "Retraite", "Formation"],
     "intervenant_category": ["Pasteur", "Conférencier", "Diacre"],
+    "ministry": [
+        "Jeunesse",
+        "Département des dames",
+        "Département des hommes",
+        "Chorale",
+        "École du dimanche",
+        "Évangélisation",
+    ],
 }
 
 MOTHER_NAME = "Église mère (Mission)"
