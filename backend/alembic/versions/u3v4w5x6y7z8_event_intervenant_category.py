@@ -5,14 +5,14 @@ Revises: t2u3v4w5x6y7
 Create Date: 2026-07-22
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "u3v4w5x6y7z8"
-down_revision: Union[str, None] = "t2u3v4w5x6y7"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "t2u3v4w5x6y7"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
