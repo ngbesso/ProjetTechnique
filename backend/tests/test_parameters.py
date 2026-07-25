@@ -42,12 +42,20 @@ def test_list_family_status_contains_seeded_values(client):
     labels = [v["label"] for v in client.get("/parameters/family_status").json()]
     assert "Célibataire" in labels
     assert "Marié(e)" in labels
+    assert "Séparé(e)" in labels
 
 
 def test_list_district_contains_seeded_values(client):
     labels = [v["label"] for v in client.get("/parameters/district").json()]
     assert "Ouest" in labels
     assert "Est" in labels
+
+
+def test_list_ministry_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/ministry").json()]
+    assert "Jeunesse" in labels
+    assert "Chorale" in labels
+    assert "École du dimanche" in labels
 
 
 def test_list_intervenant_category_is_public(client):

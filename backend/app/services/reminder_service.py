@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.email import EmailSender, event_reminder, render_event_message
+from app.core.email import EmailSender, event_reminder, render_template
 from app.models.event import Event, EventFormat, EventRegistration, RegistrationStatus
 from app.models.setting import AppSetting
 
@@ -63,7 +63,7 @@ def send_due_reminders(db: Session, sender: EmailSender) -> int:
         location_or_link = event.online_link if is_online else event.location
         formatted_date = _format_date_fr(event.date_start)
         custom_message = (
-            render_event_message(
+            render_template(
                 event.reminder_message,
                 prenom=registration.first_name,
                 titre=event.title,

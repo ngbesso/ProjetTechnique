@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -40,6 +40,10 @@ class Member(Base):
     status: Mapped[MemberStatus] = mapped_column(
         Enum(MemberStatus, native_enum=False, length=20), default=MemberStatus.pending
     )
+    # Année (calendaire, heure de l'Est) du dernier message d'anniversaire
+    # individuel envoyé — évite un double envoi si le job quotidien tourne
+    # plusieurs fois le même jour.
+    last_birthday_greeting_year: Mapped[int | None] = mapped_column(Integer, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

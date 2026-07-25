@@ -9,7 +9,13 @@ from app.models.event import (
     EventStatus,
     RegistrationStatus,
 )
-from app.schemas.event import EventCreate, EventStats, EventUpdate, StatusBreakdownItem, TopEventItem
+from app.schemas.event import (
+    EventCreate,
+    EventStats,
+    EventUpdate,
+    StatusBreakdownItem,
+    TopEventItem,
+)
 
 
 def _apply_filters(

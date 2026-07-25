@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.email import EmailSender, get_email_sender, password_reset_email
 from app.core.security import (
     create_access_token,
@@ -15,7 +16,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.rbac import Role, UserRole

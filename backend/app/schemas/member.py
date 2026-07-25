@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 def _no_future_date(v: date | None, field_name: str) -> date | None:
-    if v is not None and v > date.today():
+    if v is not None and v > datetime.now(timezone.utc).date():
         raise ValueError(f"La {field_name} ne peut pas être une date future.")
     return v
 
@@ -124,6 +124,23 @@ class MemberImportRowError(BaseModel):
 class MemberImportResult(BaseModel):
     created: int
     errors: list[MemberImportRowError]
+
+
+class MemberBirthday(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    first_name: str
+    last_name: str
+    birth_date: date
+
+
+class BirthdaysOverview(BaseModel):
+    today: list[MemberBirthday]
+    this_month: list[MemberBirthday]
+
+
+class BirthdayGreetingsSendResult(BaseModel):
+    sent: int
 
 
 class MemberSelfUpdate(BaseModel):
