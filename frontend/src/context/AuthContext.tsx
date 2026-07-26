@@ -34,6 +34,13 @@ export function hasAdminAccess(user: UserInfo | null | undefined): boolean {
   return user.permissions.some((p) => p === "*" || !MEMBER_ONLY_PERMISSIONS.has(p));
 }
 
+// Vérification de permission unique ("*" ou le code exact), pour remplacer le
+// motif user?.permissions.includes("*") || user?.permissions.includes(code)
+// dupliqué dans chaque panneau admin.
+export function hasPermission(user: UserInfo | null | undefined, code: string): boolean {
+  return !!user && (user.permissions.includes("*") || user.permissions.includes(code));
+}
+
 // Libellé du bouton/lien menant à /administration, adapté au rôle : un
 // organisateur n'accède qu'à la section Événements, "Administration" serait
 // trompeur pour lui.

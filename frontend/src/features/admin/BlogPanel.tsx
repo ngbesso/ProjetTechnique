@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import coverStyles from "./BlogPanel.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../hooks/usePosts";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchPostCategories, fetchPostsStats, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { formatDate } from "../../lib/format";
 import type { Post, PostAdminStats, PostInput, PostStatus } from "../../types";
 
 // ── Icônes KPI ────────────────────────────────────────────────────────────────
@@ -53,14 +54,6 @@ const STATUS_LABELS: Record<PostStatus, string> = {
   published: "Publié",
   archived: "Archivé",
 };
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 // ── CoverUpload — zone de dépôt / prévisualisation ────────────────────────────
 
@@ -167,8 +160,7 @@ export function BlogPanel() {
   const [categories, setCategories] = useState<string[]>([]);
   const [stats, setStats] = useState<PostAdminStats | null>(null);
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("post:manage");
+  const canManage = hasPermission(user, "post:manage");
 
   useEffect(() => {
     loadAdmin();

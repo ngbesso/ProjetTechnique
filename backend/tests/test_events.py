@@ -15,7 +15,7 @@ from app.models.event import (
 )
 from app.models.rbac import Permission, Role, UserRole
 
-BASE = "/api/events"
+BASE = "/events"
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

@@ -94,6 +94,7 @@ export interface ParameterValue {
   category: string;
   label: string;
   position: number;
+  restricted_to_sexe: string | null;
 }
 
 export interface AppSetting {
@@ -245,6 +246,11 @@ export interface MinistryMember {
 export interface MinistryBulkAddResult {
   added: number[];
   skipped: number[];
+}
+
+export interface MinistryStatsItem {
+  ministry: string;
+  count: number;
 }
 
 export interface MemberImportRowError {
@@ -572,14 +578,12 @@ export interface VolunteerRequestAdmin extends VolunteerRequest {
 
 // ── Corps de leadership ─────────────────────────────────────────────────────
 
-export type LeaderRole = "pastor" | "elder" | "deacon" | "department_head";
-
 export interface Leader {
   id: number;
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
+  role: string;
   district: string | null;
   church_id: number | null;
   bio: string | null;
@@ -604,7 +608,7 @@ export interface LeaderInput {
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
+  role: string;
   district?: string | null;
   church_id?: number | null;
   bio?: string | null;

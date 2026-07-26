@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./EglisesPanel.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -59,8 +59,7 @@ export function EglisesPanel() {
     const [formError, setFormError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-    const canManage =
-        user?.permissions.includes("*") || user?.permissions.includes("church:manage");
+    const canManage = hasPermission(user, "church:manage");
     const isEditing = editingId !== null;
 
     const [filterQ, setFilterQ] = useState("");

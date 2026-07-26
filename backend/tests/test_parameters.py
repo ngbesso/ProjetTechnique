@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.event import Event, EventStatus
+from app.models.leader import Leader
 
 
 def _mother_id(db) -> int:
@@ -68,6 +69,19 @@ def test_list_intervenant_category_contains_seeded_values(client):
     assert "Pasteur" in labels
     assert "Conférencier" in labels
     assert "Diacre" in labels
+
+
+def test_list_leader_role_is_public(client):
+    r = client.get("/parameters/leader_role")
+    assert r.status_code == 200
+
+
+def test_list_leader_role_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/leader_role").json()]
+    assert "Pasteur" in labels
+    assert "Ancien" in labels
+    assert "Diacre" in labels
+    assert "Responsable de département" in labels
 
 
 def test_list_unknown_category_rejected(client):
@@ -324,6 +338,28 @@ def test_delete_blocked_when_used_by_event_intervenant_category(
     assert "1 événement(s)" in r.json()["detail"]
 
 
+def test_delete_blocked_when_used_by_leader(client, make_user, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/leader_role", json={"label": "RoleLeaderUtilise"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Leader(
+            first_name="Jean",
+            last_name="Dupont",
+            title="Titre",
+            role="RoleLeaderUtilise",
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 membre du leadership(s)" in r.json()["detail"]
+
+
 def test_delete_allowed_when_unused(client, make_user, auth_header):
     make_user("admin@p.com", roles=["admin"])
     h = auth_header("admin@p.com")
@@ -352,3 +388,65 @@ def test_rename_allowed_even_when_used(client, make_user, make_member, auth_head
     r = client.patch(f"/parameters/{pv_id}", json={"label": "StatutRenomme"}, headers=h)
     assert r.status_code == 200
     assert r.json()["label"] == "StatutRenomme"
+
+
+# ── restricted_to_sexe (catégorie ministry uniquement) ────────────────────────
+
+
+def test_create_ministry_value_with_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe hommes 2026", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 201
+    assert r.json()["restricted_to_sexe"] == "Masculin"
+
+
+def test_restricted_to_sexe_rejected_for_other_categories(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/district",
+        json={"label": "District test restriction", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 422
+
+
+def test_update_ministry_value_can_clear_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test clear", "restricted_to_sexe": "Féminin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(
+        f"/parameters/{created['id']}", json={"restricted_to_sexe": None}, headers=h
+    )
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] is None
+
+
+def test_update_without_restricted_to_sexe_leaves_it_unchanged(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test intact", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(f"/parameters/{created['id']}", json={"label": "Renommé"}, headers=h)
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] == "Masculin"

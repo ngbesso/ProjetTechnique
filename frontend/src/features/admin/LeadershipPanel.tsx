@@ -1,27 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./LeadershipPanel.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useLeaders } from "../../hooks/useLeaders";
+import { useParameters } from "../../hooks/useParameters";
 import { KpiCard } from "../../components/ui/KpiCard";
-import type { Leader, LeaderInput, LeaderRole } from "../../types";
+import type { Leader, LeaderInput } from "../../types";
 
 const DISTRICTS = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
-
-const ROLE_LABELS: Record<LeaderRole, string> = {
-  pastor: "Pasteur",
-  elder: "Ancien",
-  deacon: "Diacre",
-  department_head: "Responsable de département",
-};
 
 const EMPTY: LeaderInput = {
   first_name: "",
   last_name: "",
   title: "",
-  role: "pastor",
+  role: "",
   district: null,
   church_id: null,
   bio: "",
@@ -74,11 +68,10 @@ export function LeadershipPanel() {
   const { user } = useAuth();
   const { leaders, loading, error, loadAdmin, add, edit, remove, uploadPhoto } = useLeaders();
   const { churches, load: loadChurches } = useChurches();
+  const { values: roleValues, load: loadRoles } = useParameters("leader_role");
   const { confirm, dialog } = useConfirm();
 
-  // Le backend réserve la gestion du leadership aux administrateurs globaux
-  // (get_current_admin exige la permission "*"), pas de permission dédiée.
-  const canManage = user?.permissions.includes("*") ?? false;
+  const canManage = hasPermission(user, "leader:manage");
 
   const [form, setForm] = useState<LeaderInput>(EMPTY);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -98,7 +91,8 @@ export function LeadershipPanel() {
   useEffect(() => {
     loadAdmin();
     loadChurches();
-  }, [loadAdmin, loadChurches]);
+    loadRoles();
+  }, [loadAdmin, loadChurches, loadRoles]);
 
   function applyFilters(overrides?: { q?: string; role?: string; district?: string; is_published?: string }) {
     const q = overrides?.q ?? filterQ;
@@ -107,7 +101,7 @@ export function LeadershipPanel() {
     const publishedStr = overrides?.is_published ?? filterPublished;
     loadAdmin({
       q: q.trim() || undefined,
-      role: (role || undefined) as LeaderRole | undefined,
+      role: role || undefined,
       district: district || undefined,
       is_published: publishedStr === "" ? undefined : publishedStr === "true",
     });
@@ -300,10 +294,11 @@ export function LeadershipPanel() {
                   <select
                     className={styles.select}
                     value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value as LeaderRole })}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
                   >
-                    {(Object.entries(ROLE_LABELS) as [LeaderRole, string][]).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                    <option value="" disabled>Sélectionner…</option>
+                    {roleValues.map((r) => (
+                      <option key={r.id} value={r.label}>{r.label}</option>
                     ))}
                   </select>
                 </div>
@@ -444,8 +439,8 @@ export function LeadershipPanel() {
             onChange={(e) => { setFilterRole(e.target.value); applyFilters({ role: e.target.value }); }}
           >
             <option value="">Tous les rôles</option>
-            {(Object.entries(ROLE_LABELS) as [LeaderRole, string][]).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {roleValues.map((r) => (
+              <option key={r.id} value={r.label}>{r.label}</option>
             ))}
           </select>
           <select
@@ -496,7 +491,7 @@ export function LeadershipPanel() {
                         ? <span className={styles.badgePublished}>Publié</span>
                         : <span className={styles.badgeInactive}>Brouillon</span>}
                     </div>
-                    <p className={styles.leaderCardTitle}>{ROLE_LABELS[l.role]} · {l.title}</p>
+                    <p className={styles.leaderCardTitle}>{l.role} · {l.title}</p>
                     <div className={styles.leaderMeta}>
                       {l.district && (
                         <div className={styles.leaderMetaRow}>

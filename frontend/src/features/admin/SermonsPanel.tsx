@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
@@ -76,8 +76,7 @@ export function SermonsPanel() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("sermon:manage");
+  const canManage = hasPermission(user, "sermon:manage");
 
   const [filterQ, setFilterQ] = useState("");
   const [filterStatus, setFilterStatus] = useState("");

@@ -2,14 +2,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.leader import LeaderRole
-
 
 class LeaderCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     title: str = Field(..., min_length=1, max_length=150)
-    role: LeaderRole
+    role: str
     district: str | None = None
     church_id: int | None = None
     bio: str | None = None
@@ -24,7 +22,7 @@ class LeaderUpdate(BaseModel):
     first_name: str | None = Field(default=None, min_length=1, max_length=100)
     last_name: str | None = Field(default=None, min_length=1, max_length=100)
     title: str | None = Field(default=None, min_length=1, max_length=150)
-    role: LeaderRole | None = None
+    role: str | None = None
     district: str | None = None
     church_id: int | None = None
     bio: str | None = None
@@ -40,7 +38,7 @@ class LeaderRead(BaseModel):
     first_name: str
     last_name: str
     title: str
-    role: LeaderRole
+    role: str
     district: str | None
     church_id: int | None
     bio: str | None

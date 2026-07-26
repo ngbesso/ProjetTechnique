@@ -43,25 +43,85 @@ export type Section =
   | "parametres"
   | "assistant";
 
-const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
-  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
-  { id: "membres", label: "Membres", icon: "👥" },
-  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
-  { id: "ministeres", label: "Ministères", icon: "🙌" },
-  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
-  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
-  { id: "dons", label: "Dons", icon: "💝" },
-  { id: "sermons", label: "Sermons", icon: "🎙" },
-  { id: "blog", label: "Blog", icon: "✍️" },
-  { id: "actualites", label: "Actualités", icon: "📰" },
-  { id: "evenements", label: "Événements", icon: "📅" },
-  { id: "prieres", label: "Demandes de prière", icon: "🙏" },
-  { id: "benevolat", label: "Bénévolat", icon: "🤝" },
-  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
-  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
-  { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
+interface NavItem {
+  id: Section;
+  label: string;
+  icon: string;
+  globalOnly?: boolean;
+}
+
+type NavEntry =
+  | { kind: "solo"; item: NavItem }
+  | { kind: "group"; label: string; icon: string; items: NavItem[] };
+
+const NAV_STRUCTURE: NavEntry[] = [
+  { kind: "solo", item: { id: "dashboard", label: "Tableau de bord", icon: "📊" } },
+  {
+    kind: "group",
+    label: "Annuaire",
+    icon: "📇",
+    items: [
+      { id: "membres", label: "Membres", icon: "👥" },
+      { id: "ministeres", label: "Ministères", icon: "🙌" },
+      { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Demandes",
+    icon: "📨",
+    items: [
+      { id: "prieres", label: "Demandes de prière", icon: "🙏" },
+      { id: "benevolat", label: "Bénévolat", icon: "🤝" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Publications",
+    icon: "📰",
+    items: [
+      { id: "sermons", label: "Sermons", icon: "🎙" },
+      { id: "blog", label: "Blog", icon: "✍️" },
+      { id: "actualites", label: "Actualités", icon: "📰" },
+    ],
+  },
+  { kind: "solo", item: { id: "evenements", label: "Événements", icon: "📅" } },
+  {
+    kind: "group",
+    label: "Structure",
+    icon: "🏛️",
+    items: [
+      { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
+      { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Finances",
+    icon: "💰",
+    items: [{ id: "dons", label: "Dons", icon: "💝" }],
+  },
+  {
+    kind: "group",
+    label: "Système",
+    icon: "⚙️",
+    items: [
+      { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
+      { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
+      { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
+      { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
+    ],
+  },
 ];
+
+function findGroupLabelForSection(section: Section): string | null {
+  for (const entry of NAV_STRUCTURE) {
+    if (entry.kind === "group" && entry.items.some((item) => item.id === section)) {
+      return entry.label;
+    }
+  }
+  return null;
+}
 
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
 
@@ -246,11 +306,25 @@ export function AdminPage() {
   const isGlobalAdmin = user?.is_global_admin ?? false;
   // Un utilisateur dont le seul rôle est « organisateur » n'a accès qu'aux Événements.
   const isOrganisateurOnly = user?.roles.length === 1 && user.roles[0] === "organisateur";
-  const NAV_ITEMS = isOrganisateurOnly
-    ? ALL_NAV_ITEMS.filter((item) => item.id === "evenements")
-    : ALL_NAV_ITEMS.filter((item) => !item.globalOnly || isGlobalAdmin);
+
+  const NAV_ENTRIES: NavEntry[] = isOrganisateurOnly
+    ? [{ kind: "solo", item: { id: "evenements", label: "Événements", icon: "📅" } }]
+    : NAV_STRUCTURE.reduce<NavEntry[]>((acc, entry) => {
+        if (entry.kind === "solo") {
+          if (!entry.item.globalOnly || isGlobalAdmin) acc.push(entry);
+          return acc;
+        }
+        const items = entry.items.filter((item) => !item.globalOnly || isGlobalAdmin);
+        if (items.length > 0) acc.push({ kind: "group", label: entry.label, icon: entry.icon, items });
+        return acc;
+      }, []);
+
+  const NAV_ITEMS: NavItem[] = NAV_ENTRIES.flatMap((entry) =>
+    entry.kind === "solo" ? [entry.item] : entry.items,
+  );
 
   const [section, setSection] = useState<Section>(isOrganisateurOnly ? "evenements" : "dashboard");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
@@ -266,6 +340,32 @@ export function AdminPage() {
       load();
     }
   }, [section, load]);
+
+  // Le groupe contenant la section active se déplie automatiquement (au
+  // chargement, et à chaque navigation qui en cible une, p. ex. depuis le
+  // tableau de bord ou la cloche de notifications) ; les autres restent tels quels.
+  useEffect(() => {
+    const label = findGroupLabelForSection(section);
+    if (label) {
+      setExpandedGroups((prev) => (prev.has(label) ? prev : new Set(prev).add(label)));
+    }
+  }, [section]);
+
+  function selectSection(id: Section) {
+    setSection(id);
+    setMembresInitialStatus(undefined);
+    setEditingRoleId(null);
+    setCreateError("");
+  }
+
+  function toggleGroup(label: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   async function handleCreateRole(e: React.FormEvent) {
     e.preventDefault();
@@ -326,24 +426,49 @@ export function AdminPage() {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              className={`${styles.navItem} ${section === item.id ? styles.navItemActive : ""}`}
-              onClick={() => {
-                setSection(item.id);
-                setMembresInitialStatus(undefined);
-                setEditingRoleId(null);
-                setCreateError("");
-              }}
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              {item.label}
-              {item.id === "membres" && pendingCount > 0 && (
-                <span className={styles.navBadge}>{pendingCount}</span>
-              )}
-            </button>
-          ))}
+          {NAV_ENTRIES.map((entry) =>
+            entry.kind === "solo" ? (
+              <button
+                key={entry.item.id}
+                className={`${styles.navItem} ${section === entry.item.id ? styles.navItemActive : ""}`}
+                onClick={() => selectSection(entry.item.id)}
+              >
+                <span className={styles.navIcon}>{entry.item.icon}</span>
+                {entry.item.label}
+              </button>
+            ) : (
+              <div key={entry.label} className={styles.navGroup}>
+                <button
+                  type="button"
+                  className={styles.navGroupHeader}
+                  aria-expanded={expandedGroups.has(entry.label)}
+                  onClick={() => toggleGroup(entry.label)}
+                >
+                  <span className={styles.navIcon}>{entry.icon}</span>
+                  {entry.label}
+                </button>
+                {expandedGroups.has(entry.label) && (
+                  <div className={styles.navGroupItems}>
+                    {entry.items.map((item) => (
+                      <button
+                        key={item.id}
+                        className={`${styles.navItem} ${styles.navSubItem} ${
+                          section === item.id ? styles.navItemActive : ""
+                        }`}
+                        onClick={() => selectSection(item.id)}
+                      >
+                        <span className={styles.navIcon}>{item.icon}</span>
+                        {item.label}
+                        {item.id === "membres" && pendingCount > 0 && (
+                          <span className={styles.navBadge}>{pendingCount}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ),
+          )}
         </nav>
 
         <div className={styles.sidebarFooter}>

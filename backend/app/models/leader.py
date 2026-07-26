@@ -1,17 +1,9 @@
-import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-
-
-class LeaderRole(str, enum.Enum):
-    pastor = "pastor"
-    elder = "elder"
-    deacon = "deacon"
-    department_head = "department_head"
 
 
 class Leader(Base):
@@ -21,9 +13,9 @@ class Leader(Base):
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     title: Mapped[str] = mapped_column(String(150))
-    role: Mapped[LeaderRole] = mapped_column(
-        Enum(LeaderRole, native_enum=False, length=20)
-    )
+    # Valeur libre alimentée par ParameterValue (category="leader_role"), sur
+    # le même modèle que Event.category / Member.sexe.
+    role: Mapped[str] = mapped_column(String(50))
     # District libre (Ouest/Est/Centre/Sud/Outremer/National) — comme Church.district,
     # pas d'enum en base pour rester cohérent avec le reste du projet.
     district: Mapped[str | None] = mapped_column(String(50), default=None)

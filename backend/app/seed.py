@@ -26,6 +26,7 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "donation_category": ["Soutien spirituel", "Action communautaire", "Développement"],
     "event_category": ["Conférence", "Colloque", "Croisade", "Retraite", "Formation"],
     "intervenant_category": ["Pasteur", "Conférencier", "Diacre"],
+    "leader_role": ["Pasteur", "Ancien", "Diacre", "Responsable de département"],
     "ministry": [
         "Jeunesse",
         "Département des dames",

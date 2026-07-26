@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
+from app.models.parameter import ParameterValue
 from app.models.rbac import Role, UserRole
 
 
@@ -18,6 +19,18 @@ def _affiliate(client, header, name, district="Est") -> int:
     return client.post(
         "/churches", json={"name": name, "district": district}, headers=header
     ).json()["id"]
+
+
+def _restrict_ministry(db, ministry: str, sexe: str) -> None:
+    """Restreint (dans la transaction du test) une valeur de ministère déjà
+    seedée, plutôt que d'en insérer une nouvelle en double."""
+    pv = db.scalar(
+        select(ParameterValue).where(
+            ParameterValue.category == "ministry", ParameterValue.label == ministry
+        )
+    )
+    pv.restricted_to_sexe = sexe
+    db.flush()
 
 
 # ── Libre-service (membre connecté) ───────────────────────────────────────────
@@ -205,6 +218,33 @@ def test_bulk_add_skips_already_affiliated(
     assert body["skipped"] == [member.id]
 
 
+def test_bulk_add_duplicate_id_in_same_request_added_once(
+    client, make_user, make_member, auth_header, db_session
+):
+    """Un même id répété dans member_ids ne doit produire qu'une seule
+    affiliation — la détection des membres déjà actifs est préchargée une
+    fois avant la boucle, elle doit donc aussi suivre les ajouts faits dans
+    la même requête."""
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    member = make_member("m12dup@b.com", _mother_id(db_session))
+    db_session.commit()
+
+    r = client.post(
+        "/ministries/Chorale/members",
+        json={"member_ids": [member.id, member.id]},
+        headers=h,
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["added"] == [member.id]
+    assert body["skipped"] == [member.id]
+
+    members = client.get("/ministries/Chorale/members", headers=h).json()
+    assert len(members) == 1
+
+
 def test_bulk_add_skips_out_of_scope_members(client, make_user, auth_header, db_session):
     make_user("boss@b.com", roles=["admin"])
     h = auth_header("boss@b.com")
@@ -282,3 +322,161 @@ def test_admin_remove_requires_permission(
     r = client.delete(f"/members/{member.id}/ministries/{affiliation_id}", headers=h)
 
     assert r.status_code == 403
+
+
+# ── Restriction par sexe ───────────────────────────────────────────────────────
+
+
+def test_join_ministry_rejected_when_sexe_does_not_match(
+    client, make_member, auth_header, db_session
+):
+    member = make_member("m15@b.com", _mother_id(db_session))
+    member.sexe = "Féminin"
+    _restrict_ministry(db_session, "Chorale", "Masculin")
+    db_session.commit()
+    h = auth_header("m15@b.com")
+
+    r = client.post("/members/me/ministries", json={"ministry": "Chorale"}, headers=h)
+
+    assert r.status_code == 422
+
+
+def test_join_ministry_allowed_when_sexe_matches_restriction(
+    client, make_member, auth_header, db_session
+):
+    member = make_member("m16@b.com", _mother_id(db_session))
+    member.sexe = "Masculin"
+    _restrict_ministry(db_session, "Chorale", "Masculin")
+    db_session.commit()
+    h = auth_header("m16@b.com")
+
+    r = client.post("/members/me/ministries", json={"ministry": "Chorale"}, headers=h)
+
+    assert r.status_code == 201
+
+
+def test_admin_cannot_bypass_sex_restriction_via_bulk_add(
+    client, make_user, make_member, auth_header, db_session
+):
+    """Même un admin ne peut pas contourner une restriction de ministère par
+    sexe via l'ajout en masse : le membre concerné est reporté dans skipped,
+    aucune affiliation n'est créée pour lui."""
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    member = make_member("m17@b.com", _mother_id(db_session))
+    member.sexe = "Féminin"
+    _restrict_ministry(db_session, "Chorale", "Masculin")
+    db_session.commit()
+
+    r = client.post(
+        "/ministries/Chorale/members", json={"member_ids": [member.id]}, headers=h
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["added"] == []
+    assert body["skipped"] == [member.id]
+
+    members = client.get("/ministries/Chorale/members", headers=h).json()
+    assert members == []
+
+
+# ── Administration : historique complet d'un membre ───────────────────────────
+
+
+def test_admin_member_history_shows_active_and_past(
+    client, make_user, make_member, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    member = make_member("m18@b.com", _mother_id(db_session))
+    db_session.commit()
+    old_id = client.post(
+        "/members/me/ministries", json={"ministry": "Jeunesse"}, headers=auth_header("m18@b.com")
+    ).json()["id"]
+    client.delete(
+        f"/members/{member.id}/ministries/{old_id}",
+        headers=h,
+    )
+    client.post(
+        "/members/me/ministries", json={"ministry": "Chorale"}, headers=auth_header("m18@b.com")
+    )
+
+    r = client.get(f"/members/{member.id}/ministries", headers=h)
+
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 2
+    by_ministry = {i["ministry"]: i["left_at"] for i in items}
+    assert by_ministry["Jeunesse"] is not None
+    assert by_ministry["Chorale"] is None
+
+
+def test_admin_member_history_requires_permission(
+    client, make_user, make_member, auth_header, db_session
+):
+    make_user("organisateur@b.com", roles=["organisateur"])
+    h = auth_header("organisateur@b.com")
+    member = make_member("m19@b.com", _mother_id(db_session))
+    db_session.commit()
+
+    r = client.get(f"/members/{member.id}/ministries", headers=h)
+
+    assert r.status_code == 403
+
+
+# ── Administration : rapport (comptes par ministère) ──────────────────────────
+
+
+def test_ministries_stats_counts_active_members_only(
+    client, make_user, make_member, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    make_member("m20@b.com", _mother_id(db_session))
+    make_member("m21@b.com", _mother_id(db_session))
+    db_session.commit()
+    client.post(
+        "/members/me/ministries", json={"ministry": "Chorale"}, headers=auth_header("m20@b.com")
+    )
+    affiliation_id = client.post(
+        "/members/me/ministries", json={"ministry": "Chorale"}, headers=auth_header("m21@b.com")
+    ).json()["id"]
+    client.delete(f"/members/me/ministries/{affiliation_id}", headers=auth_header("m21@b.com"))
+
+    r = client.get("/ministries/stats", headers=h)
+
+    assert r.status_code == 200
+    by_ministry = {item["ministry"]: item["count"] for item in r.json()}
+    assert by_ministry["Chorale"] == 1
+    assert by_ministry["Jeunesse"] == 0
+
+
+def test_ministries_stats_requires_auth(client):
+    assert client.get("/ministries/stats").status_code == 401
+
+
+# ── Administration : export CSV ───────────────────────────────────────────────
+
+
+def test_export_ministry_members_csv(client, make_user, make_member, auth_header, db_session):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    make_member("m22@b.com", _mother_id(db_session))
+    db_session.commit()
+    client.post(
+        "/members/me/ministries", json={"ministry": "Chorale"}, headers=auth_header("m22@b.com")
+    )
+
+    r = client.get("/ministries/Chorale/members/export", headers=h)
+
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "attachment" in r.headers["content-disposition"]
+    body = r.content.decode("utf-8-sig")
+    assert "Prénom,Nom,Courriel,Date d'affiliation" in body
+    assert "m22@b.com" in body
+
+
+def test_export_ministry_members_requires_auth(client):
+    assert client.get("/ministries/Chorale/members/export").status_code == 401
