@@ -3,15 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin
+from app.api.deps import require_permissions
 from app.db.session import get_db
 from app.models.church import Church
-from app.models.leader import Leader, LeaderRole
+from app.models.leader import Leader
 from app.schemas.leader import LeaderCreate, LeaderList, LeaderRead, LeaderUpdate
 from app.services import leader_service, storage
 
-router = APIRouter(prefix="/api/leaders", tags=["leadership"])
-requires_admin = Depends(get_current_admin)
+router = APIRouter(prefix="/leaders", tags=["leadership"])
+requires_leader_manage = Depends(require_permissions("leader:manage"))
 
 
 def _load(db: Session, leader_id: int) -> Leader:
@@ -62,7 +62,7 @@ def _to_read(leader: Leader) -> LeaderRead:
 @router.get("/", response_model=LeaderList)
 def list_leaders(
     db: Annotated[Session, Depends(get_db)],
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     limit: int = Query(50, ge=1, le=200),
@@ -86,11 +86,11 @@ def list_leaders(
     )
 
 
-@router.get("/admin", response_model=LeaderList, dependencies=[requires_admin])
+@router.get("/admin", response_model=LeaderList, dependencies=[requires_leader_manage])
 def list_leaders_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     is_published: bool | None = None,
@@ -130,7 +130,7 @@ def get_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post(
-    "/", response_model=LeaderRead, status_code=status.HTTP_201_CREATED, dependencies=[requires_admin]
+    "/", response_model=LeaderRead, status_code=status.HTTP_201_CREATED, dependencies=[requires_leader_manage]
 )
 def create_leader(payload: LeaderCreate, db: Annotated[Session, Depends(get_db)]):
     """Crée un membre du leadership — réservé aux administrateurs."""
@@ -139,7 +139,7 @@ def create_leader(payload: LeaderCreate, db: Annotated[Session, Depends(get_db)]
     return _to_read(leader)
 
 
-@router.put("/{leader_id}", response_model=LeaderRead, dependencies=[requires_admin])
+@router.put("/{leader_id}", response_model=LeaderRead, dependencies=[requires_leader_manage])
 def update_leader(
     leader_id: int, payload: LeaderUpdate, db: Annotated[Session, Depends(get_db)]
 ):
@@ -151,14 +151,14 @@ def update_leader(
 
 
 @router.delete(
-    "/{leader_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[requires_admin]
+    "/{leader_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[requires_leader_manage]
 )
 def delete_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
     """Supprime un membre du leadership — réservé aux administrateurs."""
     leader_service.delete_leader(db, _load(db, leader_id))
 
 
-@router.post("/{leader_id}/photo", response_model=LeaderRead, dependencies=[requires_admin])
+@router.post("/{leader_id}/photo", response_model=LeaderRead, dependencies=[requires_leader_manage])
 def upload_leader_photo(
     leader_id: int,
     db: Annotated[Session, Depends(get_db)],

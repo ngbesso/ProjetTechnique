@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./DashboardPanel.module.css";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { fetchDashboardStats, ActivityType, DashboardStats } from "../../lib/api/dashboard";
+import { formatDateTime } from "../../lib/format";
 import type { Section } from "./AdminPage";
 
 interface DashboardPanelProps {
@@ -81,12 +82,6 @@ const ACTIVITY_SECTION: Record<ActivityType, Section> = {
   prayer_request: "prieres",
   volunteer_request: "benevolat",
 };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-CA", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
 
 // ── Composant principal ───────────────────────────────────────────────────────
 

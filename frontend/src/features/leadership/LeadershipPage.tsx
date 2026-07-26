@@ -3,17 +3,11 @@ import styles from "./LeadershipPage.module.css";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate } from "../../context/RouterContext";
+import { useParameters } from "../../hooks/useParameters";
 import { getLeaders } from "../../lib/api/leaders";
-import type { Leader, LeaderRole } from "../../types";
+import type { Leader } from "../../types";
 
 const DISTRICTS = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
-
-const ROLE_LABELS: Record<LeaderRole, string> = {
-  pastor: "Pasteur",
-  elder: "Ancien",
-  deacon: "Diacre",
-  department_head: "Responsable de département",
-};
 
 function initials(leader: Leader): string {
   return `${leader.first_name[0] ?? ""}${leader.last_name[0] ?? ""}`.toUpperCase();
@@ -22,10 +16,15 @@ function initials(leader: Leader): string {
 export function LeadershipPage() {
   const navigate = useNavigate();
   const [leaders, setLeaders] = useState<Leader[]>([]);
-  const [role, setRole] = useState<LeaderRole | "">("");
+  const [role, setRole] = useState("");
   const [district, setDistrict] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { values: roleValues, load: loadRoles } = useParameters("leader_role");
+
+  useEffect(() => {
+    loadRoles();
+  }, [loadRoles]);
 
   useEffect(() => {
     setLoading(true);
@@ -57,11 +56,11 @@ export function LeadershipPage() {
           <select
             className={styles.filterSelect}
             value={role}
-            onChange={(e) => setRole(e.target.value as LeaderRole | "")}
+            onChange={(e) => setRole(e.target.value)}
           >
             <option value="">Tous les rôles</option>
-            {(Object.entries(ROLE_LABELS) as [LeaderRole, string][]).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {roleValues.map((r) => (
+              <option key={r.id} value={r.label}>{r.label}</option>
             ))}
           </select>
 

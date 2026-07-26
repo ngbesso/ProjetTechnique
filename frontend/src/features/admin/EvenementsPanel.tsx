@@ -4,12 +4,13 @@ import styles from "./EvenementsPanel.module.css";
 import { Button } from "../../components/ui/Button";
 import { Field } from "../../components/ui/Field";
 import { KpiCard } from "../../components/ui/KpiCard";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useEvents } from "../../hooks/useEvents";
 import { useParameters } from "../../hooks/useParameters";
 import { exportEventRegistrations, uploadEventImage } from "../../lib/api/events";
+import { formatDateTime } from "../../lib/format";
 import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
 import type { District, EventFormat, EventInput, EventItem, EventStatus } from "../../types";
 
@@ -134,12 +135,6 @@ function eventToForm(e: EventItem): EventInput {
   };
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-CA", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-
 function formatPrice(price: number | null): string {
   return !price ? "Gratuit" : `${price.toFixed(2)} $`;
 }
@@ -238,8 +233,7 @@ export function EvenementsPanel() {
     useParameters("intervenant_category");
   const { confirm, dialog } = useConfirm();
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("event:manage");
+  const canManage = hasPermission(user, "event:manage");
 
   const [form, setForm] = useState<EventInput>(EMPTY);
   const [editingId, setEditingId] = useState<number | null>(null);

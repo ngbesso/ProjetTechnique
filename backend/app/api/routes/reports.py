@@ -19,7 +19,7 @@ router = APIRouter(prefix="/admin", tags=["rapports"])
 
 DOMAIN_FETCHERS = {
     "membres": lambda db, user: get_members_stats(current_user=user, db=db),
-    "dons": lambda db, user: get_donations_stats(db=db, _admin=user),
+    "dons": lambda db, user: get_donations_stats(db=db, _perm=user),
     "evenements": lambda db, user: event_service.get_admin_stats(db),
     "sermons": lambda db, user: get_sermons_stats(db=db),
     "articles": lambda db, user: get_posts_stats(db=db),

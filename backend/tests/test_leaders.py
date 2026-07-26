@@ -4,8 +4,9 @@ from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.leader import Leader
+from app.models.rbac import Permission, Role, UserRole
 
-BASE = "/api/leaders"
+BASE = "/leaders"
 
 
 def _fake_storage():
@@ -19,7 +20,7 @@ def _fake_storage():
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 
-def _leader(db_session, first_name="Jean", last_name="Dupont", is_published=True, role="pastor"):
+def _leader(db_session, first_name="Jean", last_name="Dupont", is_published=True, role="Pasteur"):
     leader = Leader(
         first_name=first_name,
         last_name=last_name,
@@ -44,7 +45,7 @@ def _payload():
         "first_name": "Marie",
         "last_name": "Koffi",
         "title": "Pasteure District Est",
-        "role": "pastor",
+        "role": "Pasteur",
         "district": "Est",
         "bio": "Marie Koffi coordonne les activités évangéliques dans le district Est.",
         "years_of_service": 12,
@@ -67,10 +68,10 @@ def test_list_public_only_published(client, db_session):
 
 
 def test_list_filters_by_role(client, db_session):
-    _leader(db_session, "Le", "Pasteur", role="pastor")
-    _leader(db_session, "Le", "Diacre", role="deacon")
+    _leader(db_session, "Le", "Pasteur", role="Pasteur")
+    _leader(db_session, "Le", "Diacre", role="Diacre")
 
-    r = client.get(f"{BASE}/?role=deacon")
+    r = client.get(f"{BASE}/?role=Diacre")
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Le Diacre" in names
@@ -109,6 +110,26 @@ def test_admin_list_includes_drafts(client, make_user, auth_header, db_session):
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Brouillon Admin" in names
+
+
+def test_leader_manage_permission_grants_access_without_full_admin(
+    client, make_user, auth_header, db_session
+):
+    """La gestion du leadership passe désormais par la permission dédiée
+    leader:manage (RBAC), pas uniquement par l'accès admin global complet."""
+    mother = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    perm = db_session.scalar(select(Permission).where(Permission.code == "leader:manage"))
+    role = Role(name="leader-manager-test", description="Gestionnaire leadership (test)")
+    db_session.add(role)
+    db_session.flush()
+    role.permissions = [perm]
+    user = make_user("leadmgr@test.com")
+    db_session.add(UserRole(user_id=user.id, role_id=role.id, church_id=mother))
+    db_session.commit()
+
+    r = client.get(f"{BASE}/admin", headers=auth_header("leadmgr@test.com"))
+
+    assert r.status_code == 200
 
 
 def test_get_leader_detail(client, db_session):
