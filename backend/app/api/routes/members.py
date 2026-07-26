@@ -31,12 +31,14 @@ from app.core.email import (
     membership_received,
 )
 from app.core.security import create_setup_token, hash_password
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
 from app.models.rbac import Role, UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
+from app.schemas.common import Page
 from app.schemas.member import (
     BirthdayGreetingsSendResult,
     BirthdaysOverview,
@@ -44,7 +46,6 @@ from app.schemas.member import (
     MemberCreate,
     MemberImportResult,
     MemberImportRowError,
-    MemberList,
     MemberRead,
     MemberSelfUpdate,
     MembershipRequest,
@@ -297,7 +298,7 @@ def update_my_profile(
     return member
 
 
-@router.get("", response_model=MemberList)
+@router.get("", response_model=Page[MemberRead])
 def list_members(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -326,11 +327,8 @@ def list_members(
         query = query.where(Member.status == status)
     if family_status:
         query = query.where(Member.family_status == family_status)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    rows = db.scalars(
-        query.order_by(Member.created_at.desc()).limit(limit).offset(offset)
-    ).all()
-    return MemberList(
+    rows, total = paginate(db, query.order_by(Member.created_at.desc()), limit, offset)
+    return Page[MemberRead](
         items=[MemberRead.model_validate(m) for m in rows],
         total=total,
         limit=limit,

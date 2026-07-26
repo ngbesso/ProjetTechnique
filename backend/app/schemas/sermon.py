@@ -29,13 +29,6 @@ class SermonRead(BaseModel):
     created_at: datetime
 
 
-class SermonList(BaseModel):
-    items: list[SermonRead]
-    total: int
-    limit: int
-    offset: int
-
-
 class TopSermonItem(BaseModel):
     id: int
     title: str

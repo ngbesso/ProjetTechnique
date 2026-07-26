@@ -224,7 +224,9 @@ def test_admin_can_list_all_donations(
     )
     r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
     assert r.status_code == 200
-    assert len(r.json()) >= 1
+    body = r.json()
+    assert len(body["items"]) >= 1
+    assert body["total"] >= 1
 
 
 def test_list_all_with_dedicated_permission_only(

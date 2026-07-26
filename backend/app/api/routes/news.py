@@ -3,13 +3,15 @@ from typing import Annotated
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.news import News, NewsStatus
-from app.schemas.news import NewsCreate, NewsList, NewsRead, NewsUpdate
+from app.schemas.common import Page
+from app.schemas.news import NewsCreate, NewsRead, NewsUpdate
 from app.services import storage
 
 router = APIRouter(prefix="/news", tags=["actualités"])
@@ -25,7 +27,7 @@ def _load(db: Session, news_id: int) -> News:
     return item
 
 
-@router.get("", response_model=NewsList)
+@router.get("", response_model=Page[NewsRead])
 def list_news(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -41,14 +43,11 @@ def list_news(
         )
     if category:
         query = query.where(News.category == category)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(News.created_at.desc()).offset(offset).limit(limit)
-    ).all()
-    return NewsList(items=list(items), total=total or 0, limit=limit, offset=offset)
+    items, total = paginate(db, query.order_by(News.created_at.desc()), limit, offset)
+    return Page[NewsRead](items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/admin", response_model=NewsList, dependencies=[can_manage])
+@router.get("/admin", response_model=Page[NewsRead], dependencies=[can_manage])
 def list_news_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -67,11 +66,8 @@ def list_news_admin(
         query = query.where(News.category == category)
     if status:
         query = query.where(News.status == status)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(News.created_at.desc()).offset(offset).limit(limit)
-    ).all()
-    return NewsList(items=list(items), total=total or 0, limit=limit, offset=offset)
+    items, total = paginate(db, query.order_by(News.created_at.desc()), limit, offset)
+    return Page[NewsRead](items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/categories", response_model=list[str])

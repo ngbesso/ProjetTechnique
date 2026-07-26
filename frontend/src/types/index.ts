@@ -87,6 +87,13 @@ export interface Donation {
   created_at: string;
 }
 
+export interface DonationListResult {
+  items: Donation[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
 
 export interface ParameterValue {

@@ -44,10 +44,3 @@ class NewsRead(BaseModel):
     views: int
     created_at: datetime
     updated_at: datetime | None
-
-
-class NewsList(BaseModel):
-    items: list[NewsRead]
-    total: int
-    limit: int
-    offset: int
