@@ -6,11 +6,14 @@ import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useLeaders } from "../../hooks/useLeaders";
 import { useParameters } from "../../hooks/useParameters";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
 import type { Leader, LeaderInput } from "../../types";
 
 const DISTRICTS = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
+
+const col = createColumnHelper<Leader>();
 
 const EMPTY: LeaderInput = {
   first_name: "",
@@ -193,6 +196,86 @@ export function LeadershipPanel() {
       if (input) input.value = "";
     }
   }
+
+  const columns = [
+    col.display({
+      id: "photo",
+      header: "Photo",
+      cell: (info) => {
+        const l = info.row.original;
+        return l.photo_url ? (
+          <img className={styles.photo} src={l.photo_url} alt={`${l.first_name} ${l.last_name}`} />
+        ) : (
+          <span className={styles.photoPlaceholder}>{initials(l)}</span>
+        );
+      },
+    }),
+    col.accessor((l) => `${l.first_name} ${l.last_name}`, {
+      id: "name",
+      header: "Nom",
+      cell: (info) => {
+        const l = info.row.original;
+        return (
+          <div className={adminStyles.actions} style={{ alignItems: "center" }}>
+            <strong>{info.getValue()}</strong>
+            {l.is_published
+              ? <span className={styles.badgePublished}>Publié</span>
+              : <span className={styles.badgeInactive}>Brouillon</span>}
+          </div>
+        );
+      },
+    }),
+    col.accessor((l) => `${l.role} · ${l.title}`, {
+      id: "role",
+      header: "Rôle / Titre",
+    }),
+    col.accessor("district", { header: "District", cell: (info) => info.getValue() ?? "—" }),
+    col.accessor((l) => churchLabel(l.church_id), { id: "church", header: "Église" }),
+    ...(canManage
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => {
+              const l = info.row.original;
+              return (
+                <div className={adminStyles.actions}>
+                  <button className={adminStyles.btnOutlineSm} onClick={() => startEdit(l)}>
+                    Modifier
+                  </button>
+                  <button
+                    className={adminStyles.btnOutlineSm}
+                    onClick={() => photoInputs.current[l.id]?.click()}
+                    disabled={uploadingId === l.id}
+                  >
+                    {uploadingId === l.id ? "Envoi…" : "Photo"}
+                  </button>
+                  <input
+                    ref={(el) => { photoInputs.current[l.id] = el; }}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => handlePhotoChange(l, e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    className={l.is_published ? styles.btnCardDeactivate : styles.btnCardActivate}
+                    onClick={() => handleTogglePublish(l)}
+                  >
+                    {l.is_published ? "Dépublier" : "Publier"}
+                  </button>
+                  <button
+                    className={adminStyles.btnDanger}
+                    onClick={() => handleDelete(l.id, `${l.first_name} ${l.last_name}`)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              );
+            },
+          }),
+        ]
+      : []),
+  ];
 
   if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
@@ -444,84 +527,12 @@ export function LeadershipPanel() {
           </select>
         </div>
 
-        {leaders.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>🧑‍💼</p>
-            <p className={styles.emptyText}>Aucun membre du leadership trouvé.</p>
-          </div>
-        ) : (
-          <div className={styles.leaderGrid}>
-            {leaders.map((l) => (
-              <div
-                key={l.id}
-                className={`${styles.leaderCard} ${editingId === l.id ? styles.leaderCardEditing : ""} ${!l.is_published ? styles.leaderCardInactive : ""}`}
-              >
-                <div className={styles.leaderCardBody}>
-                  <div className={styles.photoWrap}>
-                    {l.photo_url ? (
-                      <img className={styles.photo} src={l.photo_url} alt={`${l.first_name} ${l.last_name}`} />
-                    ) : (
-                      <span className={styles.photoPlaceholder}>{initials(l)}</span>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className={styles.leaderCardTop}>
-                      <p className={styles.leaderCardName}>{l.first_name} {l.last_name}</p>
-                      {l.is_published
-                        ? <span className={styles.badgePublished}>Publié</span>
-                        : <span className={styles.badgeInactive}>Brouillon</span>}
-                    </div>
-                    <p className={styles.leaderCardTitle}>{l.role} · {l.title}</p>
-                    <div className={styles.leaderMeta}>
-                      {l.district && (
-                        <div className={styles.leaderMetaRow}>
-                          <span className={styles.metaIcon}>📍</span>
-                          <span className={styles.metaText}>{l.district}</span>
-                        </div>
-                      )}
-                      {l.church_id && (
-                        <div className={styles.leaderMetaRow}>
-                          <span className={styles.metaIcon}>⛪</span>
-                          <span className={styles.metaText}>{churchLabel(l.church_id)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {canManage && (
-                  <div className={styles.leaderCardFooter}>
-                    <button className={styles.btnCardEdit} onClick={() => startEdit(l)}>
-                      ✏ Modifier
-                    </button>
-                    <button
-                      className={styles.btnCardPhoto}
-                      onClick={() => photoInputs.current[l.id]?.click()}
-                      disabled={uploadingId === l.id}
-                    >
-                      {uploadingId === l.id ? "Envoi…" : "📷 Photo"}
-                    </button>
-                    <input
-                      ref={(el) => { photoInputs.current[l.id] = el; }}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={(e) => handlePhotoChange(l, e.target.files?.[0] ?? null)}
-                    />
-                    <button
-                      className={l.is_published ? styles.btnCardDeactivate : styles.btnCardActivate}
-                      onClick={() => handleTogglePublish(l)}
-                    >
-                      {l.is_published ? "⏸ Dépublier" : "▶ Publier"}
-                    </button>
-                    <button className={styles.btnCardDelete} onClick={() => handleDelete(l.id, `${l.first_name} ${l.last_name}`)}>
-                      🗑 Supprimer
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <DataTable
+          columns={columns}
+          data={leaders}
+          getRowId={(l) => l.id}
+          emptyMessage="Aucun membre du leadership trouvé."
+        />
       </div>
 
       {dialog}

@@ -9,8 +9,11 @@ import {
     fetchMinistryMembers,
     removeMinistryAffiliation,
 } from "../../lib/api/ministryAffiliations";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { formatDate } from "../../lib/format";
 import type { Member, MinistryMember, MinistryStatsItem } from "../../types";
+
+const col = createColumnHelper<MinistryMember>();
 
 // ── Rapport : membres par ministère ───────────────────────────────────────────
 
@@ -207,6 +210,51 @@ export function MinisteresPanel() {
     const restriction = ministries.find((m) => m.label === selected)?.restricted_to_sexe ?? null;
     const eligibleCandidates = candidates.filter((c) => !restriction || c.sexe === restriction);
 
+    const memberColumns = [
+        col.display({
+            id: "select",
+            header: "",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <input
+                        type="checkbox"
+                        checked={selectedRemoveIds.has(m.id)}
+                        onChange={() => toggleRemoveId(m.id)}
+                    />
+                );
+            },
+        }),
+        col.accessor((m) => `${m.first_name} ${m.last_name}`, {
+            id: "name",
+            header: "Membre",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <>
+                        {info.getValue()} <span style={{ color: "var(--text-muted)" }}>({m.email})</span>
+                    </>
+                );
+            },
+        }),
+        col.accessor("joined_at", {
+            header: "Affilié depuis",
+            cell: (info) => formatDate(info.getValue()),
+        }),
+        col.display({
+            id: "actions",
+            header: "",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <button className={styles.btnOutlineSm} disabled={removing} onClick={() => handleRemoveOne(m)}>
+                        Retirer
+                    </button>
+                );
+            },
+        }),
+    ];
+
     return (
         <div className={styles.rbacWrapper}>
             <div className={styles.toolbar}>
@@ -280,37 +328,15 @@ export function MinisteresPanel() {
 
                                 {loading ? (
                                     <p className={styles.stateMsg}>Chargement…</p>
-                                ) : members.length === 0 ? (
-                                    <p className={styles.empty}>Aucun membre actuellement affilié.</p>
                                 ) : (
-                                    <ul style={{ listStyle: "none", padding: 0, margin: "1rem 0 0", display: "flex", flexDirection: "column", gap: ".35rem" }}>
-                                        {members.map((m) => (
-                                            <li
-                                                key={m.affiliation_id}
-                                                style={{ display: "flex", alignItems: "center", gap: ".75rem", fontSize: ".9rem", padding: ".5rem 0", borderBottom: "1px solid var(--border)" }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedRemoveIds.has(m.id)}
-                                                    onChange={() => toggleRemoveId(m.id)}
-                                                />
-                                                <span style={{ flex: 1 }}>
-                                                    {m.first_name} {m.last_name}{" "}
-                                                    <span style={{ color: "var(--text-muted)" }}>({m.email})</span>
-                                                </span>
-                                                <span style={{ color: "var(--text-muted)" }}>
-                                                    depuis le {formatDate(m.joined_at)}
-                                                </span>
-                                                <button
-                                                    className={styles.btnOutlineSm}
-                                                    disabled={removing}
-                                                    onClick={() => handleRemoveOne(m)}
-                                                >
-                                                    Retirer
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <div style={{ marginTop: "1rem" }}>
+                                        <DataTable
+                                            columns={memberColumns}
+                                            data={members}
+                                            getRowId={(m) => m.affiliation_id}
+                                            emptyMessage="Aucun membre actuellement affilié."
+                                        />
+                                    </div>
                                 )}
                             </>
                         )}
