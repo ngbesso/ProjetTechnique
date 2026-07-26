@@ -5,17 +5,10 @@ import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate, useRouteParams } from "../../context/RouterContext";
 import { useNews } from "../../hooks/useNews";
 import { newsCoverUrl, fetchNewsItem, fetchNewsCategories } from "../../lib/api/news";
+import { formatDate } from "../../lib/format";
 import type { News } from "../../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function initials(name: string): string {
   return name
