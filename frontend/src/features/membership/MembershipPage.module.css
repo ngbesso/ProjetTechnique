@@ -14,42 +14,49 @@
 
 /* ── Hero ───────────────────────────────────────────────────── */
 .hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 440px;
-}
-
-.heroContent {
-  background: var(--deep-violet);
+  position: relative;
+  background: linear-gradient(135deg, #1e1458 0%, #3b2f8a 50%, #5b21b6 100%);
   color: #fff;
-  padding: 4rem 3rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  padding: 5rem 2rem 5.5rem;
+  overflow: hidden;
 }
 
-.eyebrow {
+.heroInner {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.65;
-  margin: 0 0 0.75rem;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.3rem 0.9rem;
+  border-radius: 99px;
+  margin-bottom: 1.25rem;
 }
 
 .heroTitle {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 1.25rem;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  margin: 0 0 1rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.heroDesc {
-  font-size: 1rem;
-  line-height: 1.75;
-  opacity: 0.85;
-  max-width: 400px;
-  margin: 0 0 2rem;
+.heroSub {
+  font-size: 1.05rem;
+  opacity: 0.8;
+  max-width: 520px;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
 }
 
 .heroCta {
@@ -67,32 +74,14 @@
 
 .heroCta:hover { opacity: 0.88; }
 
-.heroImg {
-  background: linear-gradient(135deg, #3d3790 0%, #6c63c9 55%, #2a2660 100%);
-  position: relative;
-  overflow: hidden;
-}
-
-.heroImg::before {
-  content: '';
+.heroDecor {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 30% 55%, rgba(255,255,255,0.07) 0%, transparent 50%),
-    radial-gradient(circle at 75% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
-}
-
-.heroImg::after {
-  content: '+';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.08);
-  line-height: 1;
+  z-index: 1;
   pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(139,92,246,0.35) 0%, transparent 40%),
+    radial-gradient(circle at 15% 80%, rgba(99,102,241,0.25) 0%, transparent 35%);
 }
 
 /* ── Pourquoi rejoindre ─────────────────────────────────────── */
@@ -417,9 +406,7 @@
 }
 
 @media (max-width: 700px) {
-  .hero { grid-template-columns: 1fr; }
-  .heroImg { height: 220px; order: -1; }
-  .heroContent { padding: 2.5rem 1.5rem; }
+  .hero { padding: 3rem 1.25rem 3.5rem; }
   .whyGrid { grid-template-columns: 1fr; }
   .whySection { padding: 3rem 1.25rem; }
   .quoteBand { padding: 2.5rem 1.25rem; }

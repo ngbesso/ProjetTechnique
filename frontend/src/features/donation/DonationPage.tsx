@@ -56,6 +56,7 @@ export function DonationPage() {
             communauté.
           </p>
         </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
       </section>
 
       <main className={styles.main}>

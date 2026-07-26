@@ -93,6 +93,7 @@ export function SermonsPage() {
             Réécoutez les prédications audio et vidéo de la mission.
           </p>
         </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
       </section>
 
       <main className={styles.main}>
