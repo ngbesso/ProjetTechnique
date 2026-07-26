@@ -4,26 +4,18 @@ import type { Member, MemberQuery, MemberUpdateInput } from "../types";
 import {
     fetchMembers, approveMember, rejectMember, deactivateMember, activateMember, updateMember,
 } from "../lib/api/members";
+import { useAsyncList } from "./useAsyncList";
 
 export function useMembers() {
     const [members, setMembers] = useState<Member[]>([]);
     const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const { loading, error, run } = useAsyncList();
 
-    const load = useCallback(async (query: MemberQuery = {}) => {
-        setLoading(true);
-        setError("");
-        try {
-            const data = await fetchMembers(query);
-            setMembers(data.items);
-            setTotal(data.total);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Erreur de chargement");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const load = useCallback((query: MemberQuery = {}) => run(async () => {
+        const data = await fetchMembers(query);
+        setMembers(data.items);
+        setTotal(data.total);
+    }), [run]);
 
     const approve = useCallback(async (id: number) => {
         const u = await approveMember(id);
