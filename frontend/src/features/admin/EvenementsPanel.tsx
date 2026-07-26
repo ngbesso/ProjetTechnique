@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import adminStyles from "./AdminPage.module.css";
 import styles from "./EvenementsPanel.module.css";
 import { Button } from "../../components/ui/Button";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { Field } from "../../components/ui/Field";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { IconCheckCircle, IconFileEdit, IconXCircle } from "../../components/ui/icons";
@@ -96,6 +97,8 @@ const STATUS_BADGE_CLASS: Record<EventStatus, string> = {
   cancelled: "badgeCancelled",
   completed: "badgeCompleted",
 };
+
+const col = createColumnHelper<EventItem>();
 
 /** Convertit une valeur <input type="datetime-local"> (heure locale) en ISO UTC pour l'API. */
 function toIso(localValue: string): string | undefined {
@@ -408,6 +411,110 @@ export function EvenementsPanel() {
       setExporting(false);
     }
   }
+
+  const columns = [
+    col.accessor("title", {
+      header: "Événement",
+      cell: (info) => {
+        const e = info.row.original;
+        return (
+          <div className={adminStyles.actions} style={{ alignItems: "center" }}>
+            <strong>{info.getValue()}</strong>
+            <span className={styles[STATUS_BADGE_CLASS[e.status]]}>{STATUS_LABELS[e.status]}</span>
+          </div>
+        );
+      },
+    }),
+    col.accessor("category", { header: "Catégorie" }),
+    col.accessor("date_start", {
+      header: "Date",
+      cell: (info) => formatDateTime(info.getValue()),
+    }),
+    col.display({
+      id: "lieu",
+      header: "Lieu / Format",
+      cell: (info) => {
+        const e = info.row.original;
+        return (
+          <>
+            {(e.format === "en_ligne" || e.format === "hybride") && (
+              <div>
+                {e.format === "hybride" ? "Hybride" : "En ligne"}
+                {e.online_link ? ` · ${e.online_link}` : ""}
+              </div>
+            )}
+            {(e.format === "presentiel" || e.format === "hybride") && e.location && (
+              <div>{e.location}</div>
+            )}
+          </>
+        );
+      },
+    }),
+    col.display({
+      id: "instructor",
+      header: "Intervenant",
+      cell: (info) => {
+        const e = info.row.original;
+        if (!e.instructor) return "—";
+        return `${e.instructor}${e.intervenant_category ? ` (${e.intervenant_category})` : ""}`;
+      },
+    }),
+    col.display({
+      id: "church",
+      header: "Église / District",
+      cell: (info) => {
+        const e = info.row.original;
+        return `${churchLabel(e.church_id)}${e.district ? ` · ${e.district}` : ""}`;
+      },
+    }),
+    col.accessor("price", {
+      header: "Prix",
+      cell: (info) => formatPrice(info.getValue()),
+    }),
+    col.display({
+      id: "registrations",
+      header: "Inscriptions",
+      cell: (info) => {
+        const e = info.row.original;
+        return e.capacity !== null
+          ? `${e.registered_count} / ${e.capacity}`
+          : `${e.registered_count} · illimité`;
+      },
+    }),
+    ...(canManage
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => {
+              const e = info.row.original;
+              return (
+                <div className={adminStyles.actions}>
+                  <button className={adminStyles.btnOutlineSm} onClick={() => startEdit(e)}>
+                    Modifier
+                  </button>
+                  <select
+                    className={styles.filterSelect}
+                    value={e.status}
+                    onChange={(ev) => handleStatusChange(e.id, ev.target.value as EventStatus)}
+                  >
+                    {(Object.keys(STATUS_LABELS) as EventStatus[]).map((s) => (
+                      <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+                  <button className={adminStyles.btnOutlineSm} onClick={() => openParticipants(e)}>
+                    Participants
+                  </button>
+                  <button className={adminStyles.btnDanger} onClick={() => handleDelete(e.id, e.title)}>
+                    Supprimer
+                  </button>
+                </div>
+              );
+            },
+          }),
+        ]
+      : []),
+  ];
 
   if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
@@ -994,102 +1101,12 @@ export function EvenementsPanel() {
           </select>
         </div>
 
-        {visibleEvents.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>📅</p>
-            <p className={styles.emptyText}>Aucun événement trouvé.</p>
-          </div>
-        ) : (
-          <div className={styles.eventGrid}>
-            {visibleEvents.map((e) => (
-              <div
-                key={e.id}
-                className={`${styles.eventCard} ${editingId === e.id ? styles.eventCardEditing : ""} ${e.status !== "published" ? styles.eventCardInactive : ""}`}
-              >
-                <div className={`${styles.eventCardBand} ${e.status === "published" ? styles.eventCardBandPublished : ""}`} />
-                <div className={styles.eventCardBody}>
-                  <div className={styles.eventCardTop}>
-                    <p className={styles.eventCardName}>{e.title}</p>
-                    <span className={styles[STATUS_BADGE_CLASS[e.status]]}>{STATUS_LABELS[e.status]}</span>
-                  </div>
-                  <div className={styles.eventMeta}>
-                    <div className={styles.eventMetaRow}>
-                      <span className={styles.metaIcon}>🏷️</span>
-                      <span className={styles.metaText}>{e.category}</span>
-                    </div>
-                    <div className={styles.eventMetaRow}>
-                      <span className={styles.metaIcon}>🗓️</span>
-                      <span className={styles.metaText}>{formatDateTime(e.date_start)}</span>
-                    </div>
-                    {(e.format === "en_ligne" || e.format === "hybride") && (
-                      <div className={styles.eventMetaRow}>
-                        <span className={styles.metaIcon}>🌐</span>
-                        <span className={styles.metaText}>
-                          {e.format === "hybride" ? "Hybride" : "En ligne"}
-                          {e.online_link ? ` · ${e.online_link}` : ""}
-                        </span>
-                      </div>
-                    )}
-                    {(e.format === "presentiel" || e.format === "hybride") && e.location && (
-                      <div className={styles.eventMetaRow}>
-                        <span className={styles.metaIcon}>📍</span>
-                        <span className={styles.metaText}>{e.location}</span>
-                      </div>
-                    )}
-                    {e.instructor && (
-                      <div className={styles.eventMetaRow}>
-                        <span className={styles.metaIcon}>👤</span>
-                        <span className={styles.metaText}>
-                          {e.instructor}{e.intervenant_category ? ` (${e.intervenant_category})` : ""}
-                        </span>
-                      </div>
-                    )}
-                    <div className={styles.eventMetaRow}>
-                      <span className={styles.metaIcon}>⛪</span>
-                      <span className={styles.metaText}>
-                        {churchLabel(e.church_id)}{e.district ? ` · ${e.district}` : ""}
-                      </span>
-                    </div>
-                    <div className={styles.eventMetaRow}>
-                      <span className={styles.metaIcon}>💲</span>
-                      <span className={styles.metaText}>{formatPrice(e.price)}</span>
-                    </div>
-                    <div className={styles.eventMetaRow}>
-                      <span className={styles.metaIcon}>👥</span>
-                      <span className={styles.metaText}>
-                        {e.capacity !== null
-                          ? `${e.registered_count} / ${e.capacity} inscrits`
-                          : `${e.registered_count} inscrit(s) · illimité`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {canManage && (
-                  <div className={styles.eventCardFooter}>
-                    <button className={styles.btnCardEdit} onClick={() => startEdit(e)}>
-                      ✏ Modifier
-                    </button>
-                    <select
-                      className={styles.filterSelect}
-                      value={e.status}
-                      onChange={(ev) => handleStatusChange(e.id, ev.target.value as EventStatus)}
-                    >
-                      {(Object.keys(STATUS_LABELS) as EventStatus[]).map((s) => (
-                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                      ))}
-                    </select>
-                    <button className={styles.btnCardParticipants} onClick={() => openParticipants(e)}>
-                      👥 Participants
-                    </button>
-                    <button className={styles.btnCardDelete} onClick={() => handleDelete(e.id, e.title)}>
-                      🗑 Supprimer
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <DataTable
+          columns={columns}
+          data={visibleEvents}
+          getRowId={(e) => e.id}
+          emptyMessage="Aucun événement trouvé."
+        />
       </div>
         </>
       )}
