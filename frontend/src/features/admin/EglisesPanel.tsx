@@ -7,32 +7,12 @@ import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
 import type { Church, ChurchInput, District } from "../../types";
 
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
-
-// ── Icônes KPI ──────────────────────────────────────────────────────────────
-
-function IconCheckCircle() {
-    return (
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="8 12 11 15 16 9" />
-        </svg>
-    );
-}
-
-function IconXCircle() {
-    return (
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-    );
-}
 
 type FieldErrors = { phone?: string; email?: string; address?: string };
 

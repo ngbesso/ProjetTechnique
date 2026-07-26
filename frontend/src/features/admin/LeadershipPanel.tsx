@@ -7,6 +7,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useLeaders } from "../../hooks/useLeaders";
 import { useParameters } from "../../hooks/useParameters";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
 import type { Leader, LeaderInput } from "../../types";
 
 const DISTRICTS = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
@@ -37,27 +38,6 @@ function leaderToForm(l: Leader): LeaderInput {
     phone: l.phone ?? "",
     years_of_service: l.years_of_service,
   };
-}
-
-// ── Icônes KPI ──────────────────────────────────────────────────────────────
-
-function IconCheckCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="8 12 11 15 16 9" />
-    </svg>
-  );
-}
-
-function IconXCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="15" y1="9" x2="9" y2="15" />
-      <line x1="9" y1="9" x2="15" y2="15" />
-    </svg>
-  );
 }
 
 function initials(l: Leader): string {

@@ -4,6 +4,7 @@ import styles from "./EvenementsPanel.module.css";
 import { Button } from "../../components/ui/Button";
 import { Field } from "../../components/ui/Field";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { IconCheckCircle, IconFileEdit, IconXCircle } from "../../components/ui/icons";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -155,35 +156,6 @@ function IconCalendar() {
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function IconFileEdit() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
-    </svg>
-  );
-}
-
-function IconCheckCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="8 12 11 15 16 9" />
-    </svg>
-  );
-}
-
-function IconXCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="15" y1="9" x2="9" y2="15" />
-      <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
   );
 }
