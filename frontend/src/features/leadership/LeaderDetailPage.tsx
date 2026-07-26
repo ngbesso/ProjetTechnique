@@ -5,18 +5,11 @@ import { SiteFooter } from "../../components/layout/SiteFooter";
 import { useNavigate } from "../../context/RouterContext";
 import { fetchChurches } from "../../lib/api/churches";
 import { getLeader } from "../../lib/api/leaders";
-import type { Church, Leader, LeaderRole } from "../../types";
+import type { Church, Leader } from "../../types";
 
 interface LeaderDetailPageProps {
   leaderId: number;
 }
-
-const ROLE_LABELS: Record<LeaderRole, string> = {
-  pastor: "Pasteur",
-  elder: "Ancien",
-  deacon: "Diacre",
-  department_head: "Responsable de département",
-};
 
 function initials(leader: Leader): string {
   return `${leader.first_name[0] ?? ""}${leader.last_name[0] ?? ""}`.toUpperCase();
@@ -77,7 +70,7 @@ export function LeaderDetailPage({ leaderId }: LeaderDetailPageProps) {
                   {leader.first_name} {leader.last_name}
                 </h1>
                 <p className={styles.detailTitle}>
-                  {leader.title} · {ROLE_LABELS[leader.role]}
+                  {leader.title} · {leader.role}
                 </p>
                 {leader.district && (
                   <p className={styles.detailMeta}>🗺️ District {leader.district}</p>

@@ -242,6 +242,7 @@ const SECTIONS = [
     { category: "event_category", label: "Catégories d'événement" },
     { category: "intervenant_category", label: "Catégories d'intervenant" },
     { category: "ministry", label: "Ministères" },
+    { category: "leader_role", label: "Rôles de leadership" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];

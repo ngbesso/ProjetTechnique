@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permissions
 from app.db.session import get_db
 from app.models.church import Church
-from app.models.leader import Leader, LeaderRole
+from app.models.leader import Leader
 from app.schemas.leader import LeaderCreate, LeaderList, LeaderRead, LeaderUpdate
 from app.services import leader_service, storage
 
@@ -62,7 +62,7 @@ def _to_read(leader: Leader) -> LeaderRead:
 @router.get("/", response_model=LeaderList)
 def list_leaders(
     db: Annotated[Session, Depends(get_db)],
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     limit: int = Query(50, ge=1, le=200),
@@ -90,7 +90,7 @@ def list_leaders(
 def list_leaders_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     is_published: bool | None = None,

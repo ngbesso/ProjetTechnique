@@ -20,7 +20,7 @@ def _fake_storage():
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 
-def _leader(db_session, first_name="Jean", last_name="Dupont", is_published=True, role="pastor"):
+def _leader(db_session, first_name="Jean", last_name="Dupont", is_published=True, role="Pasteur"):
     leader = Leader(
         first_name=first_name,
         last_name=last_name,
@@ -45,7 +45,7 @@ def _payload():
         "first_name": "Marie",
         "last_name": "Koffi",
         "title": "Pasteure District Est",
-        "role": "pastor",
+        "role": "Pasteur",
         "district": "Est",
         "bio": "Marie Koffi coordonne les activités évangéliques dans le district Est.",
         "years_of_service": 12,
@@ -68,10 +68,10 @@ def test_list_public_only_published(client, db_session):
 
 
 def test_list_filters_by_role(client, db_session):
-    _leader(db_session, "Le", "Pasteur", role="pastor")
-    _leader(db_session, "Le", "Diacre", role="deacon")
+    _leader(db_session, "Le", "Pasteur", role="Pasteur")
+    _leader(db_session, "Le", "Diacre", role="Diacre")
 
-    r = client.get(f"{BASE}/?role=deacon")
+    r = client.get(f"{BASE}/?role=Diacre")
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Le Diacre" in names

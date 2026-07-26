@@ -8,6 +8,7 @@ VALID_CATEGORIES = {
     "event_category",
     "intervenant_category",
     "ministry",
+    "leader_role",
 }
 
 

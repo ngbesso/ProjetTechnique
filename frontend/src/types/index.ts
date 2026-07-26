@@ -541,14 +541,12 @@ export interface VolunteerRequestAdmin extends VolunteerRequest {
 
 // ── Corps de leadership ─────────────────────────────────────────────────────
 
-export type LeaderRole = "pastor" | "elder" | "deacon" | "department_head";
-
 export interface Leader {
   id: number;
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
+  role: string;
   district: string | null;
   church_id: number | null;
   bio: string | null;
@@ -573,7 +571,7 @@ export interface LeaderInput {
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
+  role: string;
   district?: string | null;
   church_id?: number | null;
   bio?: string | null;

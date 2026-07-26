@@ -3,7 +3,7 @@ from typing import BinaryIO
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.leader import Leader, LeaderRole
+from app.models.leader import Leader
 from app.schemas.leader import LeaderCreate, LeaderUpdate
 from app.services import storage
 
@@ -20,7 +20,7 @@ def _apply_filters(
     query,
     *,
     published_only: bool,
-    role: LeaderRole | None,
+    role: str | None,
     district: str | None,
     church_id: int | None,
     q: str | None = None,
@@ -62,7 +62,7 @@ def list_leaders(
     db: Session,
     *,
     published_only: bool = True,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     q: str | None = None,
@@ -92,7 +92,7 @@ def count_leaders(
     db: Session,
     *,
     published_only: bool = True,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     q: str | None = None,
