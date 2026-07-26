@@ -8,6 +8,7 @@ from app.core.permissions import DEFAULT_ROLES, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
+from app.models.expense import Expense
 from app.models.news import News, NewsStatus
 from app.models.parameter import ParameterValue
 from app.models.post import Post, PostStatus
@@ -33,6 +34,14 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
         "Chorale",
         "École du dimanche",
         "Évangélisation",
+    ],
+    "expense_category": [
+        "Loyer et charges",
+        "Salaires",
+        "Entretien et fournitures",
+        "Missions et évangélisation",
+        "Formation",
+        "Autre",
     ],
 }
 
@@ -170,6 +179,30 @@ DEMO_NEWS: list[dict] = [
 ]
 
 
+DEMO_EXPENSES: list[dict] = [
+    dict(
+        amount=1200.00,
+        category="Loyer et charges",
+        comment="Loyer mensuel du local principal, incluant électricité et eau.",
+    ),
+    dict(
+        amount=350.50,
+        category="Entretien et fournitures",
+        comment="Achat de fournitures d'entretien et de matériel de bureau.",
+    ),
+    dict(
+        amount=800.00,
+        category="Missions et évangélisation",
+        comment="Frais de déplacement et matériel pour la campagne d'évangélisation du district Est.",
+    ),
+    dict(
+        amount=250.00,
+        category="Formation",
+        comment="Inscription de deux leaders à un séminaire de formation pastorale.",
+    ),
+]
+
+
 def seed_roles_permissions(db: Session) -> None:
     """Crée (idempotent) les permissions et les rôles par défaut."""
     perms: dict[str, Permission] = {}
@@ -274,6 +307,25 @@ def seed_news(db: Session) -> None:
             db.add(News(**data, created_at=now - timedelta(days=offset)))
 
 
+def seed_expenses(db: Session) -> None:
+    """Insère (idempotent) des dépenses de démonstration, pour les tests."""
+    admin = db.scalar(select(User).where(User.email == settings.admin_email))
+    if admin is None:
+        return
+    now = datetime.now(timezone.utc)
+    for offset, data in enumerate(DEMO_EXPENSES):
+        exists = db.scalar(select(Expense).where(Expense.comment == data["comment"]))
+        if exists is None:
+            db.add(
+                Expense(
+                    **data,
+                    expense_date=(now - timedelta(days=offset * 3)).date(),
+                    responsible_id=admin.id,
+                    created_at=now - timedelta(days=offset * 3),
+                )
+            )
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -284,6 +336,7 @@ def run() -> None:
         seed_settings(db)
         seed_posts(db)
         seed_news(db)
+        seed_expenses(db)
         db.commit()
         print("[seed] Initialisation terminée.")
     finally:

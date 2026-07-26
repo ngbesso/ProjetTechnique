@@ -88,7 +88,9 @@ def test_list_my_donations_isolated_between_members(
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("donorA@b.com", church_id)
     make_member("donorB@b.com", church_id)
-    client.post(f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com"))
+    client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com")
+    )
 
     r_a = client.get(f"{BASE}/me", headers=auth_header("donorA@b.com"))
     r_b = client.get(f"{BASE}/me", headers=auth_header("donorB@b.com"))
@@ -315,3 +317,113 @@ def test_zeffy_webhook_invalid_amount(client):
     payload["payment"]["amount"] = -5
     r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
     assert r.status_code == 400
+
+
+# ── POST /api/donations/admin (saisie manuelle) ───────────────────────────────
+
+
+def _admin_header(make_user, auth_header):
+    make_user("admin_donmanual@test.com", roles=["admin"])
+    return auth_header("admin_donmanual@test.com")
+
+
+def test_manual_donation_requires_finance_permission(client, make_user, auth_header):
+    make_user("regular_donmanual@test.com")
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 50.0, "contribution_type": "don"},
+        headers=auth_header("regular_donmanual@test.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_manual_donation_church_and_donor_optional(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 60.0, "contribution_type": "dime"},
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["contribution_type"] == "dime"
+    assert body["church_id"] is None
+    assert body["donor_name"] is None
+    assert body["payment_status"] == "manual"
+
+
+def test_manual_donation_with_donor_and_date(
+    client, make_user, auth_header, db_session
+):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={
+            "amount": 25.0,
+            "contribution_type": "offrande",
+            "donor_name": "Fidèle Anonyme",
+            "donor_email": "fidele@test.com",
+            "received_on": "2026-01-15",
+        },
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["donor_name"] == "Fidèle Anonyme"
+    assert body["created_at"].startswith("2026-01-15")
+
+
+def test_manual_donation_unknown_church(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 10.0, "contribution_type": "don", "church_id": 999999},
+        headers=h,
+    )
+    assert r.status_code == 404
+
+
+# ── Pièce jointe justificative ─────────────────────────────────────────────────
+
+
+def test_attachment_upload_download_delete(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 404
+
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=h,
+        files={"file": ("recu.txt", b"contenu du recu", "text/plain")},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["attachment_url"] == f"/api/donations/{donation_id}/attachment"
+    assert body["attachment_name"] == "recu.txt"
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 200
+    assert r.content == b"contenu du recu"
+
+    r = client.delete(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 204
+    assert client.get(f"{BASE}/{donation_id}/attachment", headers=h).status_code == 404
+
+
+def test_attachment_requires_finance_permission(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    make_user("regular_attach@test.com")
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=auth_header("regular_attach@test.com"),
+        files={"file": ("recu.txt", b"x", "text/plain")},
+    )
+    assert r.status_code == 403

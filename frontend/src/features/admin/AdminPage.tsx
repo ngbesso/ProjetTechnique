@@ -10,7 +10,7 @@ import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
-import { DonsPanel } from "./DonsPanel";
+import { DepensesPanel } from "./DepensesPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { LeadershipPanel } from "./LeadershipPanel";
@@ -19,6 +19,8 @@ import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
+import { RapportPanel } from "./RapportPanel";
+import { RevenusPanel } from "./RevenusPanel";
 import { SermonsPanel } from "./SermonsPanel";
 import { UsersPanel } from "./UsersPanel";
 
@@ -31,7 +33,9 @@ export type Section =
   | "ministeres"
   | "eglises"
   | "leadership"
-  | "dons"
+  | "finances-revenus"
+  | "finances-depenses"
+  | "finances-rapport"
   | "sermons"
   | "blog"
   | "actualites"
@@ -43,14 +47,24 @@ export type Section =
   | "parametres"
   | "assistant";
 
-const ALL_NAV_ITEMS: { id: Section; label: string; icon: string; globalOnly?: boolean }[] = [
+interface NavItem {
+  id: Section;
+  label: string;
+  icon: string;
+  globalOnly?: boolean;
+  group?: string;
+}
+
+const ALL_NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
   { id: "membres", label: "Membres", icon: "👥" },
   { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
   { id: "ministeres", label: "Ministères", icon: "🙌" },
   { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
   { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
-  { id: "dons", label: "Dons", icon: "💝" },
+  { id: "finances-revenus", label: "Revenus", icon: "💝", globalOnly: true, group: "Finances" },
+  { id: "finances-depenses", label: "Dépenses", icon: "💸", globalOnly: true, group: "Finances" },
+  { id: "finances-rapport", label: "Rapport", icon: "📈", globalOnly: true, group: "Finances" },
   { id: "sermons", label: "Sermons", icon: "🎙" },
   { id: "blog", label: "Blog", icon: "✍️" },
   { id: "actualites", label: "Actualités", icon: "📰" },
@@ -251,6 +265,10 @@ export function AdminPage() {
     : ALL_NAV_ITEMS.filter((item) => !item.globalOnly || isGlobalAdmin);
 
   const [section, setSection] = useState<Section>(isOrganisateurOnly ? "evenements" : "dashboard");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const initialGroup = ALL_NAV_ITEMS.find((i) => i.id === section)?.group;
+    return new Set(initialGroup ? [initialGroup] : []);
+  });
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
@@ -265,7 +283,20 @@ export function AdminPage() {
     if (section === "utilisateurs") {
       load();
     }
+    const group = ALL_NAV_ITEMS.find((i) => i.id === section)?.group;
+    if (group) {
+      setExpandedGroups((prev) => (prev.has(group) ? prev : new Set(prev).add(group)));
+    }
   }, [section, load]);
+
+  function toggleGroup(group: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
 
   async function handleCreateRole(e: React.FormEvent) {
     e.preventDefault();
@@ -326,24 +357,43 @@ export function AdminPage() {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              className={`${styles.navItem} ${section === item.id ? styles.navItemActive : ""}`}
-              onClick={() => {
-                setSection(item.id);
-                setMembresInitialStatus(undefined);
-                setEditingRoleId(null);
-                setCreateError("");
-              }}
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              {item.label}
-              {item.id === "membres" && pendingCount > 0 && (
-                <span className={styles.navBadge}>{pendingCount}</span>
-              )}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item, i) => {
+            const showGroupLabel = item.group && NAV_ITEMS[i - 1]?.group !== item.group;
+            const groupExpanded = item.group ? expandedGroups.has(item.group) : true;
+            return (
+              <div key={item.id}>
+                {showGroupLabel && (
+                  <button
+                    type="button"
+                    className={styles.navGroupLabel}
+                    onClick={() => toggleGroup(item.group!)}
+                  >
+                    <span style={{ flex: 1, textAlign: "left" }}>{item.group}</span>
+                    <span style={{ transform: groupExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>
+                      ›
+                    </span>
+                  </button>
+                )}
+                {(!item.group || groupExpanded) && (
+                  <button
+                    className={`${styles.navItem} ${item.group ? styles.navSubItem : ""} ${section === item.id ? styles.navItemActive : ""}`}
+                    onClick={() => {
+                      setSection(item.id);
+                      setMembresInitialStatus(undefined);
+                      setEditingRoleId(null);
+                      setCreateError("");
+                    }}
+                  >
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    {item.label}
+                    {item.id === "membres" && pendingCount > 0 && (
+                      <span className={styles.navBadge}>{pendingCount}</span>
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -426,8 +476,12 @@ export function AdminPage() {
               <AnniversairesPanel />
           ) : section === "ministeres" ? (
               <MinisteresPanel />
-          ) : section === "dons" ? (
-              <DonsPanel />
+          ) : section === "finances-revenus" ? (
+              <RevenusPanel />
+          ) : section === "finances-depenses" ? (
+              <DepensesPanel />
+          ) : section === "finances-rapport" ? (
+              <RapportPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
           ) : section === "evenements" ? (

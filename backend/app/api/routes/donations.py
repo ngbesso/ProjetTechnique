@@ -1,8 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from botocore.exceptions import ClientError
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deps import get_current_admin, get_current_member
+from app.api.deps import get_current_member, require_global_permission
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
@@ -11,14 +22,18 @@ from app.schemas.donation import (
     CategoryCount,
     DonationAdminStats,
     DonationCreate,
+    DonationManualCreate,
     DonationRead,
     ReceiptRead,
     TopChurchItem,
     TopDonorItem,
 )
-from app.services import donation_service
+from app.services import donation_service, storage
 
 router = APIRouter(prefix="/api/donations", tags=["donations"])
+can_manage_finance = Depends(require_global_permission("finance:manage"))
+
+_ATTACHMENT_PREFIX = "donations/attachments"
 
 
 def _get_church_or_404(db: Session, church_id: int) -> Church:
@@ -120,9 +135,9 @@ def list_donations(
     category: str | None = None,
     currency: str | None = None,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _admin=can_manage_finance,
 ):
-    """Liste tous les dons avec filtres — réservé aux administrateurs."""
+    """Liste tous les dons avec filtres — réservé à la gestion financière."""
     query = select(Donation)
     if q:
         term = f"%{q}%"
@@ -144,10 +159,25 @@ def list_donations(
     ).all()
 
 
+@router.post(
+    "/admin",
+    response_model=DonationRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[can_manage_finance],
+)
+def create_manual_donation(
+    payload: DonationManualCreate, db: Session = Depends(get_db)
+):
+    """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur."""
+    if payload.church_id is not None:
+        _get_church_or_404(db, payload.church_id)
+    return donation_service.create_manual_donation(db, payload)
+
+
 @router.get("/admin/stats", response_model=DonationAdminStats)
 def get_donations_stats(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _admin=can_manage_finance,
 ):
     """Montant total, répartition par catégorie, top 5 donateurs et top 5 églises."""
     donations = db.scalars(
@@ -182,14 +212,20 @@ def get_donations_stats(
         entry["count"] += 1
     top_donors = [
         TopDonorItem(name=x["name"], total=x["total"], count=x["count"])
-        for x in sorted(donor_totals.values(), key=lambda x: x["total"], reverse=True)[:5]
+        for x in sorted(donor_totals.values(), key=lambda x: x["total"], reverse=True)[
+            :5
+        ]
     ]
 
     church_totals: dict[int, float] = {}
     for d in donations:
         if d.church_id:
-            church_totals[d.church_id] = church_totals.get(d.church_id, 0.0) + float(d.amount)
-    top_church_ids = sorted(church_totals, key=lambda cid: church_totals[cid], reverse=True)[:5]
+            church_totals[d.church_id] = church_totals.get(d.church_id, 0.0) + float(
+                d.amount
+            )
+    top_church_ids = sorted(
+        church_totals, key=lambda cid: church_totals[cid], reverse=True
+    )[:5]
     churches = (
         db.scalars(select(Church).where(Church.id.in_(top_church_ids))).all()
         if top_church_ids
@@ -272,3 +308,66 @@ def get_receipt(
         donor_email=donation.donor_email,
         created_at=donation.created_at,
     )
+
+
+# ── Pièce jointe justificative (facultative) ──────────────────────────────────
+
+
+def _load_admin(db: Session, donation_id: int) -> Donation:
+    donation = db.get(Donation, donation_id)
+    if not donation:
+        raise HTTPException(404, "Don introuvable")
+    return donation
+
+
+@router.get("/{donation_id}/attachment", dependencies=[can_manage_finance])
+def get_attachment(donation_id: int, db: Session = Depends(get_db)):
+    """Sert la pièce jointe justificative — réservé à la gestion financière."""
+    donation = _load_admin(db, donation_id)
+    if not donation.attachment_url:
+        raise HTTPException(404, "Pas de pièce jointe")
+    try:
+        obj = storage.get_object(f"{_ATTACHMENT_PREFIX}/{donation_id}")
+    except ClientError:
+        raise HTTPException(404, "Fichier introuvable")
+    content_type = obj.get("ContentType", "application/octet-stream")
+    filename = donation.attachment_name or f"piece-jointe-{donation_id}"
+    return StreamingResponse(
+        obj["Body"].iter_chunks(1024 * 256),
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post(
+    "/{donation_id}/attachment",
+    response_model=DonationRead,
+    dependencies=[can_manage_finance],
+)
+def upload_attachment(
+    donation_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    donation = _load_admin(db, donation_id)
+    content_type = file.content_type or "application/octet-stream"
+    storage.upload_file(file.file, f"{_ATTACHMENT_PREFIX}/{donation_id}", content_type)
+    donation.attachment_url = f"/api/donations/{donation_id}/attachment"
+    donation.attachment_name = file.filename
+    db.commit()
+    db.refresh(donation)
+    return donation
+
+
+@router.delete(
+    "/{donation_id}/attachment", status_code=204, dependencies=[can_manage_finance]
+)
+def delete_attachment(donation_id: int, db: Session = Depends(get_db)):
+    donation = _load_admin(db, donation_id)
+    try:
+        storage.delete_file(f"{_ATTACHMENT_PREFIX}/{donation_id}")
+    except Exception:
+        pass
+    donation.attachment_url = None
+    donation.attachment_name = None
+    db.commit()

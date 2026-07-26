@@ -1,5 +1,10 @@
 import { http } from "./client";
-import type { Donation, DonationAdminStats, DonationCreate } from "../../types";
+import type {
+  Donation,
+  DonationAdminStats,
+  DonationCreate,
+  DonationManualInput,
+} from "../../types";
 
 export function fetchDonationsStats(): Promise<DonationAdminStats> {
   return http.get<DonationAdminStats>("/api/donations/admin/stats");
@@ -7,6 +12,24 @@ export function fetchDonationsStats(): Promise<DonationAdminStats> {
 
 export function createDonation(data: DonationCreate): Promise<Donation> {
   return http.post<Donation>("/api/donations/", data);
+}
+
+export function createManualDonation(data: DonationManualInput): Promise<Donation> {
+  return http.post<Donation>("/api/donations/admin", data);
+}
+
+export function uploadDonationAttachment(id: number, file: File): Promise<Donation> {
+  const fd = new FormData();
+  fd.append("file", file);
+  return http.postMultipart<Donation>(`/api/donations/${id}/attachment`, fd);
+}
+
+export function deleteDonationAttachment(id: number): Promise<void> {
+  return http.del(`/api/donations/${id}/attachment`);
+}
+
+export function downloadDonationAttachment(id: number): Promise<Blob> {
+  return http.getBlob(`/api/donations/${id}/attachment`);
 }
 
 export function fetchMyDonations(): Promise<Donation[]> {

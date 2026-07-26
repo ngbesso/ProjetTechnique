@@ -74,7 +74,7 @@ const ACTIVITY_ICON: Record<ActivityType, string> = {
 
 const ACTIVITY_SECTION: Record<ActivityType, Section> = {
   member: "membres",
-  donation: "dons",
+  donation: "finances-revenus",
   sermon: "sermons",
   post: "blog",
   event_registration: "evenements",

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.donation import Donation, _receipt_number
-from app.schemas.donation import DonationCreate
+from app.schemas.donation import DonationCreate, DonationManualCreate
 
 
 def create_donation(
@@ -21,6 +21,7 @@ def create_donation(
         amount=payload.amount,
         currency=payload.currency,
         category=payload.category,
+        contribution_type=payload.contribution_type,
         church_id=payload.church_id,
         member_id=member_id,
         donor_name=donor_name,
@@ -28,6 +29,33 @@ def create_donation(
         created_at=datetime.now(timezone.utc),
         payment_reference=payment_reference,
         payment_status=payment_status,
+    )
+    db.add(donation)
+    db.commit()
+    db.refresh(donation)
+    return donation
+
+
+def create_manual_donation(db: Session, payload: DonationManualCreate) -> Donation:
+    """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur,
+    hors formulaire membre — donateur et église facultatifs."""
+    received_at = (
+        datetime.combine(payload.received_on, datetime.min.time(), tzinfo=timezone.utc)
+        if payload.received_on
+        else datetime.now(timezone.utc)
+    )
+    donation = Donation(
+        receipt_number=_receipt_number(),
+        amount=payload.amount,
+        currency=payload.currency,
+        category=payload.category,
+        contribution_type=payload.contribution_type,
+        church_id=payload.church_id,
+        member_id=None,
+        donor_name=payload.donor_name,
+        donor_email=payload.donor_email,
+        created_at=received_at,
+        payment_status="manual",
     )
     db.add(donation)
     db.commit()

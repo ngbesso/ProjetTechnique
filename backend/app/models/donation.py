@@ -19,6 +19,12 @@ class DonationCurrency(str, PyEnum):
     USD = "USD"
 
 
+class ContributionType(str, PyEnum):
+    DON = "don"
+    DIME = "dime"
+    OFFRANDE = "offrande"
+
+
 def _receipt_number() -> str:
     return f"REC-{uuid.uuid4().hex[:8].upper()}"
 
@@ -44,6 +50,17 @@ class Donation(Base):
         ),
         nullable=True,
     )
+    # Type de contribution (don/dîme/offrande) — distinct de `category`, qui
+    # classe le don par finalité (soutien spirituel, développement, etc.)
+    contribution_type: Mapped[str] = mapped_column(
+        Enum(
+            ContributionType,
+            name="contributiontype",
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=ContributionType.DON,
+    )
     # Église destinataire du don (inconnue pour les dons reçus via le webhook Zeffy)
     church_id: Mapped[int | None] = mapped_column(
         Integer,
@@ -66,6 +83,9 @@ class Donation(Base):
     payment_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default="manual"
     )
+    # Pièce jointe justificative (facultative) : preuve de paiement, reçu, etc.
+    attachment_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    attachment_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

@@ -19,6 +19,7 @@ PERMISSIONS: dict[str, str] = {
     "content:manage": "Gérer les pages et le menu (CMS)",
     "prayer:manage": "Gérer les demandes de prière",
     "volunteer:manage": "Gérer les demandes de bénévolat",
+    "finance:manage": "Gérer les finances (dons, dépenses, rapports)",
 }
 
 # Rôles initiaux et leurs permissions.
@@ -41,4 +42,5 @@ GLOBAL_PERMISSIONS: set[str] = {
     "user:manage",
     "church:manage",
     "content:manage",
+    "finance:manage",
 }
