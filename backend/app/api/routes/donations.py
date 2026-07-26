@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_member, require_permissions
 from app.core.config import settings
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.donation import Donation, DonationCategory, DonationCurrency
+from app.schemas.common import Page
 from app.schemas.donation import (
     CategoryCount,
     DonationAdminStats,
@@ -112,7 +114,7 @@ def create_donation(
     )
 
 
-@router.get("/", response_model=list[DonationRead])
+@router.get("/", response_model=Page[DonationRead])
 def list_donations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -140,9 +142,8 @@ def list_donations(
         query = query.where(Donation.category == category)
     if currency:
         query = query.where(Donation.currency == currency)
-    return db.scalars(
-        query.order_by(Donation.created_at.desc()).offset(skip).limit(limit)
-    ).all()
+    items, total = paginate(db, query.order_by(Donation.created_at.desc()), limit, skip)
+    return Page[DonationRead](items=items, total=total, limit=limit, offset=skip)
 
 
 @router.get("/admin/stats", response_model=DonationAdminStats)

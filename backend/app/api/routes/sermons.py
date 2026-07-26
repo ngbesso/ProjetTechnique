@@ -8,12 +8,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_global_permission
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.user import User
+from app.schemas.common import Page
 from app.schemas.sermon import (
     SermonAdminStats,
-    SermonList,
     SermonRead,
     SermonUpdate,
     TopSermonItem,
@@ -38,7 +39,7 @@ def _load_published(db: Session, sermon_id: int) -> Sermon:
     return sermon
 
 
-@router.get("", response_model=SermonList)
+@router.get("", response_model=Page[SermonRead])
 def list_sermons(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -60,14 +61,11 @@ def list_sermons(
         query = query.where(Sermon.series == series)
     if format:
         query = query.where(Sermon.format == format)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    rows = db.scalars(
-        query.order_by(Sermon.sermon_date.desc()).limit(limit).offset(offset)
-    ).all()
-    return SermonList(items=list(rows), total=total or 0, limit=limit, offset=offset)
+    rows, total = paginate(db, query.order_by(Sermon.sermon_date.desc()), limit, offset)
+    return Page[SermonRead](items=rows, total=total, limit=limit, offset=offset)
 
 
-@router.get("/admin", response_model=SermonList, dependencies=[can_manage])
+@router.get("/admin", response_model=Page[SermonRead], dependencies=[can_manage])
 def list_sermons_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -92,11 +90,8 @@ def list_sermons_admin(
         query = query.where(Sermon.series == series)
     if format:
         query = query.where(Sermon.format == format)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    rows = db.scalars(
-        query.order_by(Sermon.created_at.desc()).limit(limit).offset(offset)
-    ).all()
-    return SermonList(items=list(rows), total=total or 0, limit=limit, offset=offset)
+    rows, total = paginate(db, query.order_by(Sermon.created_at.desc()), limit, offset)
+    return Page[SermonRead](items=rows, total=total, limit=limit, offset=offset)
 
 
 @router.get("/admin/stats", response_model=SermonAdminStats, dependencies=[can_manage])

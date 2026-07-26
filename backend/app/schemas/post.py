@@ -40,13 +40,6 @@ class PostRead(BaseModel):
     updated_at: datetime | None
 
 
-class PostList(BaseModel):
-    items: list[PostRead]
-    total: int
-    limit: int
-    offset: int
-
-
 class TopPostItem(BaseModel):
     id: int
     title: str

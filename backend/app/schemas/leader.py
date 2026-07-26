@@ -53,10 +53,3 @@ class LeaderRead(BaseModel):
     photo_url: str | None = None
 
     model_config = {"from_attributes": True}
-
-
-class LeaderList(BaseModel):
-    items: list[LeaderRead]
-    total: int
-    limit: int
-    offset: int

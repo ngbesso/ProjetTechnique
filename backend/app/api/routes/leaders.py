@@ -7,7 +7,8 @@ from app.api.deps import require_permissions
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.leader import Leader
-from app.schemas.leader import LeaderCreate, LeaderList, LeaderRead, LeaderUpdate
+from app.schemas.common import Page
+from app.schemas.leader import LeaderCreate, LeaderRead, LeaderUpdate
 from app.services import leader_service, storage
 
 router = APIRouter(prefix="/leaders", tags=["leadership"])
@@ -59,7 +60,7 @@ def _to_read(leader: Leader) -> LeaderRead:
     )
 
 
-@router.get("/", response_model=LeaderList)
+@router.get("/", response_model=Page[LeaderRead])
 def list_leaders(
     db: Annotated[Session, Depends(get_db)],
     role: str | None = None,
@@ -81,12 +82,12 @@ def list_leaders(
     total = leader_service.count_leaders(
         db, published_only=True, role=role, district=district, church_id=church_id
     )
-    return LeaderList(
+    return Page[LeaderRead](
         items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
     )
 
 
-@router.get("/admin", response_model=LeaderList, dependencies=[requires_leader_manage])
+@router.get("/admin", response_model=Page[LeaderRead], dependencies=[requires_leader_manage])
 def list_leaders_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -118,7 +119,7 @@ def list_leaders_admin(
         q=q,
         is_published=is_published,
     )
-    return LeaderList(
+    return Page[LeaderRead](
         items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
     )
 

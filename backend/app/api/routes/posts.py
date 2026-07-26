@@ -7,12 +7,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.post import Post, PostStatus
+from app.schemas.common import Page
 from app.schemas.post import (
     PostAdminStats,
     PostCreate,
-    PostList,
     PostRead,
     PostUpdate,
     TopPostItem,
@@ -32,7 +33,7 @@ def _load(db: Session, post_id: int) -> Post:
     return post
 
 
-@router.get("", response_model=PostList)
+@router.get("", response_model=Page[PostRead])
 def list_posts(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -48,14 +49,11 @@ def list_posts(
         )
     if category:
         query = query.where(Post.category == category)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(Post.created_at.desc()).offset(offset).limit(limit)
-    ).all()
-    return PostList(items=list(items), total=total or 0, limit=limit, offset=offset)
+    items, total = paginate(db, query.order_by(Post.created_at.desc()), limit, offset)
+    return Page[PostRead](items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/admin", response_model=PostList, dependencies=[can_manage])
+@router.get("/admin", response_model=Page[PostRead], dependencies=[can_manage])
 def list_posts_admin(
     db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
@@ -74,11 +72,8 @@ def list_posts_admin(
         query = query.where(Post.category == category)
     if status:
         query = query.where(Post.status == status)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(Post.created_at.desc()).offset(offset).limit(limit)
-    ).all()
-    return PostList(items=list(items), total=total or 0, limit=limit, offset=offset)
+    items, total = paginate(db, query.order_by(Post.created_at.desc()), limit, offset)
+    return Page[PostRead](items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/admin/stats", response_model=PostAdminStats, dependencies=[can_manage])
