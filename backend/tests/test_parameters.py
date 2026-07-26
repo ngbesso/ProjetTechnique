@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.event import Event, EventStatus
+from app.models.leader import Leader
 
 
 def _mother_id(db) -> int:
@@ -68,6 +69,19 @@ def test_list_intervenant_category_contains_seeded_values(client):
     assert "Pasteur" in labels
     assert "Conférencier" in labels
     assert "Diacre" in labels
+
+
+def test_list_leader_role_is_public(client):
+    r = client.get("/parameters/leader_role")
+    assert r.status_code == 200
+
+
+def test_list_leader_role_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/leader_role").json()]
+    assert "Pasteur" in labels
+    assert "Ancien" in labels
+    assert "Diacre" in labels
+    assert "Responsable de département" in labels
 
 
 def test_list_unknown_category_rejected(client):
@@ -322,6 +336,28 @@ def test_delete_blocked_when_used_by_event_intervenant_category(
     r = client.delete(f"/parameters/{pv_id}", headers=h)
     assert r.status_code == 409
     assert "1 événement(s)" in r.json()["detail"]
+
+
+def test_delete_blocked_when_used_by_leader(client, make_user, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/leader_role", json={"label": "RoleLeaderUtilise"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Leader(
+            first_name="Jean",
+            last_name="Dupont",
+            title="Titre",
+            role="RoleLeaderUtilise",
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 membre du leadership(s)" in r.json()["detail"]
 
 
 def test_delete_allowed_when_unused(client, make_user, auth_header):

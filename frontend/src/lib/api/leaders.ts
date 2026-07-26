@@ -1,9 +1,9 @@
 // leaders.ts — client API pour le module Corps de Leadership
 import { http } from "./client";
-import type { Leader, LeaderInput, LeaderListResult, LeaderRole } from "../../types";
+import type { Leader, LeaderInput, LeaderListResult } from "../../types";
 
 export interface LeaderQuery {
-  role?: LeaderRole;
+  role?: string;
   district?: string;
   church_id?: number;
   limit?: number;
