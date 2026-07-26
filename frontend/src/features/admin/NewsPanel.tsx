@@ -6,6 +6,7 @@ import { useNews } from "../../hooks/useNews";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchNewsCategories, uploadNewsCover, deleteNewsCover, newsCoverUrl } from "../../lib/api/news";
+import { formatDate } from "../../lib/format";
 import type { News, NewsInput, NewsStatus } from "../../types";
 
 const EMPTY: NewsInput = {
@@ -24,14 +25,6 @@ const STATUS_LABELS: Record<NewsStatus, string> = {
   published: "Publié",
   archived: "Archivé",
 };
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 // ── CoverUpload — même zone de dépôt que le blog ──────────────────────────────
 
