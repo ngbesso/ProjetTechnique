@@ -8,6 +8,7 @@ from app.core.permissions import DEFAULT_ROLES, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
+from app.models.news import News, NewsStatus
 from app.models.parameter import ParameterValue
 from app.models.post import Post, PostStatus
 from app.models.rbac import Permission, Role, UserRole
@@ -114,6 +115,62 @@ DEMO_POSTS: list[dict] = [
 ]
 
 
+DEMO_NEWS: list[dict] = [
+    dict(
+        title="Ouverture des inscriptions à la convention annuelle",
+        excerpt="Réservez votre place pour le plus grand rassemblement de l'année.",
+        content=(
+            "Les inscriptions à la convention annuelle sont désormais ouvertes. "
+            "Rejoignez des milliers de membres de nos Églises affiliées pour trois "
+            "jours de louange, de formation et de communion fraternelle."
+        ),
+        author="Administration",
+        status=NewsStatus.published,
+        category="Annonces",
+        is_featured=True,
+        position=0,
+    ),
+    dict(
+        title="Nouveau partenariat pour le développement communautaire",
+        excerpt="Un accord signé avec trois organisations locales pour élargir notre impact.",
+        content=(
+            "Notre mission signe un nouveau partenariat avec trois organisations "
+            "locales afin de renforcer les projets de développement communautaire "
+            "dans les régions desservies par nos Églises affiliées."
+        ),
+        author="Pasteure Pascale Osei",
+        status=NewsStatus.published,
+        category="Partenariats",
+        is_featured=True,
+        position=1,
+    ),
+    dict(
+        title="Résultats de la collecte de fin d'année",
+        excerpt="Grâce à votre générosité, l'objectif de la campagne a été dépassé.",
+        content=(
+            "La campagne de collecte de fin d'année a dépassé son objectif grâce à "
+            "la générosité de nos membres. Merci à toutes les Églises affiliées qui "
+            "ont contribué à ce succès collectif."
+        ),
+        author="Pasteur Marc Lemaire",
+        status=NewsStatus.published,
+        category="Dons",
+    ),
+    dict(
+        title="Lancement d'un nouveau programme de mentorat des jeunes",
+        excerpt="Un accompagnement structuré pour les 15-25 ans dès la rentrée.",
+        content=(
+            "Un nouveau programme de mentorat destiné aux jeunes de 15 à 25 ans "
+            "démarre à la rentrée, avec l'appui de leaders formés dans nos Églises "
+            "affiliées."
+        ),
+        author="Pasteur Emmanuel Diallo",
+        status=NewsStatus.published,
+        category="Jeunesse",
+    ),
+]
+
+
 def seed_roles_permissions(db: Session) -> None:
     """Crée (idempotent) les permissions et les rôles par défaut."""
     perms: dict[str, Permission] = {}
@@ -209,6 +266,15 @@ def seed_posts(db: Session) -> None:
             db.add(Post(**data, created_at=now - timedelta(days=offset)))
 
 
+def seed_news(db: Session) -> None:
+    """Insère (idempotent) des actualités de démonstration, pour les tests."""
+    now = datetime.now(timezone.utc)
+    for offset, data in enumerate(DEMO_NEWS):
+        exists = db.scalar(select(News).where(News.title == data["title"]))
+        if exists is None:
+            db.add(News(**data, created_at=now - timedelta(days=offset)))
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -218,6 +284,7 @@ def run() -> None:
         seed_parameters(db)
         seed_settings(db)
         seed_posts(db)
+        seed_news(db)
         db.commit()
         print("[seed] Initialisation terminée.")
     finally:

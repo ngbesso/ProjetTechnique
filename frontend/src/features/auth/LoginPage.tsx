@@ -35,13 +35,19 @@ export function LoginPage() {
     <div className={styles.page}>
       <SiteHeader />
 
-      <main className={styles.main}>
-        <div className={styles.formCard}>
-          <h2 className={styles.formTitle}>Connexion</h2>
-          <p className={styles.formSubtitle}>
+      <section className={styles.hero}>
+        <div className={styles.heroInner}>
+          <span className={styles.heroEyebrow}>Bienvenue</span>
+          <h1 className={styles.heroTitle}>Connexion</h1>
+          <p className={styles.heroSub}>
             Accédez à votre espace membre ou d'administration.
           </p>
+        </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
+      </section>
 
+      <main className={styles.main}>
+        <div className={styles.formCard}>
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <div>
               <label className={styles.label} htmlFor="email">

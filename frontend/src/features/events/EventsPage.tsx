@@ -133,6 +133,7 @@ export function EventsPage() {
             formations de la mission et de ses églises affiliées.
           </p>
         </div>
+        <div className={styles.heroDecor} aria-hidden="true" />
       </section>
 
       <main className={styles.main}>

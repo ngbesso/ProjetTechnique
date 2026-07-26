@@ -15,6 +15,7 @@ import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
+import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
@@ -33,6 +34,7 @@ export type Section =
   | "dons"
   | "sermons"
   | "blog"
+  | "actualites"
   | "evenements"
   | "prieres"
   | "benevolat"
@@ -80,6 +82,7 @@ const NAV_STRUCTURE: NavEntry[] = [
     items: [
       { id: "sermons", label: "Sermons", icon: "🎙" },
       { id: "blog", label: "Blog", icon: "✍️" },
+      { id: "actualites", label: "Actualités", icon: "📰" },
     ],
   },
   { kind: "solo", item: { id: "evenements", label: "Événements", icon: "📅" } },
@@ -556,6 +559,8 @@ export function AdminPage() {
               <EvenementsPanel />
           ) : section === "blog" ? (
               <BlogPanel />
+          ) : section === "actualites" ? (
+              <NewsPanel />
           ) : section === "prieres" ? (
               <PrieresPanel />
           ) : section === "benevolat" ? (
