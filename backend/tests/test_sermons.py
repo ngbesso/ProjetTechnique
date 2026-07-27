@@ -318,7 +318,7 @@ def test_replace_media(client, db_session, make_user, auth_header):
     assert r.status_code == 200
     assert r.json()["format"] == "video"
     fake_storage.upload_file.assert_called_once()
-    fake_storage.delete_file.assert_called_once_with(original_key)
+    fake_storage.delete_file_quiet.assert_called_once_with(original_key)
 
 
 def test_replace_media_requires_permission(client, db_session, make_user, auth_header):

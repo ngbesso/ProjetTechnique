@@ -6,35 +6,18 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
 import type { Church, ChurchInput, District } from "../../types";
 
 const EMPTY: ChurchInput = {
     name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
 };
 
-// ── Icônes KPI ──────────────────────────────────────────────────────────────
-
-function IconCheckCircle() {
-    return (
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="8 12 11 15 16 9" />
-        </svg>
-    );
-}
-
-function IconXCircle() {
-    return (
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-    );
-}
-
 type FieldErrors = { phone?: string; email?: string; address?: string };
+
+const col = createColumnHelper<Church>();
 
 function churchToForm(c: Church): ChurchInput {
     return {
@@ -175,6 +158,62 @@ export function EglisesPanel() {
             alert(err instanceof Error ? err.message : "Opération impossible");
         }
     }
+
+    const columns = [
+        col.accessor("name", {
+            header: "Église",
+            cell: (info) => {
+                const c = info.row.original;
+                return (
+                    <div className={adminStyles.actions} style={{ alignItems: "center" }}>
+                        <strong>{c.name}</strong>
+                        {c.is_mother
+                            ? <span className={styles.badgeMother}>Mère</span>
+                            : <span className={styles.badgeAffiliated}>Affiliée</span>}
+                        {!c.is_active && <span className={styles.badgeInactive}>Désactivée</span>}
+                    </div>
+                );
+            },
+        }),
+        col.accessor("district", { header: "District", cell: (info) => info.getValue() ?? "—" }),
+        col.accessor("pastor_name", { header: "Pasteur / représentant", cell: (info) => info.getValue() ?? "—" }),
+        col.accessor("address", { header: "Adresse", cell: (info) => info.getValue() ?? "—" }),
+        col.accessor("phone", { header: "Téléphone", cell: (info) => info.getValue() ?? "—" }),
+        col.accessor("email", { header: "Courriel", cell: (info) => info.getValue() ?? "—" }),
+        ...(canManage
+            ? [
+                col.display({
+                    id: "actions",
+                    header: "Actions",
+                    cell: (info) => {
+                        const c = info.row.original;
+                        return (
+                            <div className={adminStyles.actions}>
+                                {c.is_active && (
+                                    <button className={adminStyles.btnOutlineSm} onClick={() => startEdit(c)}>
+                                        Modifier
+                                    </button>
+                                )}
+                                {!c.is_mother && (
+                                    <>
+                                        <button
+                                            className={c.is_active ? styles.btnCardDeactivate : styles.btnCardActivate}
+                                            onClick={() => handleToggleActive(c)}
+                                        >
+                                            {c.is_active ? "Désactiver" : "Réactiver"}
+                                        </button>
+                                        <button className={adminStyles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
+                                            Supprimer
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        );
+                    },
+                }),
+            ]
+            : []),
+    ];
 
     if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
@@ -371,88 +410,12 @@ export function EglisesPanel() {
                     </select>
                 </div>
 
-                {filteredChurches.length === 0 ? (
-                    <div className={styles.emptyState}>
-                        <p className={styles.emptyIcon}>🏛</p>
-                        <p className={styles.emptyText}>Aucune église trouvée.</p>
-                    </div>
-                ) : (
-                    <div className={styles.churchGrid}>
-                        {filteredChurches.map((c) => (
-                            <div
-                                key={c.id}
-                                className={`${styles.churchCard} ${editingId === c.id ? styles.churchCardEditing : ""} ${!c.is_active ? styles.churchCardInactive : ""}`}
-                            >
-                                <div className={`${styles.churchCardBand} ${c.is_mother ? styles.churchCardBandMother : ""}`} />
-                                <div className={styles.churchCardBody}>
-                                    <div className={styles.churchCardTop}>
-                                        <p className={styles.churchCardName}>{c.name}</p>
-                                        {c.is_mother
-                                            ? <span className={styles.badgeMother}>Mère</span>
-                                            : <span className={styles.badgeAffiliated}>Affiliée</span>}
-                                        {!c.is_active && (
-                                            <span className={styles.badgeInactive}>Désactivée</span>
-                                        )}
-                                    </div>
-                                    <div className={styles.churchMeta}>
-                                        {c.district && (
-                                            <div className={styles.churchMetaRow}>
-                                                <span className={styles.metaIcon}>📍</span>
-                                                <span className={styles.metaText}>{c.district}</span>
-                                            </div>
-                                        )}
-                                        {c.pastor_name && (
-                                            <div className={styles.churchMetaRow}>
-                                                <span className={styles.metaIcon}>👤</span>
-                                                <span className={styles.metaText}>{c.pastor_name}</span>
-                                            </div>
-                                        )}
-                                        {c.address && (
-                                            <div className={styles.churchMetaRow}>
-                                                <span className={styles.metaIcon}>🏠</span>
-                                                <span className={styles.metaText}>{c.address}</span>
-                                            </div>
-                                        )}
-                                        {c.phone && (
-                                            <div className={styles.churchMetaRow}>
-                                                <span className={styles.metaIcon}>📞</span>
-                                                <span className={styles.metaText}>{c.phone}</span>
-                                            </div>
-                                        )}
-                                        {c.email && (
-                                            <div className={styles.churchMetaRow}>
-                                                <span className={styles.metaIcon}>✉️</span>
-                                                <span className={styles.metaText}>{c.email}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                {canManage && (
-                                    <div className={styles.churchCardFooter}>
-                                        {c.is_active && (
-                                            <button className={styles.btnCardEdit} onClick={() => startEdit(c)}>
-                                                ✏ Modifier
-                                            </button>
-                                        )}
-                                        {!c.is_mother && (
-                                            <>
-                                                <button
-                                                    className={c.is_active ? styles.btnCardDeactivate : styles.btnCardActivate}
-                                                    onClick={() => handleToggleActive(c)}
-                                                >
-                                                    {c.is_active ? "⏸ Désactiver" : "▶ Réactiver"}
-                                                </button>
-                                                <button className={styles.btnCardDelete} onClick={() => handleDelete(c.id, c.name)}>
-                                                    🗑 Supprimer
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={filteredChurches}
+                    getRowId={(c) => c.id}
+                    emptyMessage="Aucune église trouvée."
+                />
             </div>
 
             {dialog}

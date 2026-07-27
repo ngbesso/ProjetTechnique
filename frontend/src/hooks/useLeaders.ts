@@ -8,26 +8,18 @@ import {
   uploadLeaderPhoto,
   type LeaderAdminQuery,
 } from "../lib/api/leaders";
+import { useAsyncList } from "./useAsyncList";
 
 export function useLeaders() {
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { loading, error, run } = useAsyncList();
 
-  const loadAdmin = useCallback(async (params?: LeaderAdminQuery) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await getLeadersAdmin(params);
-      setLeaders(res.items);
-      setTotal(res.total);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loadAdmin = useCallback((params?: LeaderAdminQuery) => run(async () => {
+    const res = await getLeadersAdmin(params);
+    setLeaders(res.items);
+    setTotal(res.total);
+  }), [run]);
 
   const add = useCallback(async (data: LeaderInput) => {
     const created = await createLeader(data);

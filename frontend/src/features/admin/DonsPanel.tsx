@@ -84,7 +84,7 @@ export function DonsPanel() {
       category: (overrides?.category ?? filterCategory) || undefined,
       currency: (overrides?.currency ?? filterCurrency) || undefined,
     })
-      .then(setDonations)
+      .then((result) => setDonations(result.items))
       .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
       .finally(() => setLoading(false));
   }

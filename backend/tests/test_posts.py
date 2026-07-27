@@ -236,7 +236,7 @@ def test_get_cover_success(client, db_session):
     p = _post(db_session, "Avec couverture")
     p.cover_image_url = f"/posts/{p.id}/cover"
     db_session.flush()
-    with patch("app.api.routes.posts.storage", _fake_storage()):
+    with patch("app.services.content_service.storage", _fake_storage()):
         r = client.get(f"/posts/{p.id}/cover")
     assert r.status_code == 200
     assert r.content == b"fake-image-bytes"
@@ -251,7 +251,7 @@ def test_get_cover_missing_in_storage(client, db_session):
     fake.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
     )
-    with patch("app.api.routes.posts.storage", fake):
+    with patch("app.services.content_service.storage", fake):
         r = client.get(f"/posts/{p.id}/cover")
     assert r.status_code == 404
 
@@ -260,7 +260,7 @@ def test_upload_cover_requires_permission(client, db_session, make_user, auth_he
     make_user("regular_cover@test.com")
     h = auth_header("regular_cover@test.com")
     p = _post(db_session, "Cible upload")
-    with patch("app.api.routes.posts.storage", _fake_storage()):
+    with patch("app.services.content_service.storage", _fake_storage()):
         r = client.post(
             f"/posts/{p.id}/cover",
             files={"file": ("cover.jpg", b"fake-bytes", "image/jpeg")},
@@ -273,7 +273,7 @@ def test_upload_cover_success(client, db_session, make_user, auth_header):
     h = _admin_header(make_user, auth_header)
     p = _post(db_session, "Cible upload admin")
     fake = _fake_storage()
-    with patch("app.api.routes.posts.storage", fake):
+    with patch("app.services.content_service.storage", fake):
         r = client.post(
             f"/posts/{p.id}/cover",
             files={"file": ("cover.jpg", b"fake-bytes", "image/jpeg")},
@@ -293,7 +293,7 @@ def test_delete_cover_requires_permission(client, db_session, make_user, auth_he
     p = _post(db_session, "Cible suppression")
     p.cover_image_url = f"/posts/{p.id}/cover"
     db_session.flush()
-    with patch("app.api.routes.posts.storage", _fake_storage()):
+    with patch("app.services.content_service.storage", _fake_storage()):
         r = client.delete(f"/posts/{p.id}/cover", headers=h)
     assert r.status_code == 403
 
@@ -304,10 +304,10 @@ def test_delete_cover_success(client, db_session, make_user, auth_header):
     p.cover_image_url = f"/posts/{p.id}/cover"
     db_session.flush()
     fake = _fake_storage()
-    with patch("app.api.routes.posts.storage", fake):
+    with patch("app.services.content_service.storage", fake):
         r = client.delete(f"/posts/{p.id}/cover", headers=h)
     assert r.status_code == 204
-    fake.delete_file.assert_called_once_with(f"posts/covers/{p.id}")
+    fake.delete_file_quiet.assert_called_once_with(f"posts/covers/{p.id}")
 
     refreshed = client.get("/posts/admin?status=draft", headers=h).json()
     match = next(item for item in refreshed["items"] if item["id"] == p.id)

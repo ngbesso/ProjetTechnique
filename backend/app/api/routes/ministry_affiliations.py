@@ -1,7 +1,6 @@
 import csv
 import io
 import re
-from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,42 +22,13 @@ from app.schemas.ministry_affiliation import (
     MinistryMemberRead,
     MinistryStatsItem,
 )
+from app.services import ministry_service
 
 router = APIRouter(tags=["ministères"])
 
 
-def _today():
-    return datetime.now(timezone.utc).date()
-
-
 def _slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "ministere"
-
-
-def _ministry_sex_restriction(db: Session, ministry: str) -> str | None:
-    return db.scalar(
-        select(ParameterValue.restricted_to_sexe).where(
-            ParameterValue.category == "ministry",
-            ParameterValue.label == ministry,
-        )
-    )
-
-
-def _check_sex_restriction(member: Member, restriction: str | None) -> None:
-    """Refuse la création d'une affiliation (422) si le ministère est
-    restreint à un sexe et que celui du membre ne correspond pas exactement.
-    Ne dépend d'aucune requête : la restriction est résolue une seule fois par
-    l'appelant (_validate_sex_restriction pour un seul membre, ou en une seule
-    requête en amont de la boucle pour l'ajout en masse) — personne, pas même
-    un admin, ne peut contourner la restriction."""
-    if restriction and member.sexe != restriction:
-        raise HTTPException(
-            422, f"Ce ministère est réservé aux membres de sexe « {restriction} »."
-        )
-
-
-def _validate_sex_restriction(db: Session, member: Member, ministry: str) -> None:
-    _check_sex_restriction(member, _ministry_sex_restriction(db, ministry))
 
 
 # ── Libre-service (membre connecté) — auto-affiliation, sans approbation ─────
@@ -73,7 +43,7 @@ def join_ministry(
     ministry = data.ministry.strip()
     if not ministry:
         raise HTTPException(422, "Le ministère est requis")
-    _validate_sex_restriction(db, member, ministry)
+    ministry_service.validate_sex_restriction(db, member, ministry)
     already_active = db.scalar(
         select(MemberMinistryAffiliation).where(
             MemberMinistryAffiliation.member_id == member.id,
@@ -84,7 +54,7 @@ def join_ministry(
     if already_active:
         raise HTTPException(409, "Vous êtes déjà affilié(e) à ce ministère")
     affiliation = MemberMinistryAffiliation(
-        member_id=member.id, ministry=ministry, joined_at=_today()
+        member_id=member.id, ministry=ministry, joined_at=ministry_service.today()
     )
     db.add(affiliation)
     db.commit()
@@ -104,7 +74,7 @@ def leave_ministry(
     if not affiliation or affiliation.member_id != member.id:
         raise HTTPException(404, "Affiliation introuvable")
     if affiliation.left_at is None:
-        affiliation.left_at = _today()
+        affiliation.left_at = ministry_service.today()
         db.commit()
         db.refresh(affiliation)
     return affiliation
@@ -278,54 +248,7 @@ def bulk_add_ministry_members(
     scope = current_user.accessible_church_ids("member:update")
     if scope is not None and not scope:
         raise HTTPException(403, "Aucun périmètre accessible")
-
-    # La restriction de sexe du ministère ne dépend pas du membre : une seule
-    # requête pour tout le lot, au lieu d'une par itération.
-    restriction = _ministry_sex_restriction(db, ministry)
-
-    # Idem pour les membres eux-mêmes et leurs affiliations actives existantes
-    # — un select(...).in_(...) chacun plutôt qu'un aller-retour par membre.
-    members_by_id = {
-        m.id: m
-        for m in db.scalars(select(Member).where(Member.id.in_(data.member_ids))).all()
-    }
-    already_active_ids = set(
-        db.scalars(
-            select(MemberMinistryAffiliation.member_id).where(
-                MemberMinistryAffiliation.ministry == ministry,
-                MemberMinistryAffiliation.member_id.in_(data.member_ids),
-                MemberMinistryAffiliation.left_at.is_(None),
-            )
-        ).all()
-    )
-
-    added: list[int] = []
-    skipped: list[int] = []
-    today = _today()
-    for member_id in data.member_ids:
-        member = members_by_id.get(member_id)
-        if not member or (scope is not None and member.church_id not in scope):
-            skipped.append(member_id)
-            continue
-        try:
-            _check_sex_restriction(member, restriction)
-        except HTTPException:
-            skipped.append(member_id)
-            continue
-        # already_active_ids ne reflète que l'état en base avant la boucle :
-        # un même id répété dans la requête doit aussi être détecté ici.
-        if member_id in already_active_ids:
-            skipped.append(member_id)
-            continue
-        db.add(
-            MemberMinistryAffiliation(member_id=member.id, ministry=ministry, joined_at=today)
-        )
-        added.append(member_id)
-        already_active_ids.add(member_id)
-
-    if added:
-        db.commit()
-    return MinistryBulkAddResult(added=added, skipped=skipped)
+    return ministry_service.bulk_add_members(db, ministry, data.member_ids, scope)
 
 
 @router.delete(
@@ -349,7 +272,7 @@ def remove_ministry_affiliation(
     if not affiliation or affiliation.member_id != member.id:
         raise HTTPException(404, "Affiliation introuvable")
     if affiliation.left_at is None:
-        affiliation.left_at = _today()
+        affiliation.left_at = ministry_service.today()
         db.commit()
         db.refresh(affiliation)
     return affiliation

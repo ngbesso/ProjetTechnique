@@ -7,45 +7,31 @@ import {
   updatePost,
   deletePost,
 } from "../lib/api/posts";
+import { useAsyncList } from "./useAsyncList";
 
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { loading, error, run } = useAsyncList();
 
   const load = useCallback(
-    async (params?: { q?: string; category?: string; limit?: number; offset?: number }) => {
-      setLoading(true);
-      setError("");
-      try {
+    (params?: { q?: string; category?: string; limit?: number; offset?: number }) =>
+      run(async () => {
         const res = await fetchPosts(params);
         setPosts(res.items);
         setTotal(res.total);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Erreur de chargement");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
+      }),
+    [run],
   );
 
   const loadAdmin = useCallback(
-    async (params?: { q?: string; category?: string; status?: string; limit?: number; offset?: number }) => {
-      setLoading(true);
-      setError("");
-      try {
+    (params?: { q?: string; category?: string; status?: string; limit?: number; offset?: number }) =>
+      run(async () => {
         const res = await fetchPostsAdmin(params);
         setPosts(res.items);
         setTotal(res.total);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Erreur de chargement");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
+      }),
+    [run],
   );
 
   const add = useCallback(async (data: PostInput) => {

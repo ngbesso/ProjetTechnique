@@ -8,45 +8,31 @@ import {
   replaceSermonMedia,
   deleteSermon,
 } from "../lib/api/sermons";
+import { useAsyncList } from "./useAsyncList";
 
 export function useSermons() {
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { loading, error, run } = useAsyncList();
 
   const load = useCallback(
-    async (params?: { q?: string; series?: string; format?: string; limit?: number; offset?: number }) => {
-      setLoading(true);
-      setError("");
-      try {
+    (params?: { q?: string; series?: string; format?: string; limit?: number; offset?: number }) =>
+      run(async () => {
         const res = await fetchSermons(params);
         setSermons(res.items);
         setTotal(res.total);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Erreur de chargement");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
+      }),
+    [run],
   );
 
   const loadAdmin = useCallback(
-    async (params?: { q?: string; status?: string; series?: string; format?: string; limit?: number; offset?: number }) => {
-      setLoading(true);
-      setError("");
-      try {
+    (params?: { q?: string; status?: string; series?: string; format?: string; limit?: number; offset?: number }) =>
+      run(async () => {
         const res = await fetchSermonsAdmin(params);
         setSermons(res.items);
         setTotal(res.total);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Erreur de chargement");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
+      }),
+    [run],
   );
 
   const add = useCallback(async (data: SermonInput, file: File) => {

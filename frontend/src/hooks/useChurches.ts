@@ -4,23 +4,15 @@ import type { Church, ChurchInput, ChurchUpdateInput } from "../types";
 import {
     fetchChurches, createChurch, updateChurch, deleteChurch,
 } from "../lib/api/churches";
+import { useAsyncList } from "./useAsyncList";
 
 export function useChurches() {
     const [churches, setChurches] = useState<Church[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const { loading, error, run } = useAsyncList();
 
-    const load = useCallback(async (opts?: { activeOnly?: boolean }) => {
-        setLoading(true);
-        setError("");
-        try {
-            setChurches(await fetchChurches(opts));
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Erreur de chargement");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const load = useCallback((opts?: { activeOnly?: boolean }) => run(async () => {
+        setChurches(await fetchChurches(opts));
+    }), [run]);
 
     const add = useCallback(async (data: ChurchInput) => {
         const created = await createChurch(data);
