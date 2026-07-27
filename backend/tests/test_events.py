@@ -89,7 +89,7 @@ def test_list_public_only_published_and_upcoming(client, db_session):
     _event(db_session, "Brouillon", status=EventStatus.draft, days_from_now=5)
     _event(db_session, "Publié passé", status=EventStatus.published, days_from_now=-5)
 
-    r = client.get(f"{BASE}/")
+    r = client.get(f"{BASE}")
     assert r.status_code == 200
     titles = [e["title"] for e in r.json()["items"]]
     assert "Publié à venir" in titles
@@ -104,7 +104,7 @@ def test_list_filters_by_district(client, db_session):
     e2.district = "Est"
     db_session.flush()
 
-    r = client.get(f"{BASE}/?district=Ouest")
+    r = client.get(f"{BASE}?district=Ouest")
     assert r.status_code == 200
     titles = [e["title"] for e in r.json()["items"]]
     assert "Événement Ouest" in titles
@@ -115,7 +115,7 @@ def test_list_filters_by_category(client, db_session):
     _event(db_session, "Conférence A", category="Conférence")
     _event(db_session, "Formation B", category="Formation")
 
-    r = client.get(f"{BASE}/?category=Formation")
+    r = client.get(f"{BASE}?category=Formation")
     assert r.status_code == 200
     titles = [e["title"] for e in r.json()["items"]]
     assert "Formation B" in titles
@@ -184,7 +184,7 @@ def test_create_event_requires_permission(client, make_member, auth_header, db_s
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("membre_event@test.com", church_id)
     r = client.post(
-        f"{BASE}/", json=_payload(church_id), headers=auth_header("membre_event@test.com")
+        f"{BASE}", json=_payload(church_id), headers=auth_header("membre_event@test.com")
     )
     assert r.status_code == 403
 
@@ -192,7 +192,7 @@ def test_create_event_requires_permission(client, make_member, auth_header, db_s
 def test_create_event_as_admin(client, make_user, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     h = _admin_header(make_user, auth_header)
-    r = client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    r = client.post(f"{BASE}", json=_payload(church_id), headers=h)
     assert r.status_code == 201
     assert r.json()["title"] == "Nouvel événement"
 
@@ -203,7 +203,7 @@ def test_create_event_with_zeffy_form_path(client, make_user, auth_header, db_se
     payload = _payload(church_id)
     payload["price"] = 40
     payload["zeffy_form_path"] = "/fr/donation-form/yyyy"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     assert r.json()["zeffy_form_path"] == "/fr/donation-form/yyyy"
 
@@ -213,7 +213,7 @@ def test_create_event_with_past_date_rejected(client, make_user, auth_header, db
     h = _admin_header(make_user, auth_header)
     payload = _payload(church_id)
     payload["date_start"] = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 422
 
 
@@ -225,7 +225,7 @@ def test_create_formation_category_as_admin(client, make_user, auth_header, db_s
     payload["instructor"] = "Formateur X"
     payload["price"] = 25
     payload["capacity"] = 10
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     body = r.json()
     assert body["category"] == "Formation"
@@ -626,7 +626,7 @@ def test_create_event_online_without_link_rejected(client, make_user, auth_heade
     h = _admin_header(make_user, auth_header)
     payload = _payload(church_id)
     payload["format"] = "en_ligne"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 422
 
 
@@ -636,7 +636,7 @@ def test_create_event_online_with_link_succeeds(client, make_user, auth_header, 
     payload = _payload(church_id)
     payload["format"] = "en_ligne"
     payload["online_link"] = "https://zoom.us/j/123456"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     body = r.json()
     assert body["format"] == "en_ligne"
@@ -669,9 +669,9 @@ def test_public_list_hides_online_link(client, make_user, auth_header, db_sessio
     payload["title"] = "En ligne publique"
     payload["format"] = "en_ligne"
     payload["online_link"] = "https://secret-link.example/xyz"
-    client.post(f"{BASE}/", json=payload, headers=h)
+    client.post(f"{BASE}", json=payload, headers=h)
 
-    r = client.get(f"{BASE}/")
+    r = client.get(f"{BASE}")
     item = next(e for e in r.json()["items"] if e["title"] == "En ligne publique")
     assert item["format"] == "en_ligne"
     assert item["online_link"] is None
@@ -684,7 +684,7 @@ def test_public_detail_hides_online_link(client, make_user, auth_header, db_sess
     payload["title"] = "En ligne détail public"
     payload["format"] = "en_ligne"
     payload["online_link"] = "https://secret-link.example/detail"
-    created = client.post(f"{BASE}/", json=payload, headers=h).json()
+    created = client.post(f"{BASE}", json=payload, headers=h).json()
 
     r = client.get(f"{BASE}/{created['id']}")
     assert r.status_code == 200
@@ -698,7 +698,7 @@ def test_admin_list_reveals_online_link(client, make_user, auth_header, db_sessi
     payload["title"] = "En ligne admin"
     payload["format"] = "en_ligne"
     payload["online_link"] = "https://secret-link.example/admin"
-    client.post(f"{BASE}/", json=payload, headers=h)
+    client.post(f"{BASE}", json=payload, headers=h)
 
     r = client.get(f"{BASE}/admin", headers=h)
     item = next(e for e in r.json()["items"] if e["title"] == "En ligne admin")
@@ -758,7 +758,7 @@ def test_create_event_hybride_without_link_rejected(client, make_user, auth_head
     payload = _payload(church_id)
     payload["format"] = "hybride"
     payload["location"] = "Église mère"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 422
 
 
@@ -769,7 +769,7 @@ def test_create_event_hybride_without_location_rejected(client, make_user, auth_
     payload["format"] = "hybride"
     payload["location"] = None
     payload["online_link"] = "https://zoom.us/j/hybride"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 422
 
 
@@ -780,7 +780,7 @@ def test_create_event_hybride_with_both_succeeds(client, make_user, auth_header,
     payload["format"] = "hybride"
     payload["location"] = "Église mère"
     payload["online_link"] = "https://zoom.us/j/hybride"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     body = r.json()
     assert body["format"] == "hybride"
@@ -796,9 +796,9 @@ def test_public_hides_online_link_for_hybride_event(client, make_user, auth_head
     payload["format"] = "hybride"
     payload["location"] = "Église mère"
     payload["online_link"] = "https://secret-link.example/hybride"
-    client.post(f"{BASE}/", json=payload, headers=h)
+    client.post(f"{BASE}", json=payload, headers=h)
 
-    r = client.get(f"{BASE}/")
+    r = client.get(f"{BASE}")
     item = next(e for e in r.json()["items"] if e["title"] == "Hybride publique")
     assert item["format"] == "hybride"
     assert item["location"] == "Église mère"
@@ -1058,7 +1058,7 @@ def test_create_event_with_intervenant_category(client, make_user, auth_header, 
     payload = _payload(church_id)
     payload["instructor"] = "Pasteur Bruel"
     payload["intervenant_category"] = "Pasteur"
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     body = r.json()
     assert body["instructor"] == "Pasteur Bruel"
@@ -1079,7 +1079,7 @@ def test_create_event_show_registration_count_defaults_true(
 ):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     h = _admin_header(make_user, auth_header)
-    r = client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    r = client.post(f"{BASE}", json=_payload(church_id), headers=h)
     assert r.status_code == 201
     assert r.json()["show_registration_count"] is True
 
@@ -1089,7 +1089,7 @@ def test_create_event_show_registration_count_false(client, make_user, auth_head
     h = _admin_header(make_user, auth_header)
     payload = _payload(church_id)
     payload["show_registration_count"] = False
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 201
     assert r.json()["show_registration_count"] is False
 
@@ -1108,7 +1108,7 @@ def test_update_event_show_registration_count(client, make_user, auth_header, db
 def test_organisateur_can_create_event(client, make_user, auth_header, db_session):
     user, h = _organisateur(make_user, auth_header, db_session, "orga1@test.com")
     church_id = _mother_id(db_session)
-    r = client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    r = client.post(f"{BASE}", json=_payload(church_id), headers=h)
     assert r.status_code == 201
     assert r.json()["created_by"] == user.id
 
@@ -1122,11 +1122,11 @@ def test_organisateur_does_not_see_other_organisateur_event_in_admin_list(
 
     payload_a = _payload(church_id)
     payload_a["title"] = "Événement A"
-    client.post(f"{BASE}/", json=payload_a, headers=h_a)
+    client.post(f"{BASE}", json=payload_a, headers=h_a)
 
     payload_b = _payload(church_id)
     payload_b["title"] = "Événement B"
-    client.post(f"{BASE}/", json=payload_b, headers=h_b)
+    client.post(f"{BASE}", json=payload_b, headers=h_b)
 
     r = client.get(f"{BASE}/admin", headers=h_a)
     assert r.status_code == 200
@@ -1142,7 +1142,7 @@ def test_organisateur_cannot_update_other_organisateur_event(
     _user_b, h_b = _organisateur(make_user, auth_header, db_session, "orga_d@test.com")
     church_id = _mother_id(db_session)
 
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h_b).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h_b).json()
 
     r = client.put(f"{BASE}/{created['id']}", json={"title": "Piraté"}, headers=h_a)
     assert r.status_code == 403
@@ -1155,7 +1155,7 @@ def test_organisateur_cannot_delete_other_organisateur_event(
     _user_b, h_b = _organisateur(make_user, auth_header, db_session, "orga_f@test.com")
     church_id = _mother_id(db_session)
 
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h_b).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h_b).json()
 
     r = client.delete(f"{BASE}/{created['id']}", headers=h_a)
     assert r.status_code == 403
@@ -1168,7 +1168,7 @@ def test_organisateur_cannot_view_participants_of_other_organisateur_event(
     _user_b, h_b = _organisateur(make_user, auth_header, db_session, "orga_h@test.com")
     church_id = _mother_id(db_session)
 
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h_b).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h_b).json()
 
     r = client.get(f"{BASE}/{created['id']}/participants", headers=h_a)
     assert r.status_code == 403
@@ -1181,7 +1181,7 @@ def test_organisateur_cannot_export_registrations_of_other_organisateur_event(
     _user_b, h_b = _organisateur(make_user, auth_header, db_session, "orga_n@test.com")
     church_id = _mother_id(db_session)
 
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h_b).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h_b).json()
 
     r = client.get(f"{BASE}/{created['id']}/registrations/export", headers=h_a)
     assert r.status_code == 403
@@ -1194,7 +1194,7 @@ def test_organisateur_cannot_upload_image_for_other_organisateur_event(
     _user_b, h_b = _organisateur(make_user, auth_header, db_session, "orga_p@test.com")
     church_id = _mother_id(db_session)
 
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h_b).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h_b).json()
 
     r = client.post(
         f"{BASE}/{created['id']}/image",
@@ -1207,7 +1207,7 @@ def test_organisateur_cannot_upload_image_for_other_organisateur_event(
 def test_organisateur_can_update_own_event(client, make_user, auth_header, db_session):
     _user, h = _organisateur(make_user, auth_header, db_session, "orga_i@test.com")
     church_id = _mother_id(db_session)
-    created = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()
+    created = client.post(f"{BASE}", json=_payload(church_id), headers=h).json()
 
     r = client.put(f"{BASE}/{created['id']}", json={"title": "Modifié"}, headers=h)
     assert r.status_code == 200
@@ -1221,7 +1221,7 @@ def test_admin_sees_all_events_regardless_of_creator(
     church_id = _mother_id(db_session)
     payload = _payload(church_id)
     payload["title"] = "Créé par organisateur"
-    client.post(f"{BASE}/", json=payload, headers=h_orga)
+    client.post(f"{BASE}", json=payload, headers=h_orga)
 
     admin_h = _admin_header(make_user, auth_header)
     r = client.get(f"{BASE}/admin", headers=admin_h)
@@ -1236,11 +1236,11 @@ def test_organisateur_stats_scoped_to_own_events(client, make_user, auth_header,
 
     payload_a = _payload(church_id)
     payload_a["title"] = "Stats A"
-    client.post(f"{BASE}/", json=payload_a, headers=h_a)
+    client.post(f"{BASE}", json=payload_a, headers=h_a)
 
     payload_b = _payload(church_id)
     payload_b["title"] = "Stats B"
-    client.post(f"{BASE}/", json=payload_b, headers=h_b)
+    client.post(f"{BASE}", json=payload_b, headers=h_b)
 
     r = client.get(f"{BASE}/admin/stats", headers=h_a)
     assert r.status_code == 200

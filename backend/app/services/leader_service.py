@@ -120,10 +120,7 @@ def update_leader(db: Session, leader: Leader, payload: LeaderUpdate) -> Leader:
 
 def delete_leader(db: Session, leader: Leader) -> None:
     if leader.photo_key:
-        try:
-            storage.delete_file(leader.photo_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(leader.photo_key)
     db.delete(leader)
     db.commit()
 
@@ -137,10 +134,7 @@ def upload_photo(
 ) -> Leader:
     """Téléverse (ou remplace) la photo de profil vers MinIO."""
     if leader.photo_key:
-        try:
-            storage.delete_file(leader.photo_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(leader.photo_key)
     ext = _photo_extension(filename, content_type)
     photo_key = f"leaders/{leader.id}/photo.{ext}"
     storage.upload_file(fileobj, photo_key, content_type)

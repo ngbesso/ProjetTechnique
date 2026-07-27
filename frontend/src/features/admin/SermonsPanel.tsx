@@ -5,6 +5,7 @@ import { useSermons } from "../../hooks/useSermons";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchSermonAdminMediaUrl, fetchSermonSeries, fetchSermonsStats } from "../../lib/api/sermons";
+import { IconCheckCircle, IconEye, IconFileEdit } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
 import type { Sermon, SermonAdminStats, SermonInput, SermonStatus } from "../../types";
 
@@ -22,36 +23,6 @@ const STATUS_LABELS: Record<SermonStatus, string> = {
   published: "Publié",
   archived: "Archivé",
 };
-
-// ── Icônes KPI ────────────────────────────────────────────────────────────────
-
-function IconCheckCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="8 12 11 15 16 9" />
-    </svg>
-  );
-}
-
-function IconFileEdit() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
-    </svg>
-  );
-}
-
-function IconEye() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
 
 const col = createColumnHelper<Sermon>();
 

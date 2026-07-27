@@ -119,13 +119,6 @@ class EventRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class EventList(BaseModel):
-    items: list[EventRead]
-    total: int
-    limit: int
-    offset: int
-
-
 class ResendCancelLinkRequest(BaseModel):
     email: EmailStr
 

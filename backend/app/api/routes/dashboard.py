@@ -1,8 +1,9 @@
+from collections.abc import Callable
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, TypeVar
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_admin
@@ -29,6 +30,29 @@ router = APIRouter(prefix="/admin", tags=["dashboard"])
 _RECENT_LIMIT = 5
 _ACTIVITY_PER_SOURCE = 10
 _ACTIVITY_TOTAL = 10
+
+RowT = TypeVar("RowT")
+
+
+def _collect_activity(
+    db: Session,
+    stmt: Select[tuple[RowT]],
+    type_: str,
+    label_fn: Callable[[RowT], str],
+    limit: int,
+) -> list[tuple[datetime, ActivityItem]]:
+    """Exécute `stmt` (déjà filtrée/triée par date décroissante) et construit
+    les ActivityItem correspondants — factorise le schéma répété par les
+    différentes sources d'activité (select -> ActivityItem à partir de
+    row.created_at)."""
+    rows = db.scalars(stmt.limit(limit)).all()
+    return [
+        (
+            row.created_at,
+            ActivityItem(type=type_, label=label_fn(row), date=row.created_at.isoformat()),
+        )
+        for row in rows
+    ]
 
 
 @router.get("/dashboard", response_model=DashboardStats)
@@ -108,60 +132,44 @@ def get_dashboard(
     # ── Activité récente (union de tous les modules, triée par date) ────────
     activity: list[tuple[datetime, ActivityItem]] = []
 
-    for m in db.scalars(
-        select(Member).order_by(Member.created_at.desc()).limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        activity.append((
-            m.created_at,
-            ActivityItem(
-                type="member",
-                label=f"Nouveau membre : {m.first_name} {m.last_name}",
-                date=m.created_at.isoformat(),
-            ),
-        ))
+    activity += _collect_activity(
+        db,
+        select(Member).order_by(Member.created_at.desc()),
+        "member",
+        lambda m: f"Nouveau membre : {m.first_name} {m.last_name}",
+        _ACTIVITY_PER_SOURCE,
+    )
 
-    for d in db.scalars(
-        select(Donation).order_by(Donation.created_at.desc()).limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        donor = d.donor_name or d.donor_email or "Anonyme"
-        activity.append((
-            d.created_at,
-            ActivityItem(
-                type="donation",
-                label=f"Don reçu : {float(d.amount):.2f} $ {d.currency.value} de {donor}",
-                date=d.created_at.isoformat(),
-            ),
-        ))
+    activity += _collect_activity(
+        db,
+        select(Donation).order_by(Donation.created_at.desc()),
+        "donation",
+        lambda d: (
+            f"Don reçu : {float(d.amount):.2f} $ {d.currency.value} de "
+            f"{d.donor_name or d.donor_email or 'Anonyme'}"
+        ),
+        _ACTIVITY_PER_SOURCE,
+    )
 
-    for s in db.scalars(
+    activity += _collect_activity(
+        db,
         select(Sermon)
         .where(Sermon.status == SermonStatus.published)
-        .order_by(Sermon.created_at.desc())
-        .limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        activity.append((
-            s.created_at,
-            ActivityItem(
-                type="sermon",
-                label=f"Sermon publié : {s.title}",
-                date=s.created_at.isoformat(),
-            ),
-        ))
+        .order_by(Sermon.created_at.desc()),
+        "sermon",
+        lambda s: f"Sermon publié : {s.title}",
+        _ACTIVITY_PER_SOURCE,
+    )
 
-    for p in db.scalars(
+    activity += _collect_activity(
+        db,
         select(Post)
         .where(Post.status == PostStatus.published)
-        .order_by(Post.created_at.desc())
-        .limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        activity.append((
-            p.created_at,
-            ActivityItem(
-                type="post",
-                label=f"Article publié : {p.title}",
-                date=p.created_at.isoformat(),
-            ),
-        ))
+        .order_by(Post.created_at.desc()),
+        "post",
+        lambda p: f"Article publié : {p.title}",
+        _ACTIVITY_PER_SOURCE,
+    )
 
     reg_rows = db.execute(
         select(EventRegistration, Event)
@@ -183,44 +191,32 @@ def get_dashboard(
             ),
         ))
 
-    for pr in db.scalars(
+    activity += _collect_activity(
+        db,
         select(PrayerRequest)
         .options(selectinload(PrayerRequest.member))
-        .order_by(PrayerRequest.created_at.desc())
-        .limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        activity.append((
-            pr.created_at,
-            ActivityItem(
-                type="prayer_request",
-                label=(
-                    "Nouvelle demande de prière de "
-                    f"{pr.member.full_name if pr.member else '—'}"
-                ),
-                date=pr.created_at.isoformat(),
-            ),
-        ))
+        .order_by(PrayerRequest.created_at.desc()),
+        "prayer_request",
+        lambda pr: (
+            f"Nouvelle demande de prière de {pr.member.full_name if pr.member else '—'}"
+        ),
+        _ACTIVITY_PER_SOURCE,
+    )
 
-    for vr in db.scalars(
+    activity += _collect_activity(
+        db,
         select(VolunteerRequest)
         .options(
             selectinload(VolunteerRequest.member), selectinload(VolunteerRequest.event)
         )
-        .order_by(VolunteerRequest.created_at.desc())
-        .limit(_ACTIVITY_PER_SOURCE)
-    ).all():
-        activity.append((
-            vr.created_at,
-            ActivityItem(
-                type="volunteer_request",
-                label=(
-                    "Nouvelle demande de bénévolat de "
-                    f"{vr.member.full_name if vr.member else '—'} pour "
-                    f"« {vr.event.title if vr.event else '—'} »"
-                ),
-                date=vr.created_at.isoformat(),
-            ),
-        ))
+        .order_by(VolunteerRequest.created_at.desc()),
+        "volunteer_request",
+        lambda vr: (
+            f"Nouvelle demande de bénévolat de {vr.member.full_name if vr.member else '—'} pour "
+            f"« {vr.event.title if vr.event else '—'} »"
+        ),
+        _ACTIVITY_PER_SOURCE,
+    )
 
     activity.sort(key=lambda item: item[0], reverse=True)
     recent_activity = [item for _, item in activity[:_ACTIVITY_TOTAL]]

@@ -101,13 +101,6 @@ class MemberRead(BaseModel):
     created_at: datetime
 
 
-class MemberList(BaseModel):
-    items: list[MemberRead]
-    total: int
-    limit: int
-    offset: int
-
-
 class MemberStatusStats(BaseModel):
     active: int
     pending: int

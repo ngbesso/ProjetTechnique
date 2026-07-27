@@ -87,7 +87,16 @@ export interface Donation {
   created_at: string;
 }
 
-export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
+export interface DonationListResult {
+  items: Donation[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer" | "National";
+
+export const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
 
 export interface ParameterValue {
   id: number;
@@ -584,7 +593,7 @@ export interface Leader {
   last_name: string;
   title: string;
   role: string;
-  district: string | null;
+  district: District | null;
   church_id: number | null;
   bio: string | null;
   email: string | null;
@@ -609,7 +618,7 @@ export interface LeaderInput {
   last_name: string;
   title: string;
   role: string;
-  district?: string | null;
+  district?: District | null;
   church_id?: number | null;
   bio?: string | null;
   email?: string | null;
