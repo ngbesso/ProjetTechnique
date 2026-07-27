@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.donation import Donation, _receipt_number
+from app.models.donor import Donor
+from app.models.member import Member
 from app.schemas.donation import DonationCreate, DonationManualCreate
 
 
@@ -36,14 +38,34 @@ def create_donation(
     return donation
 
 
-def create_manual_donation(db: Session, payload: DonationManualCreate) -> Donation:
+def create_manual_donation(
+    db: Session,
+    payload: DonationManualCreate,
+    *,
+    member: Member | None = None,
+    donor: Donor | None = None,
+) -> Donation:
     """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur,
-    hors formulaire membre — donateur et église facultatifs."""
+    hors formulaire membre — église facultative, donateur soit un membre
+    existant, soit un donateur enregistré, soit du texte libre (repli)."""
     received_at = (
         datetime.combine(payload.received_on, datetime.min.time(), tzinfo=timezone.utc)
         if payload.received_on
         else datetime.now(timezone.utc)
     )
+    member_id: int | None = None
+    donor_id: int | None = None
+    donor_name = payload.donor_name
+    donor_email = payload.donor_email
+    if member is not None:
+        member_id = member.id
+        donor_name = member.full_name
+        donor_email = member.email
+    elif donor is not None:
+        donor_id = donor.id
+        donor_name = donor.name
+        donor_email = donor.email
+
     donation = Donation(
         receipt_number=_receipt_number(),
         amount=payload.amount,
@@ -51,9 +73,10 @@ def create_manual_donation(db: Session, payload: DonationManualCreate) -> Donati
         category=payload.category,
         contribution_type=payload.contribution_type,
         church_id=payload.church_id,
-        member_id=None,
-        donor_name=payload.donor_name,
-        donor_email=payload.donor_email,
+        member_id=member_id,
+        donor_id=donor_id,
+        donor_name=donor_name,
+        donor_email=donor_email,
         created_at=received_at,
         payment_status="manual",
     )

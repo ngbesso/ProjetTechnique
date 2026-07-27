@@ -84,6 +84,7 @@ export interface Donation {
   contribution_type: ContributionType;
   church_id: number | null;
   member_id: number | null;
+  donor_id: number | null;
   donor_name: string | null;
   donor_email: string | null;
   payment_reference: string | null;
@@ -99,9 +100,17 @@ export interface DonationManualInput {
   category?: DonationCategory;
   contribution_type?: ContributionType;
   church_id?: number | null;
+  member_id?: number | null;
+  donor_id?: number | null;
   donor_name?: string;
   donor_email?: string;
   received_on?: string;
+}
+
+export interface Donor {
+  id: number;
+  name: string;
+  email: string | null;
 }
 
 export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";

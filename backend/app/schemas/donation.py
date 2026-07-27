@@ -43,6 +43,12 @@ class DonationManualCreate(BaseModel):
     category: DonationCategory | None = None
     contribution_type: ContributionType = ContributionType.DON
     church_id: int | None = None
+    member_id: int | None = Field(
+        None, description="Membre donateur (mutuellement exclusif avec donor_id)"
+    )
+    donor_id: int | None = Field(
+        None, description="Donateur enregistré (mutuellement exclusif avec member_id)"
+    )
     donor_name: str | None = None
     donor_email: str | None = None
     received_on: date | None = Field(
@@ -78,6 +84,7 @@ class DonationRead(BaseModel):
     contribution_type: ContributionType
     church_id: int | None
     member_id: int | None
+    donor_id: int | None
     donor_name: str | None
     donor_email: str | None
     payment_reference: str | None

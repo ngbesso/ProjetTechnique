@@ -18,6 +18,8 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.donation import Donation, DonationCategory, DonationCurrency
+from app.models.donor import Donor
+from app.models.member import Member
 from app.schemas.donation import (
     CategoryCount,
     DonationAdminStats,
@@ -43,6 +45,24 @@ def _get_church_or_404(db: Session, church_id: int) -> Church:
             status_code=status.HTTP_404_NOT_FOUND, detail="Église introuvable"
         )
     return church
+
+
+def _get_member_or_404(db: Session, member_id: int) -> Member:
+    member = db.get(Member, member_id)
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Membre introuvable"
+        )
+    return member
+
+
+def _get_donor_or_404(db: Session, donor_id: int) -> Donor:
+    donor = db.get(Donor, donor_id)
+    if donor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Donateur introuvable"
+        )
+    return donor
 
 
 @router.post("/webhooks/zeffy", status_code=status.HTTP_200_OK)
@@ -171,7 +191,24 @@ def create_manual_donation(
     """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur."""
     if payload.church_id is not None:
         _get_church_or_404(db, payload.church_id)
-    return donation_service.create_manual_donation(db, payload)
+    if payload.member_id is not None and payload.donor_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Choisir soit un membre, soit un donateur, pas les deux",
+        )
+    member = (
+        _get_member_or_404(db, payload.member_id)
+        if payload.member_id is not None
+        else None
+    )
+    donor = (
+        _get_donor_or_404(db, payload.donor_id)
+        if payload.donor_id is not None
+        else None
+    )
+    return donation_service.create_manual_donation(
+        db, payload, member=member, donor=donor
+    )
 
 
 @router.get("/admin/stats", response_model=DonationAdminStats)

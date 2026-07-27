@@ -12,6 +12,7 @@ from app.api.routes import (
     churches,
     dashboard,
     donations,
+    donors,
     events,
     expenses,
     finances,
@@ -122,6 +123,7 @@ app.include_router(churches.router)
 app.include_router(members.router)
 app.include_router(ministry_affiliations.router)
 app.include_router(donations.router)
+app.include_router(donors.router)
 app.include_router(expenses.router)
 app.include_router(finances.router)
 app.include_router(sermons.router)

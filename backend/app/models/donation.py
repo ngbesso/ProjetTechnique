@@ -75,6 +75,13 @@ class Donation(Base):
         nullable=True,
         index=True,
     )
+    # Donateur externe réutilisable (facultatif : mutuellement exclusif avec member_id)
+    donor_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("donors.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     payment_reference: Mapped[str | None] = mapped_column(
@@ -94,3 +101,4 @@ class Donation(Base):
 
     church = relationship("Church", lazy="select")
     member = relationship("Member", back_populates="donations", lazy="select")
+    donor = relationship("Donor", lazy="select")
