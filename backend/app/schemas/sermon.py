@@ -5,6 +5,24 @@ from pydantic import BaseModel, ConfigDict
 from app.models.sermon import SermonFormat, SermonStatus
 
 
+class SermonBase(BaseModel):
+    title: str
+    preacher: str
+    sermon_date: date
+    description: str | None = None
+    series: str | None = None
+    status: SermonStatus = SermonStatus.draft
+
+
+class SermonRead(SermonBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    format: SermonFormat
+    duration_seconds: int | None
+    views: int
+    created_at: datetime
+
+
 class SermonUpdate(BaseModel):
     title: str | None = None
     preacher: str | None = None
@@ -12,21 +30,6 @@ class SermonUpdate(BaseModel):
     description: str | None = None
     series: str | None = None
     status: SermonStatus | None = None
-
-
-class SermonRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    title: str
-    preacher: str
-    sermon_date: date
-    description: str | None
-    series: str | None
-    format: SermonFormat
-    status: SermonStatus
-    duration_seconds: int | None
-    views: int
-    created_at: datetime
 
 
 class TopSermonItem(BaseModel):

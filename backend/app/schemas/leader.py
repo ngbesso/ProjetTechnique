@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-class LeaderCreate(BaseModel):
+class LeaderBase(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     title: str = Field(..., min_length=1, max_length=150)
@@ -16,6 +16,20 @@ class LeaderCreate(BaseModel):
     years_of_service: int | None = Field(default=None, ge=0)
     is_published: bool = True
     order_index: int = 0
+
+
+class LeaderCreate(LeaderBase):
+    pass
+
+
+class LeaderRead(LeaderBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    # Calculé à la volée par la route à partir de photo_key (pas une colonne en base)
+    photo_url: str | None = None
+
+    model_config = {"from_attributes": True}
 
 
 class LeaderUpdate(BaseModel):
@@ -31,25 +45,3 @@ class LeaderUpdate(BaseModel):
     years_of_service: int | None = Field(default=None, ge=0)
     is_published: bool | None = None
     order_index: int | None = None
-
-
-class LeaderRead(BaseModel):
-    id: int
-    first_name: str
-    last_name: str
-    title: str
-    role: str
-    district: str | None
-    church_id: int | None
-    bio: str | None
-    email: str | None
-    phone: str | None
-    years_of_service: int | None
-    is_published: bool
-    order_index: int
-    created_at: datetime
-    updated_at: datetime
-    # Calculé à la volée par la route à partir de photo_key (pas une colonne en base)
-    photo_url: str | None = None
-
-    model_config = {"from_attributes": True}
