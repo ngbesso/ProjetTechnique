@@ -114,10 +114,7 @@ class ContentService(Generic[ModelT]):
 
     def delete(self, db: Session, item: ModelT) -> None:
         if item.cover_image_url and item.cover_image_url.startswith(f"/{self.route_prefix}/"):
-            try:
-                storage.delete_file(f"{self.cover_key_prefix}/{item.id}")
-            except Exception:
-                pass
+            storage.delete_file_quiet(f"{self.cover_key_prefix}/{item.id}")
         db.delete(item)
         db.commit()
 
@@ -144,9 +141,6 @@ class ContentService(Generic[ModelT]):
 
     def delete_cover(self, db: Session, item_id: int) -> None:
         item = self.load(db, item_id)
-        try:
-            storage.delete_file(f"{self.cover_key_prefix}/{item_id}")
-        except Exception:
-            pass
+        storage.delete_file_quiet(f"{self.cover_key_prefix}/{item_id}")
         item.cover_image_url = None
         db.commit()

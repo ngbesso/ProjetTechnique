@@ -307,7 +307,7 @@ def test_delete_cover_success(client, db_session, make_user, auth_header):
     with patch("app.services.content_service.storage", fake):
         r = client.delete(f"/posts/{p.id}/cover", headers=h)
     assert r.status_code == 204
-    fake.delete_file.assert_called_once_with(f"posts/covers/{p.id}")
+    fake.delete_file_quiet.assert_called_once_with(f"posts/covers/{p.id}")
 
     refreshed = client.get("/posts/admin?status=draft", headers=h).json()
     match = next(item for item in refreshed["items"] if item["id"] == p.id)
