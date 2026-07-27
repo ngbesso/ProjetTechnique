@@ -286,6 +286,7 @@ def seed_settings(db: Session) -> None:
         "birthday_monthly_message_template": DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
         "site_name": "Mission Évangélique",
         "site_tagline": "unis dans la foi",
+        "site_logo_url": "",
         "hero_eyebrow": "Une famille de foi, au-delà des frontières",
         "hero_title": "Bienvenue dans notre communauté de foi",
         "hero_subtitle": (

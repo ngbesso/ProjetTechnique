@@ -1,21 +1,28 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from botocore.exceptions import ClientError
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.menu_item import MenuItem
+from app.models.setting import AppSetting
 from app.schemas.menu_item import (
     ALLOWED_TARGET_PAGES,
     MenuItemCreate,
     MenuItemRead,
     MenuItemUpdate,
 )
+from app.services import storage
 
 router = APIRouter(prefix="/content", tags=["contenu"])
 can_manage = Depends(require_global_permission("content:manage"))
+
+_LOGO_KEY = "site/logo"
+_LOGO_SETTING_KEY = "site_logo_url"
 
 
 def _validate_target_page(target_page: str | None) -> None:
@@ -78,3 +85,53 @@ def delete_menu_item(item_id: int, db: Annotated[Session, Depends(get_db)]):
     item = _load(db, item_id)
     db.delete(item)
     db.commit()
+
+
+# ── Logo du site ───────────────────────────────────────────────────────────────
+
+
+@router.get("/logo")
+def get_logo(db: Annotated[Session, Depends(get_db)]):
+    """Sert le logo du site depuis MinIO — accessible sans authentification."""
+    setting = db.get(AppSetting, _LOGO_SETTING_KEY)
+    if not setting or not setting.value:
+        raise HTTPException(404, "Aucun logo configuré")
+    try:
+        obj = storage.get_object(_LOGO_KEY)
+    except ClientError:
+        raise HTTPException(404, "Logo introuvable")
+    content_type = obj.get("ContentType", "image/png")
+    return StreamingResponse(
+        obj["Body"].iter_chunks(1024 * 256),
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.post("/logo", response_model=dict[str, str], dependencies=[can_manage])
+def upload_logo(
+    file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
+):
+    """Téléverse (ou remplace) le logo du site dans MinIO."""
+    content_type = file.content_type or "image/png"
+    storage.upload_file(file.file, _LOGO_KEY, content_type)
+    setting = db.get(AppSetting, _LOGO_SETTING_KEY)
+    if setting is None:
+        setting = AppSetting(key=_LOGO_SETTING_KEY, value="/content/logo")
+        db.add(setting)
+    else:
+        setting.value = "/content/logo"
+    db.commit()
+    return {"site_logo_url": setting.value}
+
+
+@router.delete("/logo", status_code=204, dependencies=[can_manage])
+def delete_logo(db: Annotated[Session, Depends(get_db)]):
+    try:
+        storage.delete_file(_LOGO_KEY)
+    except Exception:
+        pass
+    setting = db.get(AppSetting, _LOGO_SETTING_KEY)
+    if setting is not None:
+        setting.value = ""
+        db.commit()

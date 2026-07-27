@@ -8,6 +8,7 @@ import {
 } from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSiteContent } from "../../hooks/useSiteContent";
+import { siteLogoUrl } from "../../lib/api/content";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
@@ -33,7 +34,16 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
       <div className={styles.inner}>
         {/* Logo */}
         <Link page="home" className={styles.logo}>
-          <div className={styles.logoIcon}>+</div>
+          {siteLogoUrl(settings.site_logo_url) ? (
+            <img
+              src={siteLogoUrl(settings.site_logo_url)!}
+              alt={settings.site_name}
+              className={styles.logoIcon}
+              style={{ objectFit: "contain" }}
+            />
+          ) : (
+            <div className={styles.logoIcon}>+</div>
+          )}
           <div className={styles.logoText}>
             <span className={styles.logoTitle}>{settings.site_name}</span>
             <span className={styles.logoSubtitle}>{settings.site_tagline}</span>

@@ -9,6 +9,7 @@ import type { MenuItem } from "../types";
 const DEFAULT_SETTINGS = {
   site_name: "Mission Évangélique",
   site_tagline: "unis dans la foi",
+  site_logo_url: "",
   hero_eyebrow: "Une famille de foi, au-delà des frontières",
   hero_title: "Bienvenue dans notre communauté de foi",
   hero_subtitle:

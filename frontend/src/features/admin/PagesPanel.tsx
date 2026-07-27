@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { TemplateSettingField } from "./ParametresPanel";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -8,6 +8,9 @@ import {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  uploadSiteLogo,
+  deleteSiteLogo,
+  siteLogoUrl,
 } from "../../lib/api/content";
 import type { MenuItem } from "../../types";
 
@@ -276,11 +279,116 @@ function MenuManager() {
   );
 }
 
+// ── Logo du site ───────────────────────────────────────────────────────────────
+
+function LogoUploader() {
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchSettings()
+      .then((list) => {
+        const val = list.find((s) => s.key === "site_logo_url")?.value ?? "";
+        setLogoUrl(siteLogoUrl(val));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleFile(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Le fichier doit être une image.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const res = await uploadSiteLogo(file);
+      setLogoUrl(siteLogoUrl(res.site_logo_url));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de téléversement");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove() {
+    setSaving(true);
+    setError("");
+    try {
+      await deleteSiteLogo();
+      setLogoUrl(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de suppression");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.card}>
+      <h3 className={styles.cardTitle}>Logo du site</h3>
+      <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+        Affiché dans l'en-tête du site public. Sans logo, une icône générique est utilisée.
+      </p>
+
+      {loading ? (
+        <p className={styles.stateMsg}>Chargement…</p>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 8,
+              background: "var(--vivid-violet)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+          >
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo du site" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <span style={{ color: "#fff", fontWeight: 700, fontSize: "1.3rem" }}>+</span>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: ".5rem" }}>
+            <button type="button" className={styles.btnOutlineSm} disabled={saving} onClick={() => inputRef.current?.click()}>
+              {logoUrl ? "Changer" : "Téléverser"}
+            </button>
+            {logoUrl && (
+              <button type="button" className={styles.btnDanger} disabled={saving} onClick={handleRemove}>
+                Supprimer
+              </button>
+            )}
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
+      )}
+      {error && <p className={styles.errorMsg} role="alert" style={{ marginTop: ".75rem" }}>{error}</p>}
+    </section>
+  );
+}
+
 // ── Panel principal ───────────────────────────────────────────────────────────
 
 export function PagesPanel() {
   return (
     <div className={styles.rbacWrapper}>
+      <LogoUploader />
       <SettingTextField settingKey="site_name" title="Nom du site" description="Affiché dans l'en-tête et le pied de page." />
       <SettingTextField settingKey="site_tagline" title="Slogan" description="Affiché sous le nom du site, dans l'en-tête." />
 
