@@ -103,7 +103,7 @@ async def fetch_documents() -> list[Document]:
             )
 
         events = await _fetch_all_items(
-            client, "/events/", extra_params={"upcoming_only": "false"}
+            client, "/events", extra_params={"upcoming_only": "false"}
         )
         for e in events:
             parts = [e["title"]]

@@ -6,7 +6,7 @@ export function fetchDonationsStats(): Promise<DonationAdminStats> {
 }
 
 export function createDonation(data: DonationCreate): Promise<Donation> {
-  return http.post<Donation>("/donations/", data);
+  return http.post<Donation>("/donations", data);
 }
 
 export function fetchMyDonations(): Promise<Donation[]> {
@@ -25,5 +25,5 @@ export function fetchAllDonations(params?: {
   if (params?.category) qs.set("category", params.category);
   if (params?.currency) qs.set("currency", params.currency);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return http.get<DonationListResult>(`/donations/${suffix}`);
+  return http.get<DonationListResult>(`/donations${suffix}`);
 }

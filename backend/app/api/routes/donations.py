@@ -95,7 +95,7 @@ def zeffy_webhook(
     return {"status": "created", "donation_id": donation.id}
 
 
-@router.post("/", response_model=DonationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DonationRead, status_code=status.HTTP_201_CREATED)
 def create_donation(
     payload: DonationCreate,
     db: Session = Depends(get_db),
@@ -114,7 +114,7 @@ def create_donation(
     )
 
 
-@router.get("/", response_model=Page[DonationRead])
+@router.get("", response_model=Page[DonationRead])
 def list_donations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),

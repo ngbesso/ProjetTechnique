@@ -60,7 +60,7 @@ def test_list_public_only_published(client, db_session):
     _leader(db_session, "Publié", "Un", is_published=True)
     _leader(db_session, "Brouillon", "Deux", is_published=False)
 
-    r = client.get(f"{BASE}/")
+    r = client.get(f"{BASE}")
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Publié Un" in names
@@ -71,7 +71,7 @@ def test_list_filters_by_role(client, db_session):
     _leader(db_session, "Le", "Pasteur", role="Pasteur")
     _leader(db_session, "Le", "Diacre", role="Diacre")
 
-    r = client.get(f"{BASE}/?role=Diacre")
+    r = client.get(f"{BASE}?role=Diacre")
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "Le Diacre" in names
@@ -85,7 +85,7 @@ def test_list_filters_by_district(client, db_session):
     l2.district = "Est"
     db_session.flush()
 
-    r = client.get(f"{BASE}/?district=Est")
+    r = client.get(f"{BASE}?district=Est")
     assert r.status_code == 200
     names = [f"{item['first_name']} {item['last_name']}" for item in r.json()["items"]]
     assert "District Est" in names
@@ -158,13 +158,13 @@ def test_get_leader_not_found(client, db_session):
 def test_create_leader_requires_admin(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("membre_leader@test.com", church_id)
-    r = client.post(f"{BASE}/", json=_payload(), headers=auth_header("membre_leader@test.com"))
+    r = client.post(f"{BASE}", json=_payload(), headers=auth_header("membre_leader@test.com"))
     assert r.status_code == 403
 
 
 def test_create_leader_as_admin(client, make_user, auth_header, db_session):
     h = _admin_header(make_user, auth_header)
-    r = client.post(f"{BASE}/", json=_payload(), headers=h)
+    r = client.post(f"{BASE}", json=_payload(), headers=h)
     assert r.status_code == 201
     assert r.json()["first_name"] == "Marie"
 
@@ -172,7 +172,7 @@ def test_create_leader_as_admin(client, make_user, auth_header, db_session):
 def test_create_leader_unknown_church(client, make_user, auth_header, db_session):
     h = _admin_header(make_user, auth_header)
     payload = {**_payload(), "church_id": 999999}
-    r = client.post(f"{BASE}/", json=payload, headers=h)
+    r = client.post(f"{BASE}", json=payload, headers=h)
     assert r.status_code == 404
 
 
