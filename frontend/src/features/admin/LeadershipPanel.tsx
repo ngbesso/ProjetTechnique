@@ -9,9 +9,8 @@ import { useParameters } from "../../hooks/useParameters";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
-import type { Leader, LeaderInput } from "../../types";
-
-const DISTRICTS = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
+import { DISTRICTS } from "../../types";
+import type { District, Leader, LeaderInput } from "../../types";
 
 const col = createColumnHelper<Leader>();
 
@@ -371,7 +370,7 @@ export function LeadershipPanel() {
                   <select
                     className={styles.select}
                     value={form.district ?? ""}
-                    onChange={(e) => setForm({ ...form, district: e.target.value || null })}
+                    onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}
                   >
                     <option value="">Aucun district</option>
                     {DISTRICTS.map((d) => (
