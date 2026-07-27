@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from app.models.post import PostStatus
 
 
-class PostCreate(BaseModel):
+class PostBase(BaseModel):
     title: str
     content: str
     excerpt: str | None = None
@@ -13,6 +13,18 @@ class PostCreate(BaseModel):
     status: PostStatus = PostStatus.draft
     category: str | None = None
     cover_image_url: str | None = None
+
+
+class PostCreate(PostBase):
+    pass
+
+
+class PostRead(PostBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    views: int
+    created_at: datetime
+    updated_at: datetime | None
 
 
 class PostUpdate(BaseModel):
@@ -23,21 +35,6 @@ class PostUpdate(BaseModel):
     status: PostStatus | None = None
     category: str | None = None
     cover_image_url: str | None = None
-
-
-class PostRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    title: str
-    content: str
-    excerpt: str | None
-    author: str
-    status: PostStatus
-    category: str | None
-    cover_image_url: str | None
-    views: int
-    created_at: datetime
-    updated_at: datetime | None
 
 
 class TopPostItem(BaseModel):

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from app.models.news import NewsStatus
 
 
-class NewsCreate(BaseModel):
+class NewsBase(BaseModel):
     title: str
     content: str
     excerpt: str | None = None
@@ -15,6 +15,18 @@ class NewsCreate(BaseModel):
     cover_image_url: str | None = None
     is_featured: bool = False
     position: int = 0
+
+
+class NewsCreate(NewsBase):
+    pass
+
+
+class NewsRead(NewsBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    views: int
+    created_at: datetime
+    updated_at: datetime | None
 
 
 class NewsUpdate(BaseModel):
@@ -27,20 +39,3 @@ class NewsUpdate(BaseModel):
     cover_image_url: str | None = None
     is_featured: bool | None = None
     position: int | None = None
-
-
-class NewsRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    title: str
-    content: str
-    excerpt: str | None
-    author: str
-    status: NewsStatus
-    category: str | None
-    cover_image_url: str | None
-    is_featured: bool
-    position: int
-    views: int
-    created_at: datetime
-    updated_at: datetime | None
