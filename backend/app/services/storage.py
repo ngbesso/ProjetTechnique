@@ -1,9 +1,12 @@
+import logging
 from typing import BinaryIO
 
 import boto3
 from botocore.client import Config
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 _client = boto3.client(
     "s3",
@@ -42,6 +45,16 @@ def upload_file(fileobj: BinaryIO, key: str, content_type: str | None) -> None:
 
 def delete_file(key: str) -> None:
     _client.delete_object(Bucket=settings.s3_bucket, Key=key)
+
+
+def delete_file_quiet(key: str) -> None:
+    """Supprime un objet sans lever d'exception en cas d'échec — utilisé pour
+    le nettoyage best-effort d'un fichier associé (couverture, photo, média)
+    dont l'absence ne doit pas empêcher l'opération principale."""
+    try:
+        delete_file(key)
+    except Exception:
+        logger.warning("Échec de la suppression de l'objet MinIO %s", key, exc_info=True)
 
 
 def presigned_url(key: str, expires: int = 300) -> str:

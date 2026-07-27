@@ -249,10 +249,7 @@ def replace_sermon_media(
 ):
     sermon = _load(db, sermon_id)
     if sermon.file_key:
-        try:
-            storage.delete_file(sermon.file_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(sermon.file_key)
     fmt = (
         SermonFormat.video
         if (file.content_type or "").startswith("video")

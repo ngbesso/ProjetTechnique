@@ -577,10 +577,7 @@ def upload_event_image(
     event = _load(db, event_id)
     _assert_owns_event(current_user, event)
     if event.image_key:
-        try:
-            storage.delete_file(event.image_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(event.image_key)
     ext = _image_extension(file.filename, file.content_type)
     image_key = f"events/{event.id}/cover.{ext}"
     storage.upload_file(file.file, image_key, file.content_type)
