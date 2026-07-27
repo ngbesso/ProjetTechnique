@@ -17,6 +17,7 @@ import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
 import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
+import { PagesPanel } from "./PagesPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
 import { RapportPanel } from "./RapportPanel";
@@ -57,23 +58,23 @@ interface NavItem {
 
 const ALL_NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Tableau de bord", icon: "📊" },
-  { id: "membres", label: "Membres", icon: "👥" },
-  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
-  { id: "ministeres", label: "Ministères", icon: "🙌" },
-  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
-  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
+  { id: "membres", label: "Membres", icon: "👥", group: "Communauté" },
+  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true, group: "Communauté" },
+  { id: "ministeres", label: "Ministères", icon: "🙌", group: "Communauté" },
+  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true, group: "Organisation" },
+  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true, group: "Organisation" },
   { id: "finances-revenus", label: "Revenus", icon: "💝", globalOnly: true, group: "Finances" },
   { id: "finances-depenses", label: "Dépenses", icon: "💸", globalOnly: true, group: "Finances" },
   { id: "finances-rapport", label: "Rapport", icon: "📈", globalOnly: true, group: "Finances" },
-  { id: "sermons", label: "Sermons", icon: "🎙" },
-  { id: "blog", label: "Blog", icon: "✍️" },
-  { id: "actualites", label: "Actualités", icon: "📰" },
-  { id: "evenements", label: "Événements", icon: "📅" },
-  { id: "prieres", label: "Demandes de prière", icon: "🙏" },
-  { id: "benevolat", label: "Bénévolat", icon: "🤝" },
-  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
-  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
+  { id: "sermons", label: "Sermons", icon: "🎙", group: "Contenu" },
+  { id: "blog", label: "Blog", icon: "✍️", group: "Contenu" },
+  { id: "actualites", label: "Actualités", icon: "📰", group: "Contenu" },
+  { id: "evenements", label: "Événements", icon: "📅", group: "Contenu" },
+  { id: "prieres", label: "Demandes de prière", icon: "🙏", group: "Demandes" },
+  { id: "benevolat", label: "Bénévolat", icon: "🤝", group: "Demandes" },
+  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true, group: "Système" },
+  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true, group: "Système" },
+  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true, group: "Système" },
   { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
 ];
 
@@ -494,6 +495,8 @@ export function AdminPage() {
               <PrieresPanel />
           ) : section === "benevolat" ? (
               <BenevolatPanel />
+          ) : section === "pages" ? (
+              <PagesPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : section === "assistant" ? (

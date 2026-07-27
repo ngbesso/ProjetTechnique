@@ -9,6 +9,7 @@ from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
 from app.models.expense import Expense
+from app.models.menu_item import MenuItem
 from app.models.news import News, NewsStatus
 from app.models.parameter import ParameterValue
 from app.models.post import Post, PostStatus
@@ -283,10 +284,46 @@ def seed_settings(db: Session) -> None:
         "event_reminder_hours_before": "24",
         "birthday_message_template": DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
         "birthday_monthly_message_template": DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
+        "site_name": "Mission Évangélique",
+        "site_tagline": "unis dans la foi",
+        "hero_eyebrow": "Une famille de foi, au-delà des frontières",
+        "hero_title": "Bienvenue dans notre communauté de foi",
+        "hero_subtitle": (
+            "Des Églises affiliées partout, une mission commune — "
+            "servir, former et rayonner ensemble."
+        ),
+        "about_eyebrow": "Qui sommes-nous",
+        "about_title": "Ce qui nous rassemble et nous guide",
+        "about_description": (
+            "Fondée il y a plus de 40 ans, Mission Évangélique fédère des centaines "
+            "d'Églises autour d'une vision commune : faire des disciples dans chaque "
+            "communauté et chaque nation."
+        ),
+        "social_youtube_url": "https://youtube.com/@mission",
+        "social_facebook_url": "https://facebook.com/mission",
+        "social_instagram_url": "https://instagram.com/mission",
+        "social_whatsapp_url": "https://wa.me/15145550100",
     }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:
             db.add(AppSetting(key=key, value=value))
+
+
+def seed_menu_items(db: Session) -> None:
+    """Insère (idempotent) les entrées du menu principal par défaut."""
+    if db.scalar(select(MenuItem)) is not None:
+        return
+    defaults = [
+        ("Accueil", "home"),
+        ("Leadership", "leadership"),
+        ("Sermons", "sermons"),
+        ("Blog", "blog"),
+        ("Actualités", "actualites"),
+        ("Événements", "evenements"),
+        ("Faire un don", "donation"),
+    ]
+    for position, (label, target_page) in enumerate(defaults):
+        db.add(MenuItem(label=label, target_page=target_page, position=position))
 
 
 def seed_posts(db: Session) -> None:
@@ -334,6 +371,7 @@ def run() -> None:
         seed_admin_user(db)
         seed_parameters(db)
         seed_settings(db)
+        seed_menu_items(db)
         seed_posts(db)
         seed_news(db)
         seed_expenses(db)

@@ -128,6 +128,21 @@ export interface AppSetting {
   description: string;
 }
 
+export interface MenuItem {
+  id: number;
+  label: string;
+  target_page: string;
+  position: number;
+  is_visible: boolean;
+}
+
+export interface MenuItemInput {
+  label?: string;
+  target_page?: string;
+  position?: number;
+  is_visible?: boolean;
+}
+
 export interface Church {
   id: number;
   name: string;

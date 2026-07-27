@@ -10,6 +10,7 @@ from app.api.routes import (
     admin_users,
     auth,
     churches,
+    content,
     dashboard,
     donations,
     donors,
@@ -120,6 +121,7 @@ app.include_router(health.router, tags=["health"])
 app.include_router(auth.router)
 app.include_router(admin_rbac.router)
 app.include_router(churches.router)
+app.include_router(content.router)
 app.include_router(members.router)
 app.include_router(ministry_affiliations.router)
 app.include_router(donations.router)

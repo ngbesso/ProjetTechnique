@@ -13,12 +13,36 @@ SETTING_META: dict[str, str] = {
     "birthday_monthly_message_template": (
         "Message groupé mensuel d'anniversaire (variables : {prenom}, {nom})"
     ),
+    "site_name": "Nom du site (logo, copyright du pied de page)",
+    "site_tagline": "Slogan affiché sous le nom du site",
+    "hero_eyebrow": "Petit texte au-dessus du titre principal de l'accueil",
+    "hero_title": "Titre principal de la page d'accueil",
+    "hero_subtitle": "Sous-titre de la page d'accueil",
+    "about_eyebrow": "Petit texte au-dessus du titre de la section « Qui sommes-nous »",
+    "about_title": "Titre de la section « Qui sommes-nous »",
+    "about_description": "Paragraphe de présentation de la section « Qui sommes-nous »",
+    "social_youtube_url": "Lien YouTube (pied de page)",
+    "social_facebook_url": "Lien Facebook (pied de page)",
+    "social_instagram_url": "Lien Instagram (pied de page)",
+    "social_whatsapp_url": "Lien WhatsApp (pied de page)",
 }
 
 # Clés retournées sans authentification
 PUBLIC_SETTINGS: set[str] = {
     "zeffy_embed_path",
     "auto_approve_members",
+    "site_name",
+    "site_tagline",
+    "hero_eyebrow",
+    "hero_title",
+    "hero_subtitle",
+    "about_eyebrow",
+    "about_title",
+    "about_description",
+    "social_youtube_url",
+    "social_facebook_url",
+    "social_instagram_url",
+    "social_whatsapp_url",
 }
 
 
