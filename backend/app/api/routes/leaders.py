@@ -60,7 +60,7 @@ def _to_read(leader: Leader) -> LeaderRead:
     )
 
 
-@router.get("/", response_model=Page[LeaderRead])
+@router.get("", response_model=Page[LeaderRead])
 def list_leaders(
     db: Annotated[Session, Depends(get_db)],
     role: str | None = None,
@@ -131,7 +131,7 @@ def get_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post(
-    "/", response_model=LeaderRead, status_code=status.HTTP_201_CREATED, dependencies=[requires_leader_manage]
+    "", response_model=LeaderRead, status_code=status.HTTP_201_CREATED, dependencies=[requires_leader_manage]
 )
 def create_leader(payload: LeaderCreate, db: Annotated[Session, Depends(get_db)]):
     """Crée un membre du leadership — réservé aux administrateurs."""

@@ -28,7 +28,7 @@ function buildQuery(query: Record<string, string | number | boolean | undefined>
 // ── Public ─────────────────────────────────────────────────────────────────
 
 export function getLeaders(query: LeaderQuery = {}): Promise<LeaderListResult> {
-  return http.get<LeaderListResult>(`/leaders/${buildQuery(query)}`);
+  return http.get<LeaderListResult>(`/leaders${buildQuery(query)}`);
 }
 
 export function getLeader(id: number): Promise<Leader> {
@@ -42,7 +42,7 @@ export function getLeadersAdmin(query: LeaderAdminQuery = {}): Promise<LeaderLis
 }
 
 export function createLeader(data: LeaderInput): Promise<Leader> {
-  return http.post<Leader>("/leaders/", data);
+  return http.post<Leader>("/leaders", data);
 }
 
 export function updateLeader(id: number, data: Partial<LeaderInput>): Promise<Leader> {

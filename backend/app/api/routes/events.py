@@ -232,7 +232,7 @@ def _to_registration_read(
     )
 
 
-@router.get("/", response_model=Page[EventRead])
+@router.get("", response_model=Page[EventRead])
 def list_events(
     db: Annotated[Session, Depends(get_db)],
     category: str | None = None,
@@ -365,7 +365,7 @@ def get_event(event_id: int, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post(
-    "/", response_model=EventRead, status_code=status.HTTP_201_CREATED, dependencies=[can_manage]
+    "", response_model=EventRead, status_code=status.HTTP_201_CREATED, dependencies=[can_manage]
 )
 def create_event(
     payload: EventCreate,

@@ -39,7 +39,7 @@ function buildQuery(query: Record<string, string | number | boolean | undefined>
 // ── Public ─────────────────────────────────────────────────────────────────
 
 export function getEvents(query: EventQuery = {}): Promise<EventListResult> {
-  return http.get<EventListResult>(`/events/${buildQuery(query)}`);
+  return http.get<EventListResult>(`/events${buildQuery(query)}`);
 }
 
 export function getEvent(id: number): Promise<EventItem> {
@@ -80,7 +80,7 @@ export function getEventsStats(): Promise<EventStats> {
 }
 
 export function createEvent(data: EventInput): Promise<EventItem> {
-  return http.post<EventItem>("/events/", data);
+  return http.post<EventItem>("/events", data);
 }
 
 export function updateEvent(id: number, data: Partial<EventInput>): Promise<EventItem> {
