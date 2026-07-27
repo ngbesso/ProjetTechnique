@@ -9,9 +9,18 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user, require_global_permission
 from app.db.session import get_db
+from app.models.church import Church
 from app.models.expense import Expense
 from app.models.user import User
-from app.schemas.expense import ExpenseCreate, ExpenseList, ExpenseRead, ExpenseUpdate
+from app.schemas.expense import (
+    ExpenseAdminStats,
+    ExpenseCategoryAmount,
+    ExpenseChurchAmount,
+    ExpenseCreate,
+    ExpenseList,
+    ExpenseRead,
+    ExpenseUpdate,
+)
 from app.services import storage
 
 router = APIRouter(prefix="/expenses", tags=["finances"])
@@ -75,6 +84,53 @@ def list_expenses(
     ).all()
     return ExpenseList(
         items=[_to_read(e) for e in items], total=total or 0, limit=limit, offset=offset
+    )
+
+
+@router.get("/admin/stats", response_model=ExpenseAdminStats, dependencies=[can_manage])
+def get_expenses_stats(db: Annotated[Session, Depends(get_db)]):
+    """Montant total, nombre de dépenses, répartition par catégorie et top 5 églises."""
+    total_amount = float(
+        db.scalar(select(func.coalesce(func.sum(Expense.amount), 0))) or 0
+    )
+    count = db.scalar(select(func.count()).select_from(Expense)) or 0
+
+    cat_rows = db.execute(
+        select(
+            Expense.category, func.sum(Expense.amount), func.count(Expense.id)
+        ).group_by(Expense.category)
+    ).all()
+    by_category = [
+        ExpenseCategoryAmount(category=cat, total=float(total), count=cnt)
+        for cat, total, cnt in cat_rows
+    ]
+
+    church_rows = db.execute(
+        select(Expense.church_id, func.sum(Expense.amount))
+        .where(Expense.church_id.isnot(None))
+        .group_by(Expense.church_id)
+        .order_by(func.sum(Expense.amount).desc())
+        .limit(5)
+    ).all()
+    church_ids = [cid for cid, _ in church_rows]
+    churches = (
+        db.scalars(select(Church).where(Church.id.in_(church_ids))).all()
+        if church_ids
+        else []
+    )
+    name_map = {c.id: c.name for c in churches}
+    top_churches = [
+        ExpenseChurchAmount(
+            church_id=cid, church_name=name_map.get(cid, "—"), total=float(total)
+        )
+        for cid, total in church_rows
+    ]
+
+    return ExpenseAdminStats(
+        total_amount=total_amount,
+        count=count,
+        by_category=by_category,
+        top_churches=top_churches,
     )
 
 

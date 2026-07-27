@@ -62,3 +62,20 @@ class LeaderList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class LeaderRoleCount(BaseModel):
+    role: str
+    count: int
+
+
+class LeaderDistrictCount(BaseModel):
+    district: str
+    count: int
+
+
+class LeaderAdminStats(BaseModel):
+    total: int
+    published: int
+    by_role: list[LeaderRoleCount]
+    by_district: list[LeaderDistrictCount]

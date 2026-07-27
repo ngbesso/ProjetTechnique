@@ -12,6 +12,12 @@ STATS_ENDPOINTS = {
     "sermons": "/sermons/admin/stats",
     "articles": "/posts/admin/stats",
     "eglises": "/churches/admin/stats",
+    "depenses": "/expenses/admin/stats",
+    "actualites": "/news/admin/stats",
+    "leadership": "/api/leaders/admin/stats",
+    "ministeres": "/ministries/admin/stats",
+    "prieres": "/prayer-requests/admin/stats",
+    "benevolat": "/volunteer-requests/admin/stats",
 }
 
 

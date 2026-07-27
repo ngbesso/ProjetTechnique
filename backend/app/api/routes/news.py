@@ -9,7 +9,14 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_global_permission
 from app.db.session import get_db
 from app.models.news import News, NewsStatus
-from app.schemas.news import NewsCreate, NewsList, NewsRead, NewsUpdate
+from app.schemas.news import (
+    NewsAdminStats,
+    NewsCreate,
+    NewsList,
+    NewsRead,
+    NewsUpdate,
+    TopNewsItem,
+)
 from app.services import storage
 
 router = APIRouter(prefix="/news", tags=["actualités"])
@@ -72,6 +79,33 @@ def list_news_admin(
         query.order_by(News.created_at.desc()).offset(offset).limit(limit)
     ).all()
     return NewsList(items=list(items), total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/admin/stats", response_model=NewsAdminStats, dependencies=[can_manage])
+def get_news_stats(db: Annotated[Session, Depends(get_db)]):
+    """Répartition par statut, nombre d'épinglées, total des vues et top 5 des plus lues."""
+    status_rows = db.execute(
+        select(News.status, func.count(News.id)).group_by(News.status)
+    ).all()
+    status_map: dict[NewsStatus, int] = dict(status_rows)
+
+    featured_count = (
+        db.scalar(
+            select(func.count()).select_from(News).where(News.is_featured.is_(True))
+        )
+        or 0
+    )
+    total_views = db.scalar(select(func.coalesce(func.sum(News.views), 0))) or 0
+    top_rows = db.scalars(select(News).order_by(News.views.desc()).limit(5)).all()
+
+    return NewsAdminStats(
+        published=status_map.get(NewsStatus.published, 0),
+        draft=status_map.get(NewsStatus.draft, 0),
+        archived=status_map.get(NewsStatus.archived, 0),
+        featured_count=featured_count,
+        total_views=total_views,
+        top_news=[TopNewsItem(id=n.id, title=n.title, views=n.views) for n in top_rows],
+    )
 
 
 @router.get("/categories", response_model=list[str])

@@ -51,3 +51,18 @@ class NewsList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class TopNewsItem(BaseModel):
+    id: int
+    title: str
+    views: int
+
+
+class NewsAdminStats(BaseModel):
+    published: int
+    draft: int
+    archived: int
+    featured_count: int
+    total_views: int
+    top_news: list[TopNewsItem]

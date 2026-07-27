@@ -39,3 +39,22 @@ class ExpenseList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class ExpenseCategoryAmount(BaseModel):
+    category: str
+    total: float
+    count: int
+
+
+class ExpenseChurchAmount(BaseModel):
+    church_id: int
+    church_name: str
+    total: float
+
+
+class ExpenseAdminStats(BaseModel):
+    total_amount: float
+    count: int
+    by_category: list[ExpenseCategoryAmount]
+    top_churches: list[ExpenseChurchAmount]

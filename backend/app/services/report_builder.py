@@ -19,6 +19,12 @@ DOMAIN_LABELS = {
     "sermons": "Sermons",
     "articles": "Blog",
     "eglises": "Églises affiliées",
+    "depenses": "Dépenses",
+    "actualites": "Actualités",
+    "leadership": "Leadership",
+    "ministeres": "Ministères",
+    "prieres": "Demandes de prière",
+    "benevolat": "Bénévolat",
 }
 
 

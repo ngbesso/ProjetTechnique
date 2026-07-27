@@ -1,13 +1,22 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.leader import Leader, LeaderRole
-from app.schemas.leader import LeaderCreate, LeaderList, LeaderRead, LeaderUpdate
+from app.schemas.leader import (
+    LeaderAdminStats,
+    LeaderCreate,
+    LeaderDistrictCount,
+    LeaderList,
+    LeaderRead,
+    LeaderRoleCount,
+    LeaderUpdate,
+)
 from app.services import leader_service, storage
 
 router = APIRouter(prefix="/api/leaders", tags=["leadership"])
@@ -17,7 +26,9 @@ requires_admin = Depends(get_current_admin)
 def _load(db: Session, leader_id: int) -> Leader:
     leader = db.get(Leader, leader_id)
     if leader is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Membre du leadership introuvable")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Membre du leadership introuvable"
+        )
     return leader
 
 
@@ -31,13 +42,17 @@ def _load_published(db: Session, leader_id: int) -> Leader:
     """Une fiche non publiée se comporte comme inexistante pour le public."""
     leader = _load(db, leader_id)
     if not leader.is_published:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Membre du leadership introuvable")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Membre du leadership introuvable"
+        )
     return leader
 
 
 def _to_read(leader: Leader) -> LeaderRead:
     photo_url = (
-        storage.presigned_url(leader.photo_key, expires=3600) if leader.photo_key else None
+        storage.presigned_url(leader.photo_key, expires=3600)
+        if leader.photo_key
+        else None
     )
     return LeaderRead(
         id=leader.id,
@@ -82,7 +97,10 @@ def list_leaders(
         db, published_only=True, role=role, district=district, church_id=church_id
     )
     return LeaderList(
-        items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
+        items=[_to_read(leader) for leader in leaders],
+        total=total,
+        limit=limit,
+        offset=offset,
     )
 
 
@@ -119,7 +137,42 @@ def list_leaders_admin(
         is_published=is_published,
     )
     return LeaderList(
-        items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
+        items=[_to_read(leader) for leader in leaders],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/admin/stats", response_model=LeaderAdminStats, dependencies=[requires_admin]
+)
+def get_leaders_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre total, publiés, répartition par rôle et par district."""
+    total = db.scalar(select(func.count()).select_from(Leader)) or 0
+    published = (
+        db.scalar(
+            select(func.count())
+            .select_from(Leader)
+            .where(Leader.is_published.is_(True))
+        )
+        or 0
+    )
+    role_rows = db.execute(
+        select(Leader.role, func.count(Leader.id)).group_by(Leader.role)
+    ).all()
+    district_rows = db.execute(
+        select(Leader.district, func.count(Leader.id))
+        .where(Leader.district.isnot(None))
+        .group_by(Leader.district)
+    ).all()
+    return LeaderAdminStats(
+        total=total,
+        published=published,
+        by_role=[LeaderRoleCount(role=r.value, count=c) for r, c in role_rows],
+        by_district=[
+            LeaderDistrictCount(district=d, count=c) for d, c in district_rows
+        ],
     )
 
 
@@ -130,7 +183,10 @@ def get_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post(
-    "/", response_model=LeaderRead, status_code=status.HTTP_201_CREATED, dependencies=[requires_admin]
+    "/",
+    response_model=LeaderRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[requires_admin],
 )
 def create_leader(payload: LeaderCreate, db: Annotated[Session, Depends(get_db)]):
     """Crée un membre du leadership — réservé aux administrateurs."""
@@ -151,14 +207,18 @@ def update_leader(
 
 
 @router.delete(
-    "/{leader_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[requires_admin]
+    "/{leader_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[requires_admin],
 )
 def delete_leader(leader_id: int, db: Annotated[Session, Depends(get_db)]):
     """Supprime un membre du leadership — réservé aux administrateurs."""
     leader_service.delete_leader(db, _load(db, leader_id))
 
 
-@router.post("/{leader_id}/photo", response_model=LeaderRead, dependencies=[requires_admin])
+@router.post(
+    "/{leader_id}/photo", response_model=LeaderRead, dependencies=[requires_admin]
+)
 def upload_leader_photo(
     leader_id: int,
     db: Annotated[Session, Depends(get_db)],

@@ -2,23 +2,26 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_member, get_current_user
+from app.api.deps import get_current_member, get_current_user, require_global_permission
 from app.db.session import get_db
 from app.models.member import Member
 from app.models.ministry_affiliation import MemberMinistryAffiliation
 from app.models.user import User
 from app.schemas.ministry_affiliation import (
+    MinistryAdminStats,
     MinistryAffiliationCreate,
     MinistryAffiliationRead,
     MinistryBulkAddRequest,
     MinistryBulkAddResult,
+    MinistryCount,
     MinistryMemberRead,
 )
 
 router = APIRouter(tags=["ministères"])
+can_view = Depends(require_global_permission("member:read"))
 
 
 def _today():
@@ -28,7 +31,9 @@ def _today():
 # ── Libre-service (membre connecté) — auto-affiliation, sans approbation ─────
 
 
-@router.post("/members/me/ministries", response_model=MinistryAffiliationRead, status_code=201)
+@router.post(
+    "/members/me/ministries", response_model=MinistryAffiliationRead, status_code=201
+)
 def join_ministry(
     data: MinistryAffiliationCreate,
     member: Annotated[Member, Depends(get_current_member)],
@@ -55,7 +60,9 @@ def join_ministry(
     return affiliation
 
 
-@router.delete("/members/me/ministries/{affiliation_id}", response_model=MinistryAffiliationRead)
+@router.delete(
+    "/members/me/ministries/{affiliation_id}", response_model=MinistryAffiliationRead
+)
 def leave_ministry(
     affiliation_id: int,
     member: Annotated[Member, Depends(get_current_member)],
@@ -88,6 +95,29 @@ def my_ministries(
 # ── Administration (gestion en masse, centrée sur le ministère) ──────────────
 
 
+@router.get(
+    "/ministries/admin/stats",
+    response_model=MinistryAdminStats,
+    dependencies=[can_view],
+)
+def get_ministries_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre d'affiliations actives et répartition par ministère."""
+    rows = db.execute(
+        select(
+            MemberMinistryAffiliation.ministry, func.count(MemberMinistryAffiliation.id)
+        )
+        .where(MemberMinistryAffiliation.left_at.is_(None))
+        .group_by(MemberMinistryAffiliation.ministry)
+        .order_by(func.count(MemberMinistryAffiliation.id).desc())
+    ).all()
+    total_active = sum(c for _, c in rows)
+    return MinistryAdminStats(
+        total_active=total_active,
+        ministries_count=len(rows),
+        by_ministry=[MinistryCount(ministry=m, active_count=c) for m, c in rows],
+    )
+
+
 @router.get("/ministries/{ministry}/members", response_model=list[MinistryMemberRead])
 def list_ministry_members(
     ministry: str,
@@ -102,7 +132,9 @@ def list_ministry_members(
         raise HTTPException(403, "Aucun périmètre accessible")
     query = (
         select(Member, MemberMinistryAffiliation)
-        .join(MemberMinistryAffiliation, MemberMinistryAffiliation.member_id == Member.id)
+        .join(
+            MemberMinistryAffiliation, MemberMinistryAffiliation.member_id == Member.id
+        )
         .where(
             MemberMinistryAffiliation.ministry == ministry,
             MemberMinistryAffiliation.left_at.is_(None),
@@ -166,7 +198,9 @@ def bulk_add_ministry_members(
             skipped.append(member_id)
             continue
         db.add(
-            MemberMinistryAffiliation(member_id=member.id, ministry=ministry, joined_at=today)
+            MemberMinistryAffiliation(
+                member_id=member.id, ministry=ministry, joined_at=today
+            )
         )
         added.append(member_id)
 
