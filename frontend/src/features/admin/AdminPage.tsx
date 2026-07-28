@@ -78,6 +78,15 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
 ];
 
+const GROUP_ICONS: Record<string, string> = {
+  "Communauté": "👨‍👩‍👧‍👦",
+  "Organisation": "🏛️",
+  "Finances": "💰",
+  "Contenu": "📰",
+  "Demandes": "📨",
+  "Système": "⚙️",
+};
+
 // ── Sub-panel : Rôles & Permissions ──────────────────────────────────────────
 
 interface RbacPanelProps {
@@ -369,6 +378,7 @@ export function AdminPage() {
                     className={styles.navGroupLabel}
                     onClick={() => toggleGroup(item.group!)}
                   >
+                    <span className={styles.navIcon}>{GROUP_ICONS[item.group!] ?? "📁"}</span>
                     <span style={{ flex: 1, textAlign: "left" }}>{item.group}</span>
                     <span style={{ transform: groupExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>
                       ›
