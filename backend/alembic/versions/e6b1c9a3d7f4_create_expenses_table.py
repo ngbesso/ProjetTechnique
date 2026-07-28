@@ -1,7 +1,7 @@
 """create expenses table (module gestion financière)
 
 Revision ID: e6b1c9a3d7f4
-Revises: d58fa204b6c1
+Revises: bf9c10b20e84
 Create Date: 2026-07-25
 """
 
@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 
 revision: str = "e6b1c9a3d7f4"
-down_revision: Union[str, None] = "d58fa204b6c1"
+down_revision: Union[str, None] = "bf9c10b20e84"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

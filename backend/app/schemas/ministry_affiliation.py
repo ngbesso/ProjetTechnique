@@ -46,3 +46,8 @@ class MinistryAdminStats(BaseModel):
     total_active: int
     ministries_count: int
     by_ministry: list[MinistryCount]
+
+
+class MinistryStatsItem(BaseModel):
+    ministry: str
+    count: int

@@ -11,7 +11,7 @@ import {
 import styles from "./DataTable.module.css";
 
 interface DataTableProps<T> {
-  columns: ColumnDef<T, any>[];
+  columns: ColumnDef<T>[];
   data: T[];
   emptyMessage?: string;
   getRowId?: (row: T) => string | number;

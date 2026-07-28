@@ -9,6 +9,7 @@ VALID_CATEGORIES = {
     "intervenant_category",
     "ministry",
     "expense_category",
+    "leader_role",
 }
 
 
@@ -18,13 +19,16 @@ class ParameterValueRead(BaseModel):
     category: str
     label: str
     position: int
+    restricted_to_sexe: str | None = None
 
 
 class ParameterValueCreate(BaseModel):
     label: str
     position: int = 0
+    restricted_to_sexe: str | None = None
 
 
 class ParameterValueUpdate(BaseModel):
     label: str | None = None
     position: int | None = None
+    restricted_to_sexe: str | None = None

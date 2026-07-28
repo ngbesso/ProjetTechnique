@@ -3,7 +3,7 @@ from typing import BinaryIO
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.leader import Leader, LeaderRole
+from app.models.leader import Leader
 from app.schemas.leader import LeaderCreate, LeaderUpdate
 from app.services import storage
 
@@ -20,7 +20,7 @@ def _apply_filters(
     query,
     *,
     published_only: bool,
-    role: LeaderRole | None,
+    role: str | None,
     district: str | None,
     church_id: int | None,
     q: str | None = None,
@@ -62,7 +62,7 @@ def list_leaders(
     db: Session,
     *,
     published_only: bool = True,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     q: str | None = None,
@@ -92,7 +92,7 @@ def count_leaders(
     db: Session,
     *,
     published_only: bool = True,
-    role: LeaderRole | None = None,
+    role: str | None = None,
     district: str | None = None,
     church_id: int | None = None,
     q: str | None = None,
@@ -120,10 +120,7 @@ def update_leader(db: Session, leader: Leader, payload: LeaderUpdate) -> Leader:
 
 def delete_leader(db: Session, leader: Leader) -> None:
     if leader.photo_key:
-        try:
-            storage.delete_file(leader.photo_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(leader.photo_key)
     db.delete(leader)
     db.commit()
 
@@ -137,10 +134,7 @@ def upload_photo(
 ) -> Leader:
     """Téléverse (ou remplace) la photo de profil vers MinIO."""
     if leader.photo_key:
-        try:
-            storage.delete_file(leader.photo_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(leader.photo_key)
     ext = _photo_extension(filename, content_type)
     photo_key = f"leaders/{leader.id}/photo.{ext}"
     storage.upload_file(fileobj, photo_key, content_type)

@@ -113,13 +113,77 @@ export interface Donor {
   email: string | null;
 }
 
-export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer";
+export interface DonationListResult {
+  items: Donation[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer" | "National";
+
+export const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
+
+export interface Expense {
+  id: number;
+  amount: number;
+  expense_date: string;
+  category: string;
+  church_id: number | null;
+  responsible_id: number;
+  responsible_email: string;
+  comment: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  created_at: string;
+}
+
+export interface ExpenseInput {
+  amount: number;
+  expense_date: string;
+  category: string;
+  comment: string;
+  church_id?: number | null;
+}
+
+export interface ExpenseListResult {
+  items: Expense[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type FinancePeriod = "day" | "week" | "month" | "year" | "custom";
+
+export interface FinanceTransaction {
+  date: string;
+  type: string;
+  category: string;
+  amount: number;
+  currency: string;
+  party: string;
+  note: string;
+  attachment_url: string | null;
+}
+
+export interface FinanceReport {
+  period_start: string;
+  period_end: string;
+  income_cad: number;
+  income_usd: number;
+  expenses_total: number;
+  balance: number;
+  income_count: number;
+  expense_count: number;
+  transactions: FinanceTransaction[];
+}
 
 export interface ParameterValue {
   id: number;
   category: string;
   label: string;
   position: number;
+  restricted_to_sexe: string | null;
 }
 
 export interface AppSetting {
@@ -286,6 +350,11 @@ export interface MinistryMember {
 export interface MinistryBulkAddResult {
   added: number[];
   skipped: number[];
+}
+
+export interface MinistryStatsItem {
+  ministry: string;
+  count: number;
 }
 
 export interface MemberImportRowError {
@@ -620,8 +689,8 @@ export interface Leader {
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
-  district: string | null;
+  role: string;
+  district: District | null;
   church_id: number | null;
   bio: string | null;
   email: string | null;
@@ -645,8 +714,8 @@ export interface LeaderInput {
   first_name: string;
   last_name: string;
   title: string;
-  role: LeaderRole;
-  district?: string | null;
+  role: string;
+  district?: District | null;
   church_id?: number | null;
   bio?: string | null;
   email?: string | null;
@@ -654,60 +723,4 @@ export interface LeaderInput {
   years_of_service?: number | null;
   is_published?: boolean;
   order_index?: number;
-}
-
-// ── Finances ─────────────────────────────────────────────────────────────────
-
-export interface Expense {
-  id: number;
-  amount: number;
-  expense_date: string;
-  category: string;
-  church_id: number | null;
-  responsible_id: number;
-  responsible_email: string;
-  comment: string;
-  attachment_url: string | null;
-  attachment_name: string | null;
-  created_at: string;
-}
-
-export interface ExpenseInput {
-  amount: number;
-  expense_date: string;
-  category: string;
-  comment: string;
-  church_id?: number | null;
-}
-
-export interface ExpenseListResult {
-  items: Expense[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export type FinancePeriod = "day" | "week" | "month" | "year" | "custom";
-
-export interface FinanceTransaction {
-  date: string;
-  type: "revenu" | "dépense";
-  category: string;
-  amount: number;
-  currency: string;
-  party: string;
-  note: string;
-  attachment_url: string | null;
-}
-
-export interface FinanceReport {
-  period_start: string;
-  period_end: string;
-  income_cad: number;
-  income_usd: number;
-  expenses_total: number;
-  balance: number;
-  income_count: number;
-  expense_count: number;
-  transactions: FinanceTransaction[];
 }

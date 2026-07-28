@@ -39,72 +39,72 @@ function buildQuery(query: Record<string, string | number | boolean | undefined>
 // ── Public ─────────────────────────────────────────────────────────────────
 
 export function getEvents(query: EventQuery = {}): Promise<EventListResult> {
-  return http.get<EventListResult>(`/api/events/${buildQuery(query)}`);
+  return http.get<EventListResult>(`/events${buildQuery(query)}`);
 }
 
 export function getEvent(id: number): Promise<EventItem> {
-  return http.get<EventItem>(`/api/events/${id}`);
+  return http.get<EventItem>(`/events/${id}`);
 }
 
 export function registerToEvent(
   id: number,
   data?: EventRegistrationInput,
 ): Promise<EventRegistration> {
-  return http.post<EventRegistration>(`/api/events/${id}/register`, data ?? {});
+  return http.post<EventRegistration>(`/events/${id}/register`, data ?? {});
 }
 
 export function cancelRegistration(id: number): Promise<void> {
-  return http.del(`/api/events/${id}/register`);
+  return http.del(`/events/${id}/register`);
 }
 
 export function cancelRegistrationByToken(token: string): Promise<void> {
-  return http.del(`/api/events/registrations/cancel?token=${encodeURIComponent(token)}`);
+  return http.del(`/events/registrations/cancel?token=${encodeURIComponent(token)}`);
 }
 
 export function resendCancelLink(eventId: number, email: string): Promise<void> {
-  return http.post<void>(`/api/events/${eventId}/registrations/resend-cancel-link`, { email });
+  return http.post<void>(`/events/${eventId}/registrations/resend-cancel-link`, { email });
 }
 
 export function fetchMyEventRegistrations(): Promise<MyEventRegistration[]> {
-  return http.get<MyEventRegistration[]>("/api/events/registrations/me");
+  return http.get<MyEventRegistration[]>("/events/registrations/me");
 }
 
 // ── Administration ─────────────────────────────────────────────────────────
 
 export function getEventsAdmin(query: EventAdminQuery = {}): Promise<EventListResult> {
-  return http.get<EventListResult>(`/api/events/admin${buildQuery(query)}`);
+  return http.get<EventListResult>(`/events/admin${buildQuery(query)}`);
 }
 
 export function getEventsStats(): Promise<EventStats> {
-  return http.get<EventStats>("/api/events/admin/stats");
+  return http.get<EventStats>("/events/admin/stats");
 }
 
 export function createEvent(data: EventInput): Promise<EventItem> {
-  return http.post<EventItem>("/api/events/", data);
+  return http.post<EventItem>("/events", data);
 }
 
 export function updateEvent(id: number, data: Partial<EventInput>): Promise<EventItem> {
-  return http.put<EventItem>(`/api/events/${id}`, data);
+  return http.put<EventItem>(`/events/${id}`, data);
 }
 
 export function deleteEvent(id: number): Promise<void> {
-  return http.del(`/api/events/${id}`);
+  return http.del(`/events/${id}`);
 }
 
 export function getEventParticipants(id: number): Promise<EventRegistration[]> {
-  return http.get<EventRegistration[]>(`/api/events/${id}/participants`);
+  return http.get<EventRegistration[]>(`/events/${id}/participants`);
 }
 
 export function exportEventRegistrations(id: number): Promise<Blob> {
-  return http.getBlob(`/api/events/${id}/registrations/export`);
+  return http.getBlob(`/events/${id}/registrations/export`);
 }
 
 export function uploadEventImage(id: number, file: File): Promise<EventItem> {
   const fd = new FormData();
   fd.append("file", file);
-  return http.postMultipart<EventItem>(`/api/events/${id}/image`, fd);
+  return http.postMultipart<EventItem>(`/events/${id}/image`, fd);
 }
 
 export function getEventImageUrl(id: number): Promise<{ url: string }> {
-  return http.get<{ url: string }>(`/api/events/${id}/image`);
+  return http.get<{ url: string }>(`/events/${id}/image`);
 }

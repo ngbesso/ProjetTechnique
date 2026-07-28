@@ -44,9 +44,9 @@ from app.models.event import (
 )
 from app.models.member import Member
 from app.models.user import User
+from app.schemas.common import Page
 from app.schemas.event import (
     EventCreate,
-    EventList,
     EventRead,
     EventStats,
     EventSummary,
@@ -58,7 +58,7 @@ from app.schemas.event import (
 )
 from app.services import event_service, storage
 
-router = APIRouter(prefix="/api/events", tags=["événements"])
+router = APIRouter(prefix="/events", tags=["événements"])
 can_manage = Depends(require_global_permission("event:manage"))
 
 MONTHS_FR = [
@@ -232,7 +232,7 @@ def _to_registration_read(
     )
 
 
-@router.get("/", response_model=EventList)
+@router.get("", response_model=Page[EventRead])
 def list_events(
     db: Annotated[Session, Depends(get_db)],
     category: str | None = None,
@@ -261,7 +261,7 @@ def list_events(
         church_id=church_id,
         upcoming_only=upcoming_only,
     )
-    return EventList(
+    return Page[EventRead](
         items=[_to_read(db, e, reveal_online_link=False) for e in events],
         total=total,
         limit=limit,
@@ -269,7 +269,7 @@ def list_events(
     )
 
 
-@router.get("/admin", response_model=EventList, dependencies=[can_manage])
+@router.get("/admin", response_model=Page[EventRead], dependencies=[can_manage])
 def list_events_admin(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -309,7 +309,7 @@ def list_events_admin(
         status=event_status,
         created_by=created_by,
     )
-    return EventList(
+    return Page[EventRead](
         items=[_to_read(db, e) for e in events], total=total, limit=limit, offset=offset
     )
 
@@ -365,7 +365,7 @@ def get_event(event_id: int, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post(
-    "/", response_model=EventRead, status_code=status.HTTP_201_CREATED, dependencies=[can_manage]
+    "", response_model=EventRead, status_code=status.HTTP_201_CREATED, dependencies=[can_manage]
 )
 def create_event(
     payload: EventCreate,
@@ -577,10 +577,7 @@ def upload_event_image(
     event = _load(db, event_id)
     _assert_owns_event(current_user, event)
     if event.image_key:
-        try:
-            storage.delete_file(event.image_key)
-        except Exception:
-            pass
+        storage.delete_file_quiet(event.image_key)
     ext = _image_extension(file.filename, file.content_type)
     image_key = f"events/{event.id}/cover.{ext}"
     storage.upload_file(file.file, image_key, file.content_type)

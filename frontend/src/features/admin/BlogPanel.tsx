@@ -1,43 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import coverStyles from "./BlogPanel.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../hooks/usePosts";
 import { useConfirm } from "../../hooks/useConfirm";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchPostCategories, fetchPostsStats, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
+import { IconCheckCircle, IconEye, IconFileEdit } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { formatDate } from "../../lib/format";
 import type { Post, PostAdminStats, PostInput, PostStatus } from "../../types";
-
-// ── Icônes KPI ────────────────────────────────────────────────────────────────
-
-function IconCheckCircle() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="8 12 11 15 16 9" />
-    </svg>
-  );
-}
-
-function IconFileEdit() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <path d="M12 18l4-4-1.5-1.5L10.5 16.5V18H12z" />
-    </svg>
-  );
-}
-
-function IconEye() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
 
 const EMPTY: PostInput = {
   title: "",
@@ -53,14 +25,6 @@ const STATUS_LABELS: Record<PostStatus, string> = {
   published: "Publié",
   archived: "Archivé",
 };
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 // ── CoverUpload — zone de dépôt / prévisualisation ────────────────────────────
 
@@ -167,8 +131,7 @@ export function BlogPanel() {
   const [categories, setCategories] = useState<string[]>([]);
   const [stats, setStats] = useState<PostAdminStats | null>(null);
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("post:manage");
+  const canManage = hasPermission(user, "post:manage");
 
   useEffect(() => {
     loadAdmin();

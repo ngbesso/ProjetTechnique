@@ -4,18 +4,69 @@ import { useParameters } from "../../hooks/useParameters";
 import { fetchMembers } from "../../lib/api/members";
 import {
     bulkAddMinistryMembers,
+    exportMinistryMembers,
+    fetchMinistriesStats,
     fetchMinistryMembers,
     removeMinistryAffiliation,
 } from "../../lib/api/ministryAffiliations";
-import type { Member, MinistryMember } from "../../types";
+import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { formatDate } from "../../lib/format";
+import type { Member, MinistryMember, MinistryStatsItem } from "../../types";
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString("fr-CA", {
-        year: "numeric", month: "long", day: "numeric",
-    });
+const col = createColumnHelper<MinistryMember>();
+
+// ── Rapport : membres par ministère ───────────────────────────────────────────
+
+interface MinistryReportProps {
+    onSelectMinistry: (ministry: string) => void;
 }
 
+function MinistryReport({ onSelectMinistry }: MinistryReportProps) {
+    const [stats, setStats] = useState<MinistryStatsItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetchMinistriesStats()
+            .then(setStats)
+            .catch((e) => setError(e instanceof Error ? e.message : "Erreur"))
+            .finally(() => setLoading(false));
+    }, []);
+
+    return (
+        <section className={styles.card}>
+            <h3 className={styles.cardTitle}>Rapport — membres par ministère</h3>
+            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+            {loading ? (
+                <p className={styles.stateMsg}>Chargement…</p>
+            ) : stats.length === 0 ? (
+                <p className={styles.empty}>Aucun ministère configuré.</p>
+            ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".35rem" }}>
+                    {stats.map((s) => (
+                        <li
+                            key={s.ministry}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: ".6rem 0", borderBottom: "1px solid var(--border)" }}
+                        >
+                            <span>{s.ministry}</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                                <strong>{s.count}</strong>
+                                <button className={styles.btnOutlineSm} onClick={() => onSelectMinistry(s.ministry)}>
+                                    Gérer
+                                </button>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
+    );
+}
+
+// ── Gestion : détail d'un ministère ───────────────────────────────────────────
+
 export function MinisteresPanel() {
+    const [mode, setMode] = useState<"gestion" | "rapport">("gestion");
     const { values: ministries, load: loadMinistries } = useParameters("ministry");
     const [selected, setSelected] = useState("");
     const [members, setMembers] = useState<MinistryMember[]>([]);
@@ -24,6 +75,7 @@ export function MinisteresPanel() {
     const [memberQuery, setMemberQuery] = useState("");
     const [selectedRemoveIds, setSelectedRemoveIds] = useState<Set<number>>(new Set());
     const [removing, setRemoving] = useState(false);
+    const [exporting, setExporting] = useState(false);
 
     const [candidateQuery, setCandidateQuery] = useState("");
     const [candidates, setCandidates] = useState<Member[]>([]);
@@ -52,7 +104,6 @@ export function MinisteresPanel() {
         setSelectedRemoveIds(new Set());
         setMemberQuery("");
         loadMembers(selected, "");
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selected]);
 
     function toggleRemoveId(id: number) {
@@ -90,6 +141,27 @@ export function MinisteresPanel() {
             setError(err instanceof Error ? err.message : "Erreur");
         } finally {
             setRemoving(false);
+        }
+    }
+
+    async function handleExportCsv() {
+        if (!selected) return;
+        setExporting(true);
+        setError("");
+        try {
+            const blob = await exportMinistryMembers(selected);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `membres-${selected}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Export impossible");
+        } finally {
+            setExporting(false);
         }
     }
 
@@ -135,140 +207,197 @@ export function MinisteresPanel() {
     }
 
     const currentIds = new Set(members.map((m) => m.id));
+    const restriction = ministries.find((m) => m.label === selected)?.restricted_to_sexe ?? null;
+    const eligibleCandidates = candidates.filter((c) => !restriction || c.sexe === restriction);
+
+    const memberColumns = [
+        col.display({
+            id: "select",
+            header: "",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <input
+                        type="checkbox"
+                        checked={selectedRemoveIds.has(m.id)}
+                        onChange={() => toggleRemoveId(m.id)}
+                    />
+                );
+            },
+        }),
+        col.accessor((m) => `${m.first_name} ${m.last_name}`, {
+            id: "name",
+            header: "Membre",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <>
+                        {info.getValue()} <span style={{ color: "var(--text-muted)" }}>({m.email})</span>
+                    </>
+                );
+            },
+        }),
+        col.accessor("joined_at", {
+            header: "Affilié depuis",
+            cell: (info) => formatDate(info.getValue()),
+        }),
+        col.display({
+            id: "actions",
+            header: "",
+            cell: (info) => {
+                const m = info.row.original;
+                return (
+                    <button className={styles.btnOutlineSm} disabled={removing} onClick={() => handleRemoveOne(m)}>
+                        Retirer
+                    </button>
+                );
+            },
+        }),
+    ];
 
     return (
         <div className={styles.rbacWrapper}>
-            <section className={styles.card}>
-                <h3 className={styles.cardTitle}>Ministères</h3>
-                <div className={styles.toolbar}>
-                    <select
-                        className={styles.select}
-                        value={selected}
-                        onChange={(e) => setSelected(e.target.value)}
-                    >
-                        <option value="">Choisir un ministère…</option>
-                        {ministries.map((m) => (
-                            <option key={m.id} value={m.label}>{m.label}</option>
-                        ))}
-                    </select>
-                </div>
+            <div className={styles.toolbar}>
+                <button
+                    className={mode === "gestion" ? styles.btnPrimarySm : styles.btnOutlineSm}
+                    onClick={() => setMode("gestion")}
+                >
+                    Gestion
+                </button>
+                <button
+                    className={mode === "rapport" ? styles.btnPrimarySm : styles.btnOutlineSm}
+                    onClick={() => setMode("rapport")}
+                >
+                    Rapport
+                </button>
+            </div>
 
-                {error && <p className={styles.errorMsg} role="alert">{error}</p>}
-
-                {selected && (
-                    <>
-                        <form
-                            onSubmit={(e) => { e.preventDefault(); loadMembers(selected, memberQuery); }}
-                            className={styles.toolbar}
-                            style={{ marginTop: "1rem" }}
-                        >
-                            <input
-                                className={styles.input}
-                                placeholder="Rechercher parmi les membres affiliés (nom, courriel)…"
-                                value={memberQuery}
-                                onChange={(e) => setMemberQuery(e.target.value)}
-                            />
-                            <button type="submit" className={styles.btnOutlineSm}>Rechercher</button>
-                        </form>
-
-                        {selectedRemoveIds.size > 0 && (
-                            <div style={{ margin: ".75rem 0" }}>
-                                <button
-                                    className={styles.btnDanger}
-                                    disabled={removing}
-                                    onClick={handleRemoveSelected}
-                                >
-                                    {removing ? "…" : `Retirer la sélection (${selectedRemoveIds.size})`}
-                                </button>
-                            </div>
-                        )}
-
-                        {loading ? (
-                            <p className={styles.stateMsg}>Chargement…</p>
-                        ) : members.length === 0 ? (
-                            <p className={styles.empty}>Aucun membre actuellement affilié.</p>
-                        ) : (
-                            <ul style={{ listStyle: "none", padding: 0, margin: "1rem 0 0", display: "flex", flexDirection: "column", gap: ".35rem" }}>
-                                {members.map((m) => (
-                                    <li
-                                        key={m.affiliation_id}
-                                        style={{ display: "flex", alignItems: "center", gap: ".75rem", fontSize: ".9rem", padding: ".5rem 0", borderBottom: "1px solid var(--border)" }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedRemoveIds.has(m.id)}
-                                            onChange={() => toggleRemoveId(m.id)}
-                                        />
-                                        <span style={{ flex: 1 }}>
-                                            {m.first_name} {m.last_name}{" "}
-                                            <span style={{ color: "var(--text-muted)" }}>({m.email})</span>
-                                        </span>
-                                        <span style={{ color: "var(--text-muted)" }}>
-                                            depuis le {formatDate(m.joined_at)}
-                                        </span>
-                                        <button
-                                            className={styles.btnOutlineSm}
-                                            disabled={removing}
-                                            onClick={() => handleRemoveOne(m)}
-                                        >
-                                            Retirer
-                                        </button>
-                                    </li>
+            {mode === "rapport" ? (
+                <MinistryReport onSelectMinistry={(ministry) => { setSelected(ministry); setMode("gestion"); }} />
+            ) : (
+                <>
+                    <section className={styles.card}>
+                        <h3 className={styles.cardTitle}>Ministères</h3>
+                        <div className={styles.toolbar}>
+                            <select
+                                className={styles.select}
+                                value={selected}
+                                onChange={(e) => setSelected(e.target.value)}
+                            >
+                                <option value="">Choisir un ministère…</option>
+                                {ministries.map((m) => (
+                                    <option key={m.id} value={m.label}>{m.label}</option>
                                 ))}
-                            </ul>
-                        )}
-                    </>
-                )}
-            </section>
+                            </select>
+                            {selected && (
+                                <button className={styles.btnOutlineSm} disabled={exporting} onClick={handleExportCsv}>
+                                    {exporting ? "…" : "⭳ Exporter (CSV)"}
+                                </button>
+                            )}
+                        </div>
 
-            {selected && (
-                <section className={styles.card}>
-                    <h3 className={styles.cardTitle}>Ajouter des membres à « {selected} »</h3>
-                    <form onSubmit={searchCandidates} className={styles.toolbar}>
-                        <input
-                            className={styles.input}
-                            placeholder="Rechercher un membre (nom, courriel)…"
-                            value={candidateQuery}
-                            onChange={(e) => setCandidateQuery(e.target.value)}
-                        />
-                        <button type="submit" className={styles.btnOutlineSm} disabled={candidateLoading}>
-                            {candidateLoading ? "…" : "Rechercher"}
-                        </button>
-                    </form>
+                        {error && <p className={styles.errorMsg} role="alert">{error}</p>}
 
-                    {candidates.length > 0 && (
-                        <ul style={{ listStyle: "none", padding: 0, margin: "1rem 0", display: "flex", flexDirection: "column", gap: ".35rem" }}>
-                            {candidates.map((c) => (
-                                <li key={c.id} style={{ display: "flex", alignItems: "center", gap: ".75rem", fontSize: ".9rem" }}>
+                        {selected && (
+                            <>
+                                <form
+                                    onSubmit={(e) => { e.preventDefault(); loadMembers(selected, memberQuery); }}
+                                    className={styles.toolbar}
+                                    style={{ marginTop: "1rem" }}
+                                >
                                     <input
-                                        type="checkbox"
-                                        disabled={currentIds.has(c.id)}
-                                        checked={selectedAddIds.has(c.id)}
-                                        onChange={() => toggleAddId(c.id)}
+                                        className={styles.input}
+                                        placeholder="Rechercher parmi les membres affiliés (nom, courriel)…"
+                                        value={memberQuery}
+                                        onChange={(e) => setMemberQuery(e.target.value)}
                                     />
-                                    <span>
-                                        {c.first_name} {c.last_name}{" "}
-                                        <span style={{ color: "var(--text-muted)" }}>({c.email})</span>
-                                        {currentIds.has(c.id) && (
-                                            <span style={{ color: "var(--text-muted)" }}> — déjà affilié</span>
-                                        )}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                    <button type="submit" className={styles.btnOutlineSm}>Rechercher</button>
+                                </form>
 
-                    {selectedAddIds.size > 0 && (
-                        <button className={styles.btnPrimary} disabled={adding} onClick={handleBulkAdd}>
-                            {adding ? "…" : `Ajouter la sélection (${selectedAddIds.size})`}
-                        </button>
+                                {selectedRemoveIds.size > 0 && (
+                                    <div style={{ margin: ".75rem 0" }}>
+                                        <button
+                                            className={styles.btnDanger}
+                                            disabled={removing}
+                                            onClick={handleRemoveSelected}
+                                        >
+                                            {removing ? "…" : `Retirer la sélection (${selectedRemoveIds.size})`}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {loading ? (
+                                    <p className={styles.stateMsg}>Chargement…</p>
+                                ) : (
+                                    <div style={{ marginTop: "1rem" }}>
+                                        <DataTable
+                                            columns={memberColumns}
+                                            data={members}
+                                            getRowId={(m) => m.affiliation_id}
+                                            emptyMessage="Aucun membre actuellement affilié."
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </section>
+
+                    {selected && (
+                        <section className={styles.card}>
+                            <h3 className={styles.cardTitle}>Ajouter des membres à « {selected} »</h3>
+                            <form onSubmit={searchCandidates} className={styles.toolbar}>
+                                <input
+                                    className={styles.input}
+                                    placeholder="Rechercher un membre (nom, courriel)…"
+                                    value={candidateQuery}
+                                    onChange={(e) => setCandidateQuery(e.target.value)}
+                                />
+                                <button type="submit" className={styles.btnOutlineSm} disabled={candidateLoading}>
+                                    {candidateLoading ? "…" : "Rechercher"}
+                                </button>
+                            </form>
+
+                            {restriction && (
+                                <p style={{ fontSize: ".8rem", color: "var(--text-muted)", margin: ".5rem 0 0" }}>
+                                    Ce ministère est réservé aux membres de sexe « {restriction} ».
+                                </p>
+                            )}
+
+                            {eligibleCandidates.length > 0 && (
+                                <ul style={{ listStyle: "none", padding: 0, margin: "1rem 0", display: "flex", flexDirection: "column", gap: ".35rem" }}>
+                                    {eligibleCandidates.map((c) => (
+                                        <li key={c.id} style={{ display: "flex", alignItems: "center", gap: ".75rem", fontSize: ".9rem" }}>
+                                            <input
+                                                type="checkbox"
+                                                disabled={currentIds.has(c.id)}
+                                                checked={selectedAddIds.has(c.id)}
+                                                onChange={() => toggleAddId(c.id)}
+                                            />
+                                            <span>
+                                                {c.first_name} {c.last_name}{" "}
+                                                <span style={{ color: "var(--text-muted)" }}>({c.email})</span>
+                                                {currentIds.has(c.id) && (
+                                                    <span style={{ color: "var(--text-muted)" }}> — déjà affilié</span>
+                                                )}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+
+                            {selectedAddIds.size > 0 && (
+                                <button className={styles.btnPrimary} disabled={adding} onClick={handleBulkAdd}>
+                                    {adding ? "…" : `Ajouter la sélection (${selectedAddIds.size})`}
+                                </button>
+                            )}
+                            {addResult && (
+                                <p style={{ color: "var(--vivid-violet)", fontSize: ".85rem", marginTop: ".5rem" }}>
+                                    {addResult}
+                                </p>
+                            )}
+                        </section>
                     )}
-                    {addResult && (
-                        <p style={{ color: "var(--vivid-violet)", fontSize: ".85rem", marginTop: ".5rem" }}>
-                            {addResult}
-                        </p>
-                    )}
-                </section>
+                </>
             )}
         </div>
     );

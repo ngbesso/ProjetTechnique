@@ -67,22 +67,20 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
         <div className={styles.actions}>
           {user ? (
             <>
-              {isAdmin ? (
-                <button
-                  className={`${styles.userName} ${styles.userNameClickable}`}
-                  title={adminActionLabel(user)}
-                  onClick={() => navigate(adminActionTarget(user))}
-                >
-                  <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
-                </button>
-              ) : (
-                <span className={styles.userName} title={user.email}>
-                  <span aria-hidden>&#128100;</span> {displayName}
-                </span>
-              )}
+              <span className={styles.userName} title={user.email}>
+                <span aria-hidden>&#128100;</span> {isTrueAdmin(user) ? "Admin" : displayName}
+              </span>
               {member && (
                 <button className={styles.btnPrimary} onClick={() => navigate("espace")}>
                   Mon espace
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  className={member ? styles.btnSecondary : styles.btnPrimary}
+                  onClick={() => navigate(adminActionTarget(user))}
+                >
+                  {adminActionLabel(user)}
                 </button>
               )}
               <button className={styles.linkMuted} onClick={logout}>

@@ -1,7 +1,6 @@
 import csv
 import io
-import secrets
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import (
@@ -22,21 +21,13 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_global_permission
-from app.core.config import settings
-from app.core.email import (
-    EmailSender,
-    get_email_sender,
-    membership_approved,
-    membership_approved_invite,
-    membership_received,
-)
-from app.core.security import create_setup_token, hash_password
+from app.core.email import EmailSender, get_email_sender, membership_received
+from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.church import Church
 from app.models.member import Member, MemberStatus
-from app.models.rbac import Role, UserRole
-from app.models.setting import AppSetting
 from app.models.user import User
+from app.schemas.common import Page
 from app.schemas.member import (
     BirthdayGreetingsSendResult,
     BirthdaysOverview,
@@ -44,13 +35,13 @@ from app.schemas.member import (
     MemberCreate,
     MemberImportResult,
     MemberImportRowError,
-    MemberList,
     MemberRead,
     MemberSelfUpdate,
     MembershipRequest,
     MemberStatusStats,
     MemberUpdate,
 )
+from app.services import member_service
 from app.services.birthday_service import (
     birthdays_this_month,
     birthdays_today,
@@ -154,94 +145,6 @@ def _ensure(user: User, member: Member, code: str) -> None:
         raise HTTPException(403, "Permission insuffisante sur cette église")
 
 
-_EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en choisir une autre ou contacter l'administrateur si vous pensez qu'il s'agit d'une erreur."
-
-
-def _check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
-    """Lève HTTP 409 (message générique anti-énumération) si l'email est déjà pris,
-    que ce soit par une fiche Membre ou par un compte User existant."""
-    query = select(Member).where(Member.email == email)
-    if exclude_id is not None:
-        query = query.where(Member.id != exclude_id)
-    if db.scalar(query):
-        raise HTTPException(409, _EMAIL_TAKEN)
-    if db.scalar(select(User).where(User.email == email)):
-        raise HTTPException(409, _EMAIL_TAKEN)
-
-
-def _generate_member_code(db: Session) -> str:
-    year = datetime.now(timezone.utc).year
-    prefix = f"MBR-{year}-"
-    count = (
-        db.scalar(
-            select(func.count())
-            .select_from(Member)
-            .where(Member.member_code.like(f"{prefix}%"))
-        )
-        or 0
-    )
-    return f"{prefix}{count + 1:04d}"
-
-
-def _auto_approve_enabled(db: Session) -> bool:
-    row = db.get(AppSetting, "auto_approve_members")
-    return row is not None and row.value == "true"
-
-
-def _do_approve(
-    member: Member,
-    db: Session,
-    background: BackgroundTasks,
-    sender: EmailSender,
-) -> None:
-    """Approuve un membre : active le compte, crée/lie l'utilisateur, envoie l'email."""
-    member.status = MemberStatus.active
-    if not member.member_code:
-        member.member_code = _generate_member_code(db)
-
-    user = db.scalar(select(User).where(User.email == member.email))
-    invite_link: str | None = None
-    if user is None:
-        user = User(
-            email=member.email,
-            hashed_password=hash_password(secrets.token_urlsafe(16)),
-        )
-        db.add(user)
-        db.flush()
-        token = create_setup_token(user.id, user.token_version)
-        invite_link = f"{settings.frontend_url}/definir-mot-de-passe?token={token}"
-    member.user_id = user.id
-
-    role_membre = db.scalar(select(Role).where(Role.name == "membre"))
-    if role_membre:
-        exists = db.scalar(
-            select(UserRole).where(
-                UserRole.user_id == user.id,
-                UserRole.role_id == role_membre.id,
-                UserRole.church_id == member.church_id,
-            )
-        )
-        if not exists:
-            db.add(
-                UserRole(
-                    user_id=user.id, role_id=role_membre.id, church_id=member.church_id
-                )
-            )
-
-    if invite_link:
-        background.add_task(
-            membership_approved_invite,
-            sender,
-            member.email,
-            member.first_name,
-            invite_link,
-        )
-    else:
-        background.add_task(
-            membership_approved, sender, member.email, member.first_name
-        )
-
-
 @router.post("/request", response_model=MemberRead, status_code=201)
 def request_membership(
     data: MembershipRequest,
@@ -251,14 +154,14 @@ def request_membership(
 ):
     if not db.get(Church, data.church_id):
         raise HTTPException(404, "Église introuvable")
-    _check_email_unique(db, data.email)
+    member_service.check_email_unique(db, data.email)
 
     member = Member(**data.model_dump(), status=MemberStatus.pending)
     db.add(member)
     db.flush()
 
-    if _auto_approve_enabled(db):
-        _do_approve(member, db, background, sender)
+    if member_service.auto_approve_enabled(db):
+        member_service.approve(member, db, background, sender)
     else:
         background.add_task(
             membership_received, sender, member.email, member.first_name
@@ -297,7 +200,7 @@ def update_my_profile(
     return member
 
 
-@router.get("", response_model=MemberList)
+@router.get("", response_model=Page[MemberRead])
 def list_members(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -326,11 +229,8 @@ def list_members(
         query = query.where(Member.status == status)
     if family_status:
         query = query.where(Member.family_status == family_status)
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    rows = db.scalars(
-        query.order_by(Member.created_at.desc()).limit(limit).offset(offset)
-    ).all()
-    return MemberList(
+    rows, total = paginate(db, query.order_by(Member.created_at.desc()), limit, offset)
+    return Page[MemberRead](
         items=[MemberRead.model_validate(m) for m in rows],
         total=total,
         limit=limit,
@@ -417,7 +317,7 @@ def create_member(
         raise HTTPException(403, "Permission insuffisante sur cette église")
     if not db.get(Church, data.church_id):
         raise HTTPException(404, "Église introuvable")
-    _check_email_unique(db, data.email)
+    member_service.check_email_unique(db, data.email)
     member = Member(**data.model_dump(), status=MemberStatus.active)
     db.add(member)
     db.commit()
@@ -508,7 +408,7 @@ def import_members(
             )
             continue
         try:
-            _check_email_unique(db, data.email)
+            member_service.check_email_unique(db, data.email)
         except HTTPException:
             errors.append(
                 MemberImportRowError(
@@ -522,7 +422,7 @@ def import_members(
         member = Member(
             **data.model_dump(),
             status=MemberStatus.active,
-            member_code=_generate_member_code(db),
+            member_code=member_service.generate_member_code(db),
         )
         db.add(member)
         db.flush()
@@ -570,7 +470,7 @@ def approve_member(
 ):
     member = _load(db, member_id)
     _ensure(current_user, member, "member:approve")
-    _do_approve(member, db, background, sender)
+    member_service.approve(member, db, background, sender)
     db.commit()
     db.refresh(member)
     return member

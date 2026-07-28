@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_admin
 from app.db.session import get_db
 from app.models.setting import AppSetting
 from app.models.user import User
@@ -16,11 +16,6 @@ from app.schemas.setting import (
 )
 
 router = APIRouter(prefix="/settings", tags=["paramètres système"])
-
-
-def _require_admin(user: User) -> None:
-    if not user.has_global_permission("*"):
-        raise HTTPException(403, "Réservé aux administrateurs globaux")
 
 
 def _enrich(s: AppSetting) -> AppSettingRead:
@@ -41,10 +36,9 @@ def get_public_settings(db: Annotated[Session, Depends(get_db)]):
 
 @router.get("", response_model=list[AppSettingRead])
 def list_settings(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    _require_admin(current_user)
     rows = db.scalars(select(AppSetting)).all()
     return [_enrich(r) for r in rows]
 
@@ -53,10 +47,9 @@ def list_settings(
 def update_setting(
     key: str,
     data: AppSettingUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    _require_admin(current_user)
     if key not in SETTING_META:
         raise HTTPException(400, f"Paramètre inconnu : {key}")
     setting = db.get(AppSetting, key)

@@ -1,0 +1,9 @@
+# Normalise les fins de ligne en LF, quel que soit l'OS de la personne qui
+# committe (évite le bruit de diff "tout le fichier a changé" observé sur ce
+# dépôt entre environnements Windows/Unix).
+* text=auto eol=lf
+
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf

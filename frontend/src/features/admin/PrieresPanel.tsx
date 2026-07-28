@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
-import { useAuth } from "../../context/AuthContext";
+import { hasPermission, useAuth } from "../../context/AuthContext";
 import { fetchPrayerRequestsAdmin, updatePrayerRequestStatus } from "../../lib/api/prayerRequests";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { formatDateTime } from "../../lib/format";
 import type { PrayerRequestAdmin, PrayerRequestStatus } from "../../types";
 
 const STATUS_LABELS: Record<PrayerRequestStatus, string> = {
@@ -17,12 +18,6 @@ const STATUS_BADGE_CLASS: Record<PrayerRequestStatus, string> = {
 
 const col = createColumnHelper<PrayerRequestAdmin>();
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-CA", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-
 export function PrieresPanel() {
   const { user } = useAuth();
   const [requests, setRequests] = useState<PrayerRequestAdmin[]>([]);
@@ -30,8 +25,7 @@ export function PrieresPanel() {
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  const canManage =
-    user?.permissions.includes("*") || user?.permissions.includes("prayer:manage");
+  const canManage = hasPermission(user, "prayer:manage");
 
   function load(status?: string) {
     setLoading(true);
