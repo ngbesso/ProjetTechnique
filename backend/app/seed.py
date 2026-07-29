@@ -8,14 +8,23 @@ from app.core.permissions import DEFAULT_ROLES, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.church import Church
+from app.models.donation import Donation
+from app.models.donor import Donor
+from app.models.event import Event, EventStatus
 from app.models.expense import Expense
+from app.models.leader import Leader
+from app.models.member import Member, MemberStatus
 from app.models.menu_item import MenuItem
+from app.models.ministry_affiliation import MemberMinistryAffiliation
 from app.models.news import News, NewsStatus
 from app.models.parameter import ParameterValue
 from app.models.post import Post, PostStatus
+from app.models.prayer_request import PrayerRequest
 from app.models.rbac import Permission, Role, UserRole
+from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.setting import AppSetting
 from app.models.user import User
+from app.models.volunteer_request import VolunteerRequest
 from app.services.birthday_service import (
     DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
     DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
@@ -205,6 +214,169 @@ DEMO_EXPENSES: list[dict] = [
 ]
 
 
+DEMO_CHURCHES: list[dict] = [
+    dict(
+        name="Église de la Grâce",
+        district="Ouest",
+        address="120 rue des Érables, Montréal, QC",
+        phone="514-555-0102",
+        email="grace@mission-evangelique.org",
+        pastor_name="Pasteur David Mensah",
+    ),
+    dict(
+        name="Église du Renouveau",
+        district="Est",
+        address="45 avenue du Renouveau, Longueuil, QC",
+        phone="450-555-0187",
+        email="renouveau@mission-evangelique.org",
+        pastor_name="Pasteure Chantal N'Diaye",
+    ),
+]
+
+DEMO_MEMBERS: list[dict] = [
+    dict(
+        first_name="Jean",
+        last_name="Tremblay",
+        email="jean.tremblay@example.com",
+        sexe="Masculin",
+        family_status="Marié(e)",
+        is_baptized=True,
+        status=MemberStatus.active,
+    ),
+    dict(
+        first_name="Marie-Claire",
+        last_name="Fortin",
+        email="marieclaire.fortin@example.com",
+        sexe="Féminin",
+        family_status="Célibataire",
+        is_baptized=True,
+        status=MemberStatus.active,
+    ),
+    dict(
+        first_name="Samuel",
+        last_name="Okafor",
+        email="samuel.okafor@example.com",
+        sexe="Masculin",
+        family_status="Marié(e)",
+        is_baptized=True,
+        status=MemberStatus.active,
+    ),
+    dict(
+        first_name="Grace",
+        last_name="Amoah",
+        email="grace.amoah@example.com",
+        sexe="Féminin",
+        family_status="Célibataire",
+        is_baptized=False,
+        status=MemberStatus.active,
+    ),
+    dict(
+        first_name="Paul",
+        last_name="Bergeron",
+        email="paul.bergeron@example.com",
+        sexe="Masculin",
+        family_status="Marié(e)",
+        is_baptized=False,
+        status=MemberStatus.pending,
+    ),
+]
+
+DEMO_LEADERS: list[dict] = [
+    dict(
+        first_name="David",
+        last_name="Mensah",
+        title="Pasteur principal",
+        role="Pasteur",
+        district="Ouest",
+        bio="À la tête de l'Église de la Grâce depuis 2015, passionné par le mentorat des jeunes leaders.",
+        email="grace@mission-evangelique.org",
+        years_of_service=12,
+        is_published=True,
+        order_index=1,
+    ),
+    dict(
+        first_name="Chantal",
+        last_name="N'Diaye",
+        title="Pasteure",
+        role="Pasteur",
+        district="Est",
+        bio="Responsable de l'Église du Renouveau, engagée dans l'accompagnement communautaire.",
+        email="renouveau@mission-evangelique.org",
+        years_of_service=8,
+        is_published=True,
+        order_index=2,
+    ),
+]
+
+DEMO_SERMONS: list[dict] = [
+    dict(
+        title="Marcher par la foi, non par la vue",
+        preacher="Pasteur Marc Lemaire",
+        description="Une méditation sur la confiance en Dieu au milieu de l'incertitude.",
+        series="Fondements de la foi",
+        format=SermonFormat.audio,
+        file_key="sermons/demo/marcher-par-la-foi.mp3",
+        duration_seconds=2280,
+        status=SermonStatus.published,
+    ),
+    dict(
+        title="L'amour qui transforme",
+        preacher="Pasteure Hélène Bakayoko",
+        description="Comment l'amour de Dieu change nos relations et nos communautés.",
+        series="Vie de communauté",
+        format=SermonFormat.video,
+        file_key="sermons/demo/amour-qui-transforme.mp4",
+        duration_seconds=3120,
+        status=SermonStatus.published,
+    ),
+    dict(
+        title="Servir avec excellence",
+        preacher="Pasteur Emmanuel Diallo",
+        description="Un appel à servir nos communautés avec intégrité et engagement.",
+        series="Leadership et service",
+        format=SermonFormat.audio,
+        file_key="sermons/demo/servir-avec-excellence.mp3",
+        duration_seconds=1980,
+        status=SermonStatus.published,
+    ),
+]
+
+DEMO_EVENTS: list[dict] = [
+    dict(
+        title="Convention annuelle 2026",
+        description="Trois jours de louange, de formation et de communion fraternelle.",
+        category="Conférence",
+        location="Centre des congrès, Montréal",
+        instructor="Pasteur Général André Kouassi",
+        status=EventStatus.published,
+        days_ahead=30,
+    ),
+    dict(
+        title="Retraite spirituelle du district Est",
+        description="Une retraite de ressourcement pour les membres du district Est.",
+        category="Retraite",
+        location="Centre de retraite Bel-Horizon",
+        instructor="Pasteure Chantal N'Diaye",
+        status=EventStatus.published,
+        days_ahead=45,
+    ),
+    dict(
+        title="Formation des nouveaux leaders (brouillon)",
+        description="Session de formation encore en préparation.",
+        category="Formation",
+        location="À confirmer",
+        instructor="Pasteur Emmanuel Diallo",
+        status=EventStatus.draft,
+        days_ahead=60,
+    ),
+]
+
+DEMO_DONORS: list[dict] = [
+    dict(name="Fondation Lumière", email="dons@fondation-lumiere.org"),
+    dict(name="Entreprise Bâtir Ensemble", email="contact@batirensemble.ca"),
+]
+
+
 def seed_roles_permissions(db: Session) -> None:
     """Crée (idempotent) les permissions et les rôles par défaut."""
     perms: dict[str, Permission] = {}
@@ -365,6 +537,216 @@ def seed_expenses(db: Session) -> None:
             )
 
 
+def seed_churches(db: Session) -> None:
+    """Insère (idempotent) quelques Églises affiliées de démonstration."""
+    mother = ensure_mother_church(db)
+    for data in DEMO_CHURCHES:
+        exists = db.scalar(select(Church).where(Church.name == data["name"]))
+        if exists is None:
+            db.add(Church(**data, parent_id=mother.id))
+    db.flush()
+
+
+def seed_members(db: Session) -> None:
+    """Insère (idempotent) quelques membres de démonstration, répartis entre
+    l'église mère et les Églises affiliées."""
+    churches = db.scalars(select(Church).order_by(Church.id)).all()
+    if not churches:
+        return
+    now = datetime.now(timezone.utc)
+    for i, data in enumerate(DEMO_MEMBERS):
+        exists = db.scalar(select(Member).where(Member.email == data["email"]))
+        if exists is None:
+            church = churches[i % len(churches)]
+            db.add(
+                Member(
+                    **data,
+                    church_id=church.id,
+                    created_at=now - timedelta(days=(i + 1) * 5),
+                )
+            )
+    db.flush()
+
+
+def seed_leaders(db: Session) -> None:
+    """Insère (idempotent) quelques membres du leadership de démonstration."""
+    churches_by_name = {c.name: c for c in db.scalars(select(Church)).all()}
+    for data, church_name in zip(
+        DEMO_LEADERS, ("Église de la Grâce", "Église du Renouveau")
+    ):
+        exists = db.scalar(select(Leader).where(Leader.email == data["email"]))
+        if exists is None:
+            church = churches_by_name.get(church_name)
+            db.add(Leader(**data, church_id=church.id if church else None))
+
+
+def seed_sermons(db: Session) -> None:
+    """Insère (idempotent) quelques sermons de démonstration (fichiers fictifs,
+    la lecture audio/vidéo ne fonctionnera pas sans média réel dans MinIO)."""
+    now = datetime.now(timezone.utc)
+    for offset, data in enumerate(DEMO_SERMONS):
+        exists = db.scalar(select(Sermon).where(Sermon.title == data["title"]))
+        if exists is None:
+            db.add(
+                Sermon(
+                    **data,
+                    sermon_date=(now - timedelta(days=offset * 7)).date(),
+                    created_at=now - timedelta(days=offset * 7),
+                )
+            )
+
+
+def seed_events(db: Session) -> None:
+    """Insère (idempotent) quelques événements de démonstration."""
+    now = datetime.now(timezone.utc)
+    for data in DEMO_EVENTS:
+        payload = dict(data)
+        days_ahead = payload.pop("days_ahead")
+        exists = db.scalar(select(Event).where(Event.title == payload["title"]))
+        if exists is None:
+            db.add(Event(**payload, date_start=now + timedelta(days=days_ahead)))
+
+
+def seed_donors_and_donations(db: Session) -> None:
+    """Insère (idempotent) quelques donateurs et dons de démonstration —
+    certains liés à un membre, d'autres à un donateur enregistré, un anonyme."""
+    for data in DEMO_DONORS:
+        exists = db.scalar(select(Donor).where(Donor.name == data["name"]))
+        if exists is None:
+            db.add(Donor(**data))
+    db.flush()
+
+    members = db.scalars(select(Member).order_by(Member.id)).all()
+    donors = db.scalars(select(Donor).order_by(Donor.id)).all()
+    if not members or not donors:
+        return
+
+    now = datetime.now(timezone.utc)
+    demo_donations = [
+        dict(
+            amount=75.00,
+            contribution_type="don",
+            donor_name=members[0].full_name,
+            donor_email=members[0].email,
+            member_id=members[0].id,
+        ),
+        dict(
+            amount=200.00,
+            contribution_type="dime",
+            donor_name=members[1].full_name,
+            donor_email=members[1].email,
+            member_id=members[1].id,
+        ),
+        dict(
+            amount=500.00,
+            contribution_type="don",
+            donor_name=donors[0].name,
+            donor_email=donors[0].email,
+            donor_id=donors[0].id,
+        ),
+        dict(
+            amount=150.00,
+            contribution_type="offrande",
+            donor_name="Don anonyme",
+            donor_email=None,
+        ),
+    ]
+    for offset, data in enumerate(demo_donations):
+        exists = db.scalar(
+            select(Donation).where(
+                Donation.donor_name == data["donor_name"],
+                Donation.amount == data["amount"],
+            )
+        )
+        if exists is None:
+            db.add(
+                Donation(
+                    currency="CAD",
+                    payment_status="manual",
+                    created_at=now - timedelta(days=offset * 4),
+                    **data,
+                )
+            )
+
+
+def seed_prayer_requests(db: Session) -> None:
+    """Insère (idempotent) quelques demandes de prière de démonstration."""
+    members = db.scalars(select(Member).order_by(Member.id)).all()
+    if len(members) < 2:
+        return
+    demo = [
+        (
+            members[0].id,
+            "Merci de prier pour la guérison de mon père, hospitalisé cette semaine.",
+        ),
+        (
+            members[1].id,
+            "Je demande vos prières pour une décision importante concernant mon emploi.",
+        ),
+    ]
+    for member_id, message in demo:
+        exists = db.scalar(
+            select(PrayerRequest).where(PrayerRequest.message == message)
+        )
+        if exists is None:
+            db.add(PrayerRequest(member_id=member_id, message=message))
+
+
+def seed_volunteer_requests(db: Session) -> None:
+    """Insère (idempotent) quelques demandes de bénévolat de démonstration."""
+    members = db.scalars(select(Member).order_by(Member.id)).all()
+    events = db.scalars(select(Event).order_by(Event.id)).all()
+    if len(members) < 2 or not events:
+        return
+    demo = [
+        (members[2].id, events[0].id, "Disponible pour l'accueil et l'installation."),
+        (
+            members[3].id,
+            events[0].id,
+            "Je peux aider avec la logistique et le transport.",
+        ),
+    ]
+    for member_id, event_id, message in demo:
+        exists = db.scalar(
+            select(VolunteerRequest).where(
+                VolunteerRequest.member_id == member_id,
+                VolunteerRequest.event_id == event_id,
+            )
+        )
+        if exists is None:
+            db.add(
+                VolunteerRequest(
+                    member_id=member_id, event_id=event_id, message=message
+                )
+            )
+
+
+def seed_ministry_affiliations(db: Session) -> None:
+    """Affilie (idempotent) quelques membres de démonstration à des ministères."""
+    members = db.scalars(select(Member).order_by(Member.id)).all()
+    if len(members) < 3:
+        return
+    today = datetime.now(timezone.utc).date()
+    demo = [
+        (members[0].id, "Chorale"),
+        (members[1].id, "École du dimanche"),
+        (members[2].id, "Jeunesse"),
+    ]
+    for member_id, ministry in demo:
+        exists = db.scalar(
+            select(MemberMinistryAffiliation).where(
+                MemberMinistryAffiliation.member_id == member_id,
+                MemberMinistryAffiliation.ministry == ministry,
+            )
+        )
+        if exists is None:
+            db.add(
+                MemberMinistryAffiliation(
+                    member_id=member_id, ministry=ministry, joined_at=today
+                )
+            )
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -377,6 +759,15 @@ def run() -> None:
         seed_posts(db)
         seed_news(db)
         seed_expenses(db)
+        seed_churches(db)
+        seed_members(db)
+        seed_leaders(db)
+        seed_sermons(db)
+        seed_events(db)
+        seed_donors_and_donations(db)
+        seed_prayer_requests(db)
+        seed_volunteer_requests(db)
+        seed_ministry_affiliations(db)
         db.commit()
         print("[seed] Initialisation terminée.")
     finally:

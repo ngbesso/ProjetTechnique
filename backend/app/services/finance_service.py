@@ -68,7 +68,7 @@ def build_report(db: Session, start: date | None, end: date | None) -> FinanceRe
             FinanceTransaction(
                 date=d.created_at.date(),
                 type="revenu",
-                category=d.contribution_type.value,
+                category=d.contribution_type,
                 amount=float(d.amount),
                 currency=d.currency.value,
                 party=party,

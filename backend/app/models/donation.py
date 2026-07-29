@@ -51,15 +51,12 @@ class Donation(Base):
         nullable=True,
     )
     # Type de contribution (don/dîme/offrande) — distinct de `category`, qui
-    # classe le don par finalité (soutien spirituel, développement, etc.)
+    # classe le don par finalité (soutien spirituel, développement, etc.).
+    # Colonne VARCHAR simple (pas d'enum Postgres natif) : la migration
+    # d'origine (f7c2d0b4e8a5) n'a créé qu'une colonne VARCHAR(20), sans
+    # CREATE TYPE — le champ doit donc rester une chaîne, pas un Enum SQLAlchemy.
     contribution_type: Mapped[str] = mapped_column(
-        Enum(
-            ContributionType,
-            name="contributiontype",
-            values_callable=lambda x: [e.value for e in x],
-        ),
-        nullable=False,
-        default=ContributionType.DON,
+        String(20), nullable=False, default=ContributionType.DON.value
     )
     # Église destinataire du don (inconnue pour les dons reçus via le webhook Zeffy)
     church_id: Mapped[int | None] = mapped_column(
