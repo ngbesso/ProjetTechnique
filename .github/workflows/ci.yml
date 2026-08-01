@@ -30,6 +30,26 @@ jobs:
       - name: Install deps
         working-directory: backend
         run: pip install -r requirements.txt
+      - name: Start MinIO
+        # Pas de `services:` ici : l'image minio/minio exige un argument de
+        # commande (`server /data`), que `services:` ne permet pas de fournir
+        # (pas d'équivalent au `command:` de docker-compose). On la lance donc
+        # directement via `docker run`, avec un contrôle total sur la commande.
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:9000/minio/health/live && exit 0
+            sleep 2
+          done
+          echo "MinIO n'a pas démarré à temps" && exit 1
+      - name: Create MinIO bucket
+        run: |
+          docker run --rm --network host \
+            -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
+            minio/mc mb -p local/sermons
       - name: Lint (ruff)
         working-directory: backend
         run: ruff check .
@@ -43,6 +63,13 @@ jobs:
           # (secrets codés en dur) — la CI doit les fournir explicitement.
           JWT_SECRET_KEY: ci-test-secret-key-not-for-production
           ADMIN_PASSWORD: CiTestAdmin1234!
+          # Pièces jointes (dons/dépenses) : le bucket "sermons" est créé par
+          # l'étape "Create MinIO bucket" ci-dessus.
+          S3_ENDPOINT_URL: http://localhost:9000
+          S3_PUBLIC_URL: http://localhost:9000
+          S3_BUCKET: sermons
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
         run: pytest -q
 
   ai-service:
