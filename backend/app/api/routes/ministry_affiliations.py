@@ -1,6 +1,8 @@
 import csv
 import io
 import re
+import unicodedata
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,27 +10,39 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_member, get_current_user
+from app.api.deps import get_current_member, get_current_user, require_global_permission
 from app.db.session import get_db
 from app.models.member import Member
 from app.models.ministry_affiliation import MemberMinistryAffiliation
 from app.models.parameter import ParameterValue
 from app.models.user import User
 from app.schemas.ministry_affiliation import (
+    MinistryAdminStats,
     MinistryAffiliationCreate,
     MinistryAffiliationRead,
     MinistryBulkAddRequest,
     MinistryBulkAddResult,
+    MinistryCount,
     MinistryMemberRead,
     MinistryStatsItem,
 )
 from app.services import ministry_service
 
 router = APIRouter(tags=["ministères"])
+can_view = Depends(require_global_permission("member:read"))
 
 
-def _slugify(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "ministere"
+def _today():
+    return datetime.now(timezone.utc).date()
+
+
+def _slugify(value: str) -> str:
+    """Convertit un texte libre (ex. nom de ministère) en fragment de nom de
+    fichier sûr : minuscules, sans accents, espaces remplacés par des tirets."""
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", ascii_only).strip("-").lower()
+    return slug or "ministere"
 
 
 # ── Libre-service (membre connecté) — auto-affiliation, sans approbation ─────
@@ -54,7 +68,7 @@ def join_ministry(
     if already_active:
         raise HTTPException(409, "Vous êtes déjà affilié(e) à ce ministère")
     affiliation = MemberMinistryAffiliation(
-        member_id=member.id, ministry=ministry, joined_at=ministry_service.today()
+        member_id=member.id, ministry=ministry, joined_at=_today()
     )
     db.add(affiliation)
     db.commit()
@@ -62,7 +76,9 @@ def join_ministry(
     return affiliation
 
 
-@router.delete("/members/me/ministries/{affiliation_id}", response_model=MinistryAffiliationRead)
+@router.delete(
+    "/members/me/ministries/{affiliation_id}", response_model=MinistryAffiliationRead
+)
 def leave_ministry(
     affiliation_id: int,
     member: Annotated[Member, Depends(get_current_member)],
@@ -74,7 +90,7 @@ def leave_ministry(
     if not affiliation or affiliation.member_id != member.id:
         raise HTTPException(404, "Affiliation introuvable")
     if affiliation.left_at is None:
-        affiliation.left_at = ministry_service.today()
+        affiliation.left_at = _today()
         db.commit()
         db.refresh(affiliation)
     return affiliation
@@ -93,6 +109,29 @@ def my_ministries(
 
 
 # ── Administration (gestion en masse, centrée sur le ministère) ──────────────
+
+
+@router.get(
+    "/ministries/admin/stats",
+    response_model=MinistryAdminStats,
+    dependencies=[can_view],
+)
+def get_ministries_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre d'affiliations actives et répartition par ministère."""
+    rows = db.execute(
+        select(
+            MemberMinistryAffiliation.ministry, func.count(MemberMinistryAffiliation.id)
+        )
+        .where(MemberMinistryAffiliation.left_at.is_(None))
+        .group_by(MemberMinistryAffiliation.ministry)
+        .order_by(func.count(MemberMinistryAffiliation.id).desc())
+    ).all()
+    total_active = sum(c for _, c in rows)
+    return MinistryAdminStats(
+        total_active=total_active,
+        ministries_count=len(rows),
+        by_ministry=[MinistryCount(ministry=m, active_count=c) for m, c in rows],
+    )
 
 
 @router.get("/members/{member_id}/ministries", response_model=list[MinistryAffiliationRead])
@@ -272,7 +311,7 @@ def remove_ministry_affiliation(
     if not affiliation or affiliation.member_id != member.id:
         raise HTTPException(404, "Affiliation introuvable")
     if affiliation.left_at is None:
-        affiliation.left_at = ministry_service.today()
+        affiliation.left_at = _today()
         db.commit()
         db.refresh(affiliation)
     return affiliation

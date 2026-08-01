@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_member, require_global_permission
@@ -17,7 +17,9 @@ from app.models.event import Event
 from app.models.member import Member
 from app.models.volunteer_request import VolunteerRequest, VolunteerRequestStatus
 from app.schemas.volunteer_request import (
+    VolunteerEventCount,
     VolunteerRequestAdminRead,
+    VolunteerRequestAdminStats,
     VolunteerRequestCreate,
     VolunteerRequestRead,
     VolunteerRequestUpdate,
@@ -117,6 +119,41 @@ def list_volunteer_requests_admin(
         query = query.where(VolunteerRequest.event_id == event_id)
     rows = db.scalars(query.order_by(VolunteerRequest.created_at.desc())).all()
     return [_to_admin_read(r) for r in rows]
+
+
+@router.get(
+    "/admin/stats", response_model=VolunteerRequestAdminStats, dependencies=[can_manage]
+)
+def get_volunteer_requests_stats(db: Annotated[Session, Depends(get_db)]):
+    """Répartition par statut et top 5 événements par nombre de demandes."""
+    status_rows = db.execute(
+        select(VolunteerRequest.status, func.count(VolunteerRequest.id)).group_by(
+            VolunteerRequest.status
+        )
+    ).all()
+    status_map: dict[VolunteerRequestStatus, int] = dict(status_rows)
+    pending = status_map.get(VolunteerRequestStatus.pending, 0)
+    approved = status_map.get(VolunteerRequestStatus.approved, 0)
+    rejected = status_map.get(VolunteerRequestStatus.rejected, 0)
+
+    event_rows = db.execute(
+        select(Event.id, Event.title, func.count(VolunteerRequest.id))
+        .join(VolunteerRequest, VolunteerRequest.event_id == Event.id)
+        .group_by(Event.id, Event.title)
+        .order_by(func.count(VolunteerRequest.id).desc())
+        .limit(5)
+    ).all()
+
+    return VolunteerRequestAdminStats(
+        pending=pending,
+        approved=approved,
+        rejected=rejected,
+        total=pending + approved + rejected,
+        top_events_by_requests=[
+            VolunteerEventCount(event_id=eid, event_title=title, count=c)
+            for eid, title, c in event_rows
+        ],
+    )
 
 
 @router.patch(

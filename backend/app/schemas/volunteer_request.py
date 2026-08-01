@@ -29,3 +29,17 @@ class VolunteerRequestAdminRead(VolunteerRequestRead):
 
 class VolunteerRequestUpdate(BaseModel):
     status: VolunteerRequestStatus
+
+
+class VolunteerEventCount(BaseModel):
+    event_id: int
+    event_title: str
+    count: int
+
+
+class VolunteerRequestAdminStats(BaseModel):
+    pending: int
+    approved: int
+    rejected: int
+    total: int
+    top_events_by_requests: list[VolunteerEventCount]

@@ -45,3 +45,20 @@ class LeaderUpdate(BaseModel):
     years_of_service: int | None = Field(default=None, ge=0)
     is_published: bool | None = None
     order_index: int | None = None
+
+
+class LeaderRoleCount(BaseModel):
+    role: str
+    count: int
+
+
+class LeaderDistrictCount(BaseModel):
+    district: str
+    count: int
+
+
+class LeaderAdminStats(BaseModel):
+    total: int
+    published: int
+    by_role: list[LeaderRoleCount]
+    by_district: list[LeaderDistrictCount]

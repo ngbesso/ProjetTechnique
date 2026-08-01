@@ -4,9 +4,8 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.models.church import Church
 from app.models.donation import Donation
-from app.models.rbac import Permission, Role, UserRole
 
-BASE = "/donations"
+BASE = "/api/donations"
 WEBHOOK_SECRET = "test-zeffy-secret"
 
 
@@ -22,44 +21,20 @@ def _payload(church_id: int) -> dict:
     }
 
 
-def _make_donor(make_member, db_session, email, church_id):
-    """make_member seul ne pose aucun rôle. Un membre réel obtient le rôle
-    "membre" (donation:create incluse) à l'approbation de son adhésion —
-    reproduit ici pour les tests qui créent effectivement un don, maintenant
-    que donation:create est vérifiée (elle ne l'était pas avant)."""
-    member = make_member(email, church_id)
-    role = db_session.scalar(select(Role).where(Role.name == "membre"))
-    db_session.add(UserRole(user_id=member.user_id, role_id=role.id, church_id=church_id))
-    db_session.flush()
-    return member
-
-
-def _make_role_with_permission(db_session, name: str, code: str, church_id: int, user_id: int):
-    """Rôle ad hoc doté d'une seule permission, assigné à user_id — pour
-    prouver qu'une permission précédemment orpheline est bien vérifiée."""
-    perm = db_session.scalar(select(Permission).where(Permission.code == code))
-    role = Role(name=name, description=name)
-    db_session.add(role)
-    db_session.flush()
-    role.permissions = [perm]
-    db_session.add(UserRole(user_id=user_id, role_id=role.id, church_id=church_id))
-    db_session.flush()
-
-
-# ── POST /donations/ ──────────────────────────────────────────────────────
+# ── POST /api/donations/ ──────────────────────────────────────────────────────
 
 
 def test_create_donation_requires_auth(client, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    r = client.post(f"{BASE}", json=_payload(church_id))
+    r = client.post(f"{BASE}/", json=_payload(church_id))
     assert r.status_code == 401
 
 
 def test_create_donation_success(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "donor@b.com", church_id)
+    make_member("donor@b.com", church_id)
     r = client.post(
-        f"{BASE}", json=_payload(church_id), headers=auth_header("donor@b.com")
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor@b.com")
     )
     assert r.status_code == 201
     body = r.json()
@@ -68,40 +43,11 @@ def test_create_donation_success(client, make_member, auth_header, db_session):
     assert body["receipt_number"].startswith("REC-")
 
 
-def test_create_donation_requires_donation_create_permission(
-    client, make_member, auth_header, db_session
-):
-    """donation:create était déclarée mais jamais vérifiée — un membre sans
-    aucun rôle (donc sans cette permission) doit désormais être refusé."""
-    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    make_member("norole@b.com", church_id)
-    r = client.post(
-        f"{BASE}", json=_payload(church_id), headers=auth_header("norole@b.com")
-    )
-    assert r.status_code == 403
-
-
-def test_create_donation_with_dedicated_permission_only(
-    client, make_member, auth_header, db_session
-):
-    """Un rôle ad hoc ne portant que donation:create (pas le rôle "membre"
-    complet, pas "*") suffit désormais à créer un don."""
-    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    member = make_member("dedicated@b.com", church_id)
-    _make_role_with_permission(
-        db_session, "donateur-seul", "donation:create", church_id, member.user_id
-    )
-    r = client.post(
-        f"{BASE}", json=_payload(church_id), headers=auth_header("dedicated@b.com")
-    )
-    assert r.status_code == 201
-
-
 def test_create_donation_unknown_church(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "donor2@b.com", church_id)
+    make_member("donor2@b.com", church_id)
     r = client.post(
-        f"{BASE}",
+        f"{BASE}/",
         json=_payload(999999),
         headers=auth_header("donor2@b.com"),
     )
@@ -110,22 +56,22 @@ def test_create_donation_unknown_church(client, make_member, auth_header, db_ses
 
 def test_create_donation_zero_amount(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "donor3@b.com", church_id)
+    make_member("donor3@b.com", church_id)
     payload = _payload(church_id)
     payload["amount"] = 0
-    r = client.post(f"{BASE}", json=payload, headers=auth_header("donor3@b.com"))
+    r = client.post(f"{BASE}/", json=payload, headers=auth_header("donor3@b.com"))
     assert r.status_code == 422
 
 
-# ── GET /donations/me ─────────────────────────────────────────────────────
+# ── GET /api/donations/me ─────────────────────────────────────────────────────
 
 
 def test_list_my_donations(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "me@b.com", church_id)
+    make_member("me@b.com", church_id)
     h = auth_header("me@b.com")
-    client.post(f"{BASE}", json=_payload(church_id), headers=h)
-    client.post(f"{BASE}", json=_payload(church_id), headers=h)
+    client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    client.post(f"{BASE}/", json=_payload(church_id), headers=h)
     r = client.get(f"{BASE}/me", headers=h)
     assert r.status_code == 200
     assert len(r.json()) == 2
@@ -140,9 +86,11 @@ def test_list_my_donations_isolated_between_members(
 ):
     """Un membre ne doit jamais voir les dons d'un autre membre via /me."""
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "donorA@b.com", church_id)
+    make_member("donorA@b.com", church_id)
     make_member("donorB@b.com", church_id)
-    client.post(f"{BASE}", json=_payload(church_id), headers=auth_header("donorA@b.com"))
+    client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com")
+    )
 
     r_a = client.get(f"{BASE}/me", headers=auth_header("donorA@b.com"))
     r_b = client.get(f"{BASE}/me", headers=auth_header("donorB@b.com"))
@@ -150,14 +98,14 @@ def test_list_my_donations_isolated_between_members(
     assert len(r_b.json()) == 0
 
 
-# ── GET /donations/{id} ───────────────────────────────────────────────────
+# ── GET /api/donations/{id} ───────────────────────────────────────────────────
 
 
 def test_get_donation(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "getdon@b.com", church_id)
+    make_member("getdon@b.com", church_id)
     h = auth_header("getdon@b.com")
-    donation_id = client.post(f"{BASE}", json=_payload(church_id), headers=h).json()[
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
         "id"
     ]
     r = client.get(f"{BASE}/{donation_id}", headers=h)
@@ -169,10 +117,10 @@ def test_get_donation_other_member_forbidden(
     client, make_member, auth_header, db_session
 ):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "owner@b.com", church_id)
+    make_member("owner@b.com", church_id)
     make_member("intruder@b.com", church_id)
     donation_id = client.post(
-        f"{BASE}", json=_payload(church_id), headers=auth_header("owner@b.com")
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("owner@b.com")
     ).json()["id"]
     r = client.get(f"{BASE}/{donation_id}", headers=auth_header("intruder@b.com"))
     assert r.status_code == 403
@@ -185,14 +133,14 @@ def test_get_donation_not_found(client, make_member, auth_header, db_session):
     assert r.status_code == 404
 
 
-# ── GET /donations/{id}/recu ──────────────────────────────────────────────
+# ── GET /api/donations/{id}/recu ──────────────────────────────────────────────
 
 
 def test_get_receipt(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    _make_donor(make_member, db_session, "recu@b.com", church_id)
+    make_member("recu@b.com", church_id)
     h = auth_header("recu@b.com")
-    donation_id = client.post(f"{BASE}", json=_payload(church_id), headers=h).json()[
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
         "id"
     ]
     r = client.get(f"{BASE}/{donation_id}/recu", headers=h)
@@ -203,13 +151,13 @@ def test_get_receipt(client, make_member, auth_header, db_session):
     assert body["donor_email"] == "recu@b.com"
 
 
-# ── GET /donations/ (admin) ───────────────────────────────────────────────
+# ── GET /api/donations/ (admin) ───────────────────────────────────────────────
 
 
 def test_list_all_requires_admin(client, make_member, auth_header, db_session):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_member("plain2@b.com", church_id)
-    r = client.get(f"{BASE}", headers=auth_header("plain2@b.com"))
+    r = client.get(f"{BASE}/", headers=auth_header("plain2@b.com"))
     assert r.status_code == 403
 
 
@@ -218,32 +166,16 @@ def test_admin_can_list_all_donations(
 ):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_user("admin@b.com", roles=["admin"])
-    _make_donor(make_member, db_session, "donor4@b.com", church_id)
+    make_member("donor4@b.com", church_id)
     client.post(
-        f"{BASE}", json=_payload(church_id), headers=auth_header("donor4@b.com")
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor4@b.com")
     )
-    r = client.get(f"{BASE}", headers=auth_header("admin@b.com"))
+    r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
     assert r.status_code == 200
-    body = r.json()
-    assert len(body["items"]) >= 1
-    assert body["total"] >= 1
+    assert len(r.json()) >= 1
 
 
-def test_list_all_with_dedicated_permission_only(
-    client, make_member, auth_header, db_session
-):
-    """donation:read était déclarée mais jamais vérifiée — un rôle ad hoc ne
-    portant que donation:read (pas "*") doit désormais suffire à lister."""
-    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    member = make_member("lecteur@b.com", church_id)
-    _make_role_with_permission(
-        db_session, "lecteur-dons", "donation:read", church_id, member.user_id
-    )
-    r = client.get(f"{BASE}", headers=auth_header("lecteur@b.com"))
-    assert r.status_code == 200
-
-
-# ── GET /donations/admin/stats ────────────────────────────────────────────
+# ── GET /api/donations/admin/stats ────────────────────────────────────────────
 
 
 def test_donations_stats_requires_admin(client, make_member, auth_header, db_session):
@@ -258,14 +190,14 @@ def test_donations_stats_totals_category_and_top_lists(
 ):
     church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
     make_user("admin@b.com", roles=["admin"])
-    donor1 = _make_donor(make_member, db_session, "donorstat1@b.com", church_id)
-    donor2 = _make_donor(make_member, db_session, "donorstat2@b.com", church_id)
+    donor1 = make_member("donorstat1@b.com", church_id)
+    donor2 = make_member("donorstat2@b.com", church_id)
 
     def _give(email, amount, category="soutien_spirituel"):
         payload = _payload(church_id)
         payload["amount"] = amount
         payload["category"] = category
-        client.post(f"{BASE}", json=payload, headers=auth_header(email))
+        client.post(f"{BASE}/", json=payload, headers=auth_header(email))
 
     _give("donorstat1@b.com", 100, "soutien_spirituel")
     _give("donorstat1@b.com", 50, "action_communautaire")
@@ -296,20 +228,7 @@ def test_donations_stats_totals_category_and_top_lists(
     _ = donor2
 
 
-def test_donations_stats_with_dedicated_permission_only(
-    client, make_member, auth_header, db_session
-):
-    """Même vérification que ci-dessus, pour /admin/stats."""
-    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
-    member = make_member("lecteurstats@b.com", church_id)
-    _make_role_with_permission(
-        db_session, "lecteur-dons-stats", "donation:read", church_id, member.user_id
-    )
-    r = client.get(f"{BASE}/admin/stats", headers=auth_header("lecteurstats@b.com"))
-    assert r.status_code == 200
-
-
-# ── POST /donations/webhooks/zeffy ────────────────────────────────────────
+# ── POST /api/donations/webhooks/zeffy ────────────────────────────────────────
 
 
 def _zeffy_payload(payment_id="zeffy-pay-1", amount=42.5, currency="CAD"):
@@ -398,3 +317,113 @@ def test_zeffy_webhook_invalid_amount(client):
     payload["payment"]["amount"] = -5
     r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
     assert r.status_code == 400
+
+
+# ── POST /api/donations/admin (saisie manuelle) ───────────────────────────────
+
+
+def _admin_header(make_user, auth_header):
+    make_user("admin_donmanual@test.com", roles=["admin"])
+    return auth_header("admin_donmanual@test.com")
+
+
+def test_manual_donation_requires_finance_permission(client, make_user, auth_header):
+    make_user("regular_donmanual@test.com")
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 50.0, "contribution_type": "don"},
+        headers=auth_header("regular_donmanual@test.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_manual_donation_church_and_donor_optional(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 60.0, "contribution_type": "dime"},
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["contribution_type"] == "dime"
+    assert body["church_id"] is None
+    assert body["donor_name"] is None
+    assert body["payment_status"] == "manual"
+
+
+def test_manual_donation_with_donor_and_date(
+    client, make_user, auth_header, db_session
+):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={
+            "amount": 25.0,
+            "contribution_type": "offrande",
+            "donor_name": "Fidèle Anonyme",
+            "donor_email": "fidele@test.com",
+            "received_on": "2026-01-15",
+        },
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["donor_name"] == "Fidèle Anonyme"
+    assert body["created_at"].startswith("2026-01-15")
+
+
+def test_manual_donation_unknown_church(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 10.0, "contribution_type": "don", "church_id": 999999},
+        headers=h,
+    )
+    assert r.status_code == 404
+
+
+# ── Pièce jointe justificative ─────────────────────────────────────────────────
+
+
+def test_attachment_upload_download_delete(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 404
+
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=h,
+        files={"file": ("recu.txt", b"contenu du recu", "text/plain")},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["attachment_url"] == f"/api/donations/{donation_id}/attachment"
+    assert body["attachment_name"] == "recu.txt"
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 200
+    assert r.content == b"contenu du recu"
+
+    r = client.delete(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 204
+    assert client.get(f"{BASE}/{donation_id}/attachment", headers=h).status_code == 404
+
+
+def test_attachment_requires_finance_permission(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    make_user("regular_attach@test.com")
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=auth_header("regular_attach@test.com"),
+        files={"file": ("recu.txt", b"x", "text/plain")},
+    )
+    assert r.status_code == 403

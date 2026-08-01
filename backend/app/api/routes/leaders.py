@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permissions
@@ -8,7 +9,14 @@ from app.db.session import get_db
 from app.models.church import Church
 from app.models.leader import Leader
 from app.schemas.common import Page
-from app.schemas.leader import LeaderCreate, LeaderRead, LeaderUpdate
+from app.schemas.leader import (
+    LeaderAdminStats,
+    LeaderCreate,
+    LeaderDistrictCount,
+    LeaderRead,
+    LeaderRoleCount,
+    LeaderUpdate,
+)
 from app.services import leader_service, storage
 
 router = APIRouter(prefix="/leaders", tags=["leadership"])
@@ -121,6 +129,34 @@ def list_leaders_admin(
     )
     return Page[LeaderRead](
         items=[_to_read(leader) for leader in leaders], total=total, limit=limit, offset=offset
+    )
+
+
+@router.get(
+    "/admin/stats", response_model=LeaderAdminStats, dependencies=[requires_leader_manage]
+)
+def get_leaders_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre total, publiés, répartition par rôle et par district."""
+    total = db.scalar(select(func.count()).select_from(Leader)) or 0
+    published = (
+        db.scalar(
+            select(func.count()).select_from(Leader).where(Leader.is_published.is_(True))
+        )
+        or 0
+    )
+    role_rows = db.execute(
+        select(Leader.role, func.count(Leader.id)).group_by(Leader.role)
+    ).all()
+    district_rows = db.execute(
+        select(Leader.district, func.count(Leader.id))
+        .where(Leader.district.isnot(None))
+        .group_by(Leader.district)
+    ).all()
+    return LeaderAdminStats(
+        total=total,
+        published=published,
+        by_role=[LeaderRoleCount(role=r, count=c) for r, c in role_rows],
+        by_district=[LeaderDistrictCount(district=d, count=c) for d, c in district_rows],
     )
 
 

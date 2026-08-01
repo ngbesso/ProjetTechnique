@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.church import Church
 from app.models.donation import Donation
 from app.models.event import Event
+from app.models.expense import Expense
 from app.models.leader import Leader
 from app.models.member import Member
 from app.models.ministry_affiliation import MemberMinistryAffiliation
@@ -35,6 +36,7 @@ _USAGE_MAP: dict[str, list[tuple[type, str, str]]] = {
     "event_category": [(Event, "category", "événement")],
     "intervenant_category": [(Event, "intervenant_category", "événement")],
     "ministry": [(MemberMinistryAffiliation, "ministry", "affiliation de membre")],
+    "expense_category": [(Expense, "category", "dépense")],
     "leader_role": [(Leader, "role", "membre du leadership")],
 }
 
