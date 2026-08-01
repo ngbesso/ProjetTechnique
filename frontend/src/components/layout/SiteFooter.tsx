@@ -8,15 +8,8 @@ import {
 } from "../../context/AuthContext";
 import { Link, useGoToSection } from "../../context/RouterContext";
 import { fetchChurches } from "../../lib/api/churches";
+import { useSiteContent } from "../../hooks/useSiteContent";
 import type { Church } from "../../types";
-
-// URLs placeholder — à remplacer par les comptes officiels de la mission.
-const SOCIAL_LINKS = {
-  youtube: "https://youtube.com/@mission",
-  facebook: "https://facebook.com/mission",
-  instagram: "https://instagram.com/mission",
-  whatsapp: "https://wa.me/15145550100",
-};
 
 function IconYouTube() {
   return (
@@ -68,10 +61,10 @@ function IconWhatsApp() {
 }
 
 const SOCIAL_ITEMS = [
-  { key: "youtube" as const, label: "YouTube", Icon: IconYouTube },
-  { key: "facebook" as const, label: "Facebook", Icon: IconFacebook },
-  { key: "instagram" as const, label: "Instagram", Icon: IconInstagram },
-  { key: "whatsapp" as const, label: "WhatsApp", Icon: IconWhatsApp },
+  { settingKey: "social_youtube_url" as const, label: "YouTube", Icon: IconYouTube },
+  { settingKey: "social_facebook_url" as const, label: "Facebook", Icon: IconFacebook },
+  { settingKey: "social_instagram_url" as const, label: "Instagram", Icon: IconInstagram },
+  { settingKey: "social_whatsapp_url" as const, label: "WhatsApp", Icon: IconWhatsApp },
 ];
 
 export function SiteFooter() {
@@ -79,6 +72,7 @@ export function SiteFooter() {
   const goToSection = useGoToSection();
   const [motherChurch, setMotherChurch] = useState<Church | null>(null);
   const isAdmin = hasAdminAccess(user);
+  const { settings } = useSiteContent();
 
   useEffect(() => {
     fetchChurches()
@@ -151,23 +145,25 @@ export function SiteFooter() {
       </div>
 
       <div className={styles.social}>
-        {SOCIAL_ITEMS.map(({ key, label, Icon }) => (
-          <a
-            key={key}
-            className={styles.socialLink}
-            href={SOCIAL_LINKS[key]}
-            target="_blank"
-            rel="noopener"
-            aria-label={label}
-            title={label}
-          >
-            <Icon />
-          </a>
-        ))}
+        {SOCIAL_ITEMS.filter(({ settingKey }) => settings[settingKey]).map(
+          ({ settingKey, label, Icon }) => (
+            <a
+              key={settingKey}
+              className={styles.socialLink}
+              href={settings[settingKey]}
+              target="_blank"
+              rel="noopener"
+              aria-label={label}
+              title={label}
+            >
+              <Icon />
+            </a>
+          ),
+        )}
       </div>
 
       <div className={styles.bottom}>
-        <p>© {new Date().getFullYear()} Mission Évangélique — Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} {settings.site_name} — Tous droits réservés.</p>
         <Link page="confidentialite" className={styles.bottomLink}>
           Politique de confidentialité
         </Link>

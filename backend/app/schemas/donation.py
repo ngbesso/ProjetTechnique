@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
@@ -15,11 +15,45 @@ class DonationCurrency(str, Enum):
     USD = "USD"
 
 
+class ContributionType(str, Enum):
+    DON = "don"
+    DIME = "dime"
+    OFFRANDE = "offrande"
+
+
 class DonationCreate(BaseModel):
     amount: float = Field(..., gt=0, description="Montant positif en dollars")
     currency: DonationCurrency = DonationCurrency.CAD
     category: DonationCategory
+    contribution_type: ContributionType = ContributionType.DON
     church_id: int = Field(..., description="Identifiant de l'église destinataire")
+
+    @field_validator("amount")
+    @classmethod
+    def round_two_decimals(cls, v: float) -> float:
+        return round(v, 2)
+
+
+class DonationManualCreate(BaseModel):
+    """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur —
+    église et donateur facultatifs, contrairement au formulaire membre public."""
+
+    amount: float = Field(..., gt=0, description="Montant positif en dollars")
+    currency: DonationCurrency = DonationCurrency.CAD
+    category: DonationCategory | None = None
+    contribution_type: ContributionType = ContributionType.DON
+    church_id: int | None = None
+    member_id: int | None = Field(
+        None, description="Membre donateur (mutuellement exclusif avec donor_id)"
+    )
+    donor_id: int | None = Field(
+        None, description="Donateur enregistré (mutuellement exclusif avec member_id)"
+    )
+    donor_name: str | None = None
+    donor_email: str | None = None
+    received_on: date | None = Field(
+        None, description="Date de réception (défaut : aujourd'hui)"
+    )
 
     @field_validator("amount")
     @classmethod
@@ -47,12 +81,16 @@ class DonationRead(BaseModel):
     amount: float
     currency: DonationCurrency
     category: DonationCategory | None
+    contribution_type: ContributionType
     church_id: int | None
     member_id: int | None
+    donor_id: int | None
     donor_name: str | None
     donor_email: str | None
     payment_reference: str | None
     payment_status: str
+    attachment_url: str | None
+    attachment_name: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

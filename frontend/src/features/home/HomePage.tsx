@@ -9,6 +9,7 @@ import {
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
+import { useSiteContent } from "../../hooks/useSiteContent";
 import { getEvents } from "../../lib/api/events";
 import { NewsCarousel } from "./NewsCarousel";
 import { SiteHeader } from "../../components/layout/SiteHeader";
@@ -65,17 +66,13 @@ function Hero() {
   const navigate = useNavigate();
   const { user, member } = useAuth();
   const isAdmin = hasAdminAccess(user);
+  const { settings } = useSiteContent();
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
-        <p className={styles.heroEyebrow}>Une famille de foi, au-delà des frontières</p>
-        <h1 className={styles.heroTitle}>
-          Bienvenue dans notre<br />communauté de foi
-        </h1>
-        <p className={styles.heroSubtitle}>
-          Des Églises affiliées partout, une mission commune —<br />
-          servir, former et rayonner ensemble.
-        </p>
+        <p className={styles.heroEyebrow}>{settings.hero_eyebrow}</p>
+        <h1 className={styles.heroTitle}>{settings.hero_title}</h1>
+        <p className={styles.heroSubtitle}>{settings.hero_subtitle}</p>
         <div className={styles.heroActions}>
           {user ? (
             <>
@@ -119,19 +116,14 @@ function Hero() {
 
 
 function AboutSection() {
+  const { settings } = useSiteContent();
   return (
     <section id="qui-sommes-nous" className={styles.aboutSection}>
       <div className={styles.aboutInner}>
         <div className={styles.aboutLeft}>
-          <p className={styles.aboutEyebrow}>Qui sommes-nous</p>
-          <h2 className={styles.aboutTitle}>
-            Ce qui nous rassemble<br />et nous guide
-          </h2>
-          <p className={styles.aboutDesc}>
-            Fondée il y a plus de 40 ans, Mission Évangélique fédère des centaines
-            d'Églises autour d'une vision commune : faire des disciples dans chaque
-            communauté et chaque nation.
-          </p>
+          <p className={styles.aboutEyebrow}>{settings.about_eyebrow}</p>
+          <h2 className={styles.aboutTitle}>{settings.about_title}</h2>
+          <p className={styles.aboutDesc}>{settings.about_description}</p>
           <a href="#qui-sommes-nous" className={styles.textLink}>
             En savoir plus →
           </a>

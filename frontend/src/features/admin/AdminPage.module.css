@@ -64,7 +64,7 @@
   display: flex;
   flex-direction: column;
   padding: 0.75rem 0.5rem;
-  gap: 0.15rem;
+  gap: 0.3rem;
 }
 
 .navItem {
@@ -102,44 +102,35 @@
   flex-shrink: 0;
 }
 
-/* ── Nav groups ─────────────────────────────────────────────── */
-.navGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.navGroupHeader {
+.navGroupLabel {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   width: 100%;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.6rem;
   padding: 0.6rem 0.875rem;
   border-radius: var(--radius);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  text-align: left;
-  transition: background 0.12s, color 0.12s;
 }
 
-.navGroupHeader:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+.navGroupLabel .navIcon {
+  font-size: 0.9rem;
 }
 
-.navGroupItems {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding-left: 0.9rem;
+.navGroupLabel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .navSubItem {
-  padding-left: 0.6rem;
+  padding-left: 2.1rem;
 }
 
 /* ── Sidebar footer ─────────────────────────────────────────── */
@@ -603,8 +594,6 @@
   .main { margin-left: 56px; }
   .brandName, .brandSub, .navItem span:not(.navIcon), .backBtn { display: none; }
   .navItem { justify-content: center; padding: 0.75rem; }
-  .navGroupHeader { padding: 0.75rem; }
-  .navGroupItems { padding-left: 0; }
   .sidebarBrand { padding: 1rem 0.5rem; justify-content: center; }
   .topBar { padding: 0.75rem 1rem; }
   .content { padding: 1rem; }

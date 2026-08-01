@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_member, require_global_permission
@@ -17,6 +17,7 @@ from app.models.member import Member
 from app.models.prayer_request import PrayerRequest, PrayerRequestStatus
 from app.schemas.prayer_request import (
     PrayerRequestAdminRead,
+    PrayerRequestAdminStats,
     PrayerRequestCreate,
     PrayerRequestRead,
     PrayerRequestUpdate,
@@ -96,6 +97,22 @@ def list_prayer_requests_admin(
         query = query.where(PrayerRequest.status == status)
     rows = db.scalars(query.order_by(PrayerRequest.created_at.desc())).all()
     return [_to_admin_read(r) for r in rows]
+
+
+@router.get(
+    "/admin/stats", response_model=PrayerRequestAdminStats, dependencies=[can_manage]
+)
+def get_prayer_requests_stats(db: Annotated[Session, Depends(get_db)]):
+    """Répartition des demandes de prière par statut."""
+    rows = db.execute(
+        select(PrayerRequest.status, func.count(PrayerRequest.id)).group_by(
+            PrayerRequest.status
+        )
+    ).all()
+    status_map: dict[PrayerRequestStatus, int] = dict(rows)
+    new = status_map.get(PrayerRequestStatus.new, 0)
+    handled = status_map.get(PrayerRequestStatus.handled, 0)
+    return PrayerRequestAdminStats(new=new, handled=handled, total=new + handled)
 
 
 @router.patch(

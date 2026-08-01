@@ -19,6 +19,7 @@ PERMISSIONS: dict[str, str] = {
     "content:manage": "Gérer les pages et le menu (CMS)",
     "prayer:manage": "Gérer les demandes de prière",
     "volunteer:manage": "Gérer les demandes de bénévolat",
+    "finance:manage": "Gérer les finances (dons, dépenses, rapports)",
     "leader:manage": "Gérer les membres du leadership",
 }
 
@@ -41,6 +42,5 @@ GLOBAL_PERMISSIONS: set[str] = {
     "rbac:manage",
     "user:manage",
     "church:manage",
-    "leader:manage",
     "content:manage",
 }

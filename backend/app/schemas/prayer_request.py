@@ -26,3 +26,9 @@ class PrayerRequestAdminRead(PrayerRequestRead):
 
 class PrayerRequestUpdate(BaseModel):
     status: PrayerRequestStatus
+
+
+class PrayerRequestAdminStats(BaseModel):
+    new: int
+    handled: int
+    total: int

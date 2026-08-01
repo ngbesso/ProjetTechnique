@@ -7,21 +7,13 @@ import {
   useAuth,
 } from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
+import { useSiteContent } from "../../hooks/useSiteContent";
+import { siteLogoUrl } from "../../lib/api/content";
 import type { Page } from "../../types";
 
 interface SiteHeaderProps {
   activePage?: Page;
 }
-
-const NAV_ITEMS: { label: string; page: Page }[] = [
-  { label: "Accueil", page: "home" },
-  { label: "Leadership", page: "leadership" },
-  { label: "Sermons", page: "sermons" },
-  { label: "Blog", page: "blog" },
-  { label: "Actualités", page: "actualites" },
-  { label: "Événements", page: "evenements" },
-  { label: "Faire un don", page: "donation" },
-];
 
 function navClass(active: boolean): string {
   return active ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -30,6 +22,7 @@ function navClass(active: boolean): string {
 export function SiteHeader({ activePage }: SiteHeaderProps) {
   const { user, member, logout } = useAuth();
   const navigate = useNavigate();
+  const { settings, menu } = useSiteContent();
 
   const isAdmin = hasAdminAccess(user);
   const displayName = member
@@ -41,17 +34,30 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
       <div className={styles.inner}>
         {/* Logo */}
         <Link page="home" className={styles.logo}>
-          <div className={styles.logoIcon}>+</div>
+          {siteLogoUrl(settings.site_logo_url) ? (
+            <img
+              src={siteLogoUrl(settings.site_logo_url)!}
+              alt={settings.site_name}
+              className={styles.logoIcon}
+              style={{ objectFit: "contain" }}
+            />
+          ) : (
+            <div className={styles.logoIcon}>+</div>
+          )}
           <div className={styles.logoText}>
-            <span className={styles.logoTitle}>Mission Évangélique</span>
-            <span className={styles.logoSubtitle}>unis dans la foi</span>
+            <span className={styles.logoTitle}>{settings.site_name}</span>
+            <span className={styles.logoSubtitle}>{settings.site_tagline}</span>
           </div>
         </Link>
 
         {/* Nav */}
         <nav className={styles.nav} aria-label="Navigation principale">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.label} page={item.page} className={navClass(activePage === item.page)}>
+          {menu.map((item) => (
+            <Link
+              key={item.id}
+              page={item.target_page as Page}
+              className={navClass(activePage === item.target_page)}
+            >
               {item.label}
             </Link>
           ))}

@@ -9,16 +9,19 @@ import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
-import { DonsPanel } from "./DonsPanel";
+import { DepensesPanel } from "./DepensesPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
 import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
 import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
+import { PagesPanel } from "./PagesPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
+import { RapportPanel } from "./RapportPanel";
 import { RbacPanel } from "./RbacPanel";
+import { RevenusPanel } from "./RevenusPanel";
 import { SermonsPanel } from "./SermonsPanel";
 import { UsersPanel } from "./UsersPanel";
 
@@ -31,7 +34,9 @@ export type Section =
   | "ministeres"
   | "eglises"
   | "leadership"
-  | "dons"
+  | "finances-revenus"
+  | "finances-depenses"
+  | "finances-rapport"
   | "sermons"
   | "blog"
   | "actualites"
@@ -48,80 +53,39 @@ interface NavItem {
   label: string;
   icon: string;
   globalOnly?: boolean;
+  group?: string;
 }
 
-type NavEntry =
-  | { kind: "solo"; item: NavItem }
-  | { kind: "group"; label: string; icon: string; items: NavItem[] };
-
-const NAV_STRUCTURE: NavEntry[] = [
-  { kind: "solo", item: { id: "dashboard", label: "Tableau de bord", icon: "📊" } },
-  {
-    kind: "group",
-    label: "Annuaire",
-    icon: "📇",
-    items: [
-      { id: "membres", label: "Membres", icon: "👥" },
-      { id: "ministeres", label: "Ministères", icon: "🙌" },
-      { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Demandes",
-    icon: "📨",
-    items: [
-      { id: "prieres", label: "Demandes de prière", icon: "🙏" },
-      { id: "benevolat", label: "Bénévolat", icon: "🤝" },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Publications",
-    icon: "📰",
-    items: [
-      { id: "sermons", label: "Sermons", icon: "🎙" },
-      { id: "blog", label: "Blog", icon: "✍️" },
-      { id: "actualites", label: "Actualités", icon: "📰" },
-    ],
-  },
-  { kind: "solo", item: { id: "evenements", label: "Événements", icon: "📅" } },
-  {
-    kind: "group",
-    label: "Structure",
-    icon: "🏛️",
-    items: [
-      { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true },
-      { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Finances",
-    icon: "💰",
-    items: [{ id: "dons", label: "Dons", icon: "💝" }],
-  },
-  {
-    kind: "group",
-    label: "Système",
-    icon: "⚙️",
-    items: [
-      { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true },
-      { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true },
-      { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true },
-      { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
-    ],
-  },
+const ALL_NAV_ITEMS: NavItem[] = [
+  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
+  { id: "membres", label: "Membres", icon: "👥", group: "Communauté" },
+  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true, group: "Communauté" },
+  { id: "ministeres", label: "Ministères", icon: "🙌", group: "Communauté" },
+  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true, group: "Organisation" },
+  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true, group: "Organisation" },
+  { id: "finances-revenus", label: "Revenus", icon: "💝", globalOnly: true, group: "Finances" },
+  { id: "finances-depenses", label: "Dépenses", icon: "💸", globalOnly: true, group: "Finances" },
+  { id: "finances-rapport", label: "Rapport", icon: "📈", globalOnly: true, group: "Finances" },
+  { id: "sermons", label: "Sermons", icon: "🎙", group: "Contenu" },
+  { id: "blog", label: "Blog", icon: "✍️", group: "Contenu" },
+  { id: "actualites", label: "Actualités", icon: "📰", group: "Contenu" },
+  { id: "evenements", label: "Événements", icon: "📅", group: "Contenu" },
+  { id: "prieres", label: "Demandes de prière", icon: "🙏", group: "Demandes" },
+  { id: "benevolat", label: "Bénévolat", icon: "🤝", group: "Demandes" },
+  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true, group: "Système" },
+  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true, group: "Système" },
+  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true, group: "Système" },
+  { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
 ];
 
-function findGroupLabelForSection(section: Section): string | null {
-  for (const entry of NAV_STRUCTURE) {
-    if (entry.kind === "group" && entry.items.some((item) => item.id === section)) {
-      return entry.label;
-    }
-  }
-  return null;
-}
+const GROUP_ICONS: Record<string, string> = {
+  "Communauté": "👨‍👩‍👧‍👦",
+  "Organisation": "🏛️",
+  "Finances": "💰",
+  "Contenu": "📰",
+  "Demandes": "📨",
+  "Système": "⚙️",
+};
 
 // ── Sub-panel : Placeholder ───────────────────────────────────────────────────
 
@@ -145,52 +109,35 @@ function PlaceholderPanel({ label }: { label: string }) {
 export function AdminPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   const { count: pendingCount, refresh: refreshPending } = usePendingCount();
 
   const isGlobalAdmin = user?.is_global_admin ?? false;
   // Un utilisateur dont le seul rôle est « organisateur » n'a accès qu'aux Événements.
   const isOrganisateurOnly = user?.roles.length === 1 && user.roles[0] === "organisateur";
-
-  const NAV_ENTRIES: NavEntry[] = isOrganisateurOnly
-    ? [{ kind: "solo", item: { id: "evenements", label: "Événements", icon: "📅" } }]
-    : NAV_STRUCTURE.reduce<NavEntry[]>((acc, entry) => {
-        if (entry.kind === "solo") {
-          if (!entry.item.globalOnly || isGlobalAdmin) acc.push(entry);
-          return acc;
-        }
-        const items = entry.items.filter((item) => !item.globalOnly || isGlobalAdmin);
-        if (items.length > 0) acc.push({ kind: "group", label: entry.label, icon: entry.icon, items });
-        return acc;
-      }, []);
-
-  const NAV_ITEMS: NavItem[] = NAV_ENTRIES.flatMap((entry) =>
-    entry.kind === "solo" ? [entry.item] : entry.items,
-  );
+  const NAV_ITEMS = isOrganisateurOnly
+    ? ALL_NAV_ITEMS.filter((item) => item.id === "evenements")
+    : ALL_NAV_ITEMS.filter((item) => !item.globalOnly || isGlobalAdmin);
 
   const [section, setSection] = useState<Section>(isOrganisateurOnly ? "evenements" : "dashboard");
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const initialGroup = ALL_NAV_ITEMS.find((i) => i.id === section)?.group;
+    return new Set(initialGroup ? [initialGroup] : []);
+  });
   const [membresInitialStatus, setMembresInitialStatus] = useState<MemberStatus | undefined>();
 
-  // Le groupe contenant la section active se déplie automatiquement (au
-  // chargement, et à chaque navigation qui en cible une, p. ex. depuis le
-  // tableau de bord ou la cloche de notifications) ; les autres restent tels quels.
   useEffect(() => {
-    const label = findGroupLabelForSection(section);
-    if (label) {
-      setExpandedGroups((prev) => (prev.has(label) ? prev : new Set(prev).add(label)));
+    const group = ALL_NAV_ITEMS.find((i) => i.id === section)?.group;
+    if (group) {
+      setExpandedGroups((prev) => (prev.has(group) ? prev : new Set(prev).add(group)));
     }
   }, [section]);
 
-  function selectSection(id: Section) {
-    setSection(id);
-    setMembresInitialStatus(undefined);
-  }
-
-  function toggleGroup(label: string) {
+  function toggleGroup(group: string) {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
       return next;
     });
   }
@@ -211,49 +158,42 @@ export function AdminPage() {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV_ENTRIES.map((entry) =>
-            entry.kind === "solo" ? (
-              <button
-                key={entry.item.id}
-                className={`${styles.navItem} ${section === entry.item.id ? styles.navItemActive : ""}`}
-                onClick={() => selectSection(entry.item.id)}
-              >
-                <span className={styles.navIcon}>{entry.item.icon}</span>
-                {entry.item.label}
-              </button>
-            ) : (
-              <div key={entry.label} className={styles.navGroup}>
-                <button
-                  type="button"
-                  className={styles.navGroupHeader}
-                  aria-expanded={expandedGroups.has(entry.label)}
-                  onClick={() => toggleGroup(entry.label)}
-                >
-                  <span className={styles.navIcon}>{entry.icon}</span>
-                  {entry.label}
-                </button>
-                {expandedGroups.has(entry.label) && (
-                  <div className={styles.navGroupItems}>
-                    {entry.items.map((item) => (
-                      <button
-                        key={item.id}
-                        className={`${styles.navItem} ${styles.navSubItem} ${
-                          section === item.id ? styles.navItemActive : ""
-                        }`}
-                        onClick={() => selectSection(item.id)}
-                      >
-                        <span className={styles.navIcon}>{item.icon}</span>
-                        {item.label}
-                        {item.id === "membres" && pendingCount > 0 && (
-                          <span className={styles.navBadge}>{pendingCount}</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+          {NAV_ITEMS.map((item, i) => {
+            const showGroupLabel = item.group && NAV_ITEMS[i - 1]?.group !== item.group;
+            const groupExpanded = item.group ? expandedGroups.has(item.group) : true;
+            return (
+              <div key={item.id}>
+                {showGroupLabel && (
+                  <button
+                    type="button"
+                    className={styles.navGroupLabel}
+                    onClick={() => toggleGroup(item.group!)}
+                  >
+                    <span className={styles.navIcon}>{GROUP_ICONS[item.group!] ?? "📁"}</span>
+                    <span style={{ flex: 1, textAlign: "left" }}>{item.group}</span>
+                    <span style={{ transform: groupExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>
+                      ›
+                    </span>
+                  </button>
+                )}
+                {(!item.group || groupExpanded) && (
+                  <button
+                    className={`${styles.navItem} ${item.group ? styles.navSubItem : ""} ${section === item.id ? styles.navItemActive : ""}`}
+                    onClick={() => {
+                      setSection(item.id);
+                      setMembresInitialStatus(undefined);
+                    }}
+                  >
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    {item.label}
+                    {item.id === "membres" && pendingCount > 0 && (
+                      <span className={styles.navBadge}>{pendingCount}</span>
+                    )}
+                  </button>
                 )}
               </div>
-            ),
-          )}
+            );
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -318,8 +258,12 @@ export function AdminPage() {
               <AnniversairesPanel />
           ) : section === "ministeres" ? (
               <MinisteresPanel />
-          ) : section === "dons" ? (
-              <DonsPanel />
+          ) : section === "finances-revenus" ? (
+              <RevenusPanel />
+          ) : section === "finances-depenses" ? (
+              <DepensesPanel />
+          ) : section === "finances-rapport" ? (
+              <RapportPanel />
           ) : section === "sermons" ? (
               <SermonsPanel />
           ) : section === "evenements" ? (
@@ -332,6 +276,8 @@ export function AdminPage() {
               <PrieresPanel />
           ) : section === "benevolat" ? (
               <BenevolatPanel />
+          ) : section === "pages" ? (
+              <PagesPanel />
           ) : section === "parametres" ? (
               <ParametresPanel />
           ) : section === "assistant" ? (

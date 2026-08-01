@@ -7,11 +7,17 @@ from app.core.config import settings
 
 STATS_ENDPOINTS = {
     "membres": "/members/admin/stats",
-    "dons": "/donations/admin/stats",
+    "dons": "/api/donations/admin/stats",
     "evenements": "/events/admin/stats",
     "sermons": "/sermons/admin/stats",
     "articles": "/posts/admin/stats",
     "eglises": "/churches/admin/stats",
+    "depenses": "/expenses/admin/stats",
+    "actualites": "/news/admin/stats",
+    "leadership": "/leaders/admin/stats",
+    "ministeres": "/ministries/admin/stats",
+    "prieres": "/prayer-requests/admin/stats",
+    "benevolat": "/volunteer-requests/admin/stats",
 }
 
 

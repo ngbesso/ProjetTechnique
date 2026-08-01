@@ -40,10 +40,13 @@ export type DonationCategory =
 
 export type DonationCurrency = "CAD" | "USD";
 
+export type ContributionType = "don" | "dime" | "offrande";
+
 export interface DonationCreate {
   amount: number;
   currency: DonationCurrency;
   category: DonationCategory;
+  contribution_type?: ContributionType;
   church_id: number;
 }
 
@@ -78,13 +81,36 @@ export interface Donation {
   amount: number;
   currency: DonationCurrency;
   category: DonationCategory | null;
+  contribution_type: ContributionType;
   church_id: number | null;
   member_id: number | null;
+  donor_id: number | null;
   donor_name: string | null;
   donor_email: string | null;
   payment_reference: string | null;
   payment_status: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
   created_at: string;
+}
+
+export interface DonationManualInput {
+  amount: number;
+  currency?: DonationCurrency;
+  category?: DonationCategory;
+  contribution_type?: ContributionType;
+  church_id?: number | null;
+  member_id?: number | null;
+  donor_id?: number | null;
+  donor_name?: string;
+  donor_email?: string;
+  received_on?: string;
+}
+
+export interface Donor {
+  id: number;
+  name: string;
+  email: string | null;
 }
 
 export interface DonationListResult {
@@ -98,6 +124,60 @@ export type District = "Ouest" | "Est" | "Centre" | "Sud" | "Outremer" | "Nation
 
 export const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer", "National"];
 
+export interface Expense {
+  id: number;
+  amount: number;
+  expense_date: string;
+  category: string;
+  church_id: number | null;
+  responsible_id: number;
+  responsible_email: string;
+  comment: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  created_at: string;
+}
+
+export interface ExpenseInput {
+  amount: number;
+  expense_date: string;
+  category: string;
+  comment: string;
+  church_id?: number | null;
+}
+
+export interface ExpenseListResult {
+  items: Expense[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type FinancePeriod = "day" | "week" | "month" | "year" | "custom";
+
+export interface FinanceTransaction {
+  date: string;
+  type: string;
+  category: string;
+  amount: number;
+  currency: string;
+  party: string;
+  note: string;
+  attachment_url: string | null;
+}
+
+export interface FinanceReport {
+  period_start: string;
+  period_end: string;
+  income_cad: number;
+  income_usd: number;
+  expenses_total: number;
+  balance: number;
+  income_count: number;
+  expense_count: number;
+  transactions: FinanceTransaction[];
+}
+
 export interface ParameterValue {
   id: number;
   category: string;
@@ -110,6 +190,21 @@ export interface AppSetting {
   key: string;
   value: string;
   description: string;
+}
+
+export interface MenuItem {
+  id: number;
+  label: string;
+  target_page: string;
+  position: number;
+  is_visible: boolean;
+}
+
+export interface MenuItemInput {
+  label?: string;
+  target_page?: string;
+  position?: number;
+  is_visible?: boolean;
 }
 
 export interface Church {
@@ -586,6 +681,8 @@ export interface VolunteerRequestAdmin extends VolunteerRequest {
 }
 
 // ── Corps de leadership ─────────────────────────────────────────────────────
+
+export type LeaderRole = "pastor" | "elder" | "deacon" | "department_head";
 
 export interface Leader {
   id: number;

@@ -10,9 +10,13 @@ from app.api.routes import (
     admin_users,
     auth,
     churches,
+    content,
     dashboard,
     donations,
+    donors,
     events,
+    expenses,
+    finances,
     health,
     leaders,
     members,
@@ -69,16 +73,18 @@ def _run_birthday_monthly_job() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    seed_run()
-    try:
-        storage.ensure_bucket()
-    except Exception as e:
-        print(f"[startup] MinIO indisponible, bucket non vérifié : {e}")
-
-    # Désactivé pendant les tests (pytest importe l'app dans le même process)
-    # pour ne pas interférer avec les transactions de test.
+    # Désactivé pendant les tests (pytest importe l'app dans le même process) :
+    # le seed utilise sa propre session (hors transaction de test, donc jamais
+    # annulée par le rollback par test) et écrirait des données de démonstration
+    # partagées entre tous les tests ; MinIO n'est pas non plus disponible en CI.
     global _scheduler
     if "pytest" not in sys.modules:
+        seed_run()
+        try:
+            storage.ensure_bucket()
+        except Exception as e:
+            print(f"[startup] MinIO indisponible, bucket non vérifié : {e}")
+
         _scheduler = BackgroundScheduler()
         _scheduler.add_job(_run_reminder_job, "interval", hours=1, id="event_reminders")
         # Heure serveur (UTC) ~ matinée à l'Est ; la comparaison de date elle-même
@@ -117,9 +123,13 @@ app.include_router(health.router, tags=["health"])
 app.include_router(auth.router)
 app.include_router(admin_rbac.router)
 app.include_router(churches.router)
+app.include_router(content.router)
 app.include_router(members.router)
 app.include_router(ministry_affiliations.router)
 app.include_router(donations.router)
+app.include_router(donors.router)
+app.include_router(expenses.router)
+app.include_router(finances.router)
 app.include_router(sermons.router)
 app.include_router(events.router)
 app.include_router(leaders.router)

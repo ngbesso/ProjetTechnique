@@ -8,9 +8,15 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_admin
 from app.api.routes.churches import get_churches_stats
 from app.api.routes.donations import get_donations_stats
+from app.api.routes.expenses import get_expenses_stats
+from app.api.routes.leaders import get_leaders_stats
 from app.api.routes.members import get_members_stats
+from app.api.routes.ministry_affiliations import get_ministries_stats
+from app.api.routes.news import get_news_stats
 from app.api.routes.posts import get_posts_stats
+from app.api.routes.prayer_requests import get_prayer_requests_stats
 from app.api.routes.sermons import get_sermons_stats
+from app.api.routes.volunteer_requests import get_volunteer_requests_stats
 from app.db.session import get_db
 from app.models.user import User
 from app.services import event_service, report_builder
@@ -19,11 +25,17 @@ router = APIRouter(prefix="/admin", tags=["rapports"])
 
 DOMAIN_FETCHERS = {
     "membres": lambda db, user: get_members_stats(current_user=user, db=db),
-    "dons": lambda db, user: get_donations_stats(db=db, _perm=user),
+    "dons": lambda db, user: get_donations_stats(db=db, _admin=user),
     "evenements": lambda db, user: event_service.get_admin_stats(db),
     "sermons": lambda db, user: get_sermons_stats(db=db),
     "articles": lambda db, user: get_posts_stats(db=db),
     "eglises": lambda db, user: get_churches_stats(db=db),
+    "depenses": lambda db, user: get_expenses_stats(db=db),
+    "actualites": lambda db, user: get_news_stats(db=db),
+    "leadership": lambda db, user: get_leaders_stats(db=db),
+    "ministeres": lambda db, user: get_ministries_stats(db=db),
+    "prieres": lambda db, user: get_prayer_requests_stats(db=db),
+    "benevolat": lambda db, user: get_volunteer_requests_stats(db=db),
 }
 
 _FORMATS = {
@@ -70,7 +82,9 @@ def get_report(
     build_fn, media_type, extension = _FORMATS[format]
     content = build_fn(f"Rapport — {domain_label}", summary, tables, ai_summary)
 
-    filename = f"rapport-{domain}-{datetime.now(timezone.utc).date().isoformat()}.{extension}"
+    filename = (
+        f"rapport-{domain}-{datetime.now(timezone.utc).date().isoformat()}.{extension}"
+    )
     return StreamingResponse(
         iter([content]),
         media_type=media_type,

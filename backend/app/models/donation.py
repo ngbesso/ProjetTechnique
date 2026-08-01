@@ -19,6 +19,12 @@ class DonationCurrency(str, PyEnum):
     USD = "USD"
 
 
+class ContributionType(str, PyEnum):
+    DON = "don"
+    DIME = "dime"
+    OFFRANDE = "offrande"
+
+
 def _receipt_number() -> str:
     return f"REC-{uuid.uuid4().hex[:8].upper()}"
 
@@ -44,6 +50,14 @@ class Donation(Base):
         ),
         nullable=True,
     )
+    # Type de contribution (don/dîme/offrande) — distinct de `category`, qui
+    # classe le don par finalité (soutien spirituel, développement, etc.).
+    # Colonne VARCHAR simple (pas d'enum Postgres natif) : la migration
+    # d'origine (f7c2d0b4e8a5) n'a créé qu'une colonne VARCHAR(20), sans
+    # CREATE TYPE — le champ doit donc rester une chaîne, pas un Enum SQLAlchemy.
+    contribution_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=ContributionType.DON.value
+    )
     # Église destinataire du don (inconnue pour les dons reçus via le webhook Zeffy)
     church_id: Mapped[int | None] = mapped_column(
         Integer,
@@ -58,6 +72,13 @@ class Donation(Base):
         nullable=True,
         index=True,
     )
+    # Donateur externe réutilisable (facultatif : mutuellement exclusif avec member_id)
+    donor_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("donors.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     donor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     donor_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     payment_reference: Mapped[str | None] = mapped_column(
@@ -66,6 +87,9 @@ class Donation(Base):
     payment_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default="manual"
     )
+    # Pièce jointe justificative (facultative) : preuve de paiement, reçu, etc.
+    attachment_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    attachment_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -74,3 +98,4 @@ class Donation(Base):
 
     church = relationship("Church", lazy="select")
     member = relationship("Member", back_populates="donations", lazy="select")
+    donor = relationship("Donor", lazy="select")

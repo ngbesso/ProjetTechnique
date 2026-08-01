@@ -1,3 +1,4 @@
+import csv
 import io
 
 import httpx
@@ -18,6 +19,12 @@ DOMAIN_LABELS = {
     "sermons": "Sermons",
     "articles": "Blog",
     "eglises": "Églises affiliées",
+    "depenses": "Dépenses",
+    "actualites": "Actualités",
+    "leadership": "Leadership",
+    "ministeres": "Ministères",
+    "prieres": "Demandes de prière",
+    "benevolat": "Bénévolat",
 }
 
 
@@ -85,6 +92,38 @@ def build_excel(
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+def build_csv(
+    title: str,
+    summary: list[tuple[str, str]],
+    tables: dict[str, list[dict]],
+    ai_summary: str | None = None,
+) -> bytes:
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([title])
+    writer.writerow([])
+    if ai_summary:
+        writer.writerow(["Synthèse IA", ai_summary])
+        writer.writerow([])
+    writer.writerow(["Résumé"])
+    for key, value in summary:
+        writer.writerow([key, value])
+
+    for name, rows in tables.items():
+        writer.writerow([])
+        writer.writerow([name])
+        if rows:
+            headers = list(rows[0].keys())
+            writer.writerow(headers)
+            for row in rows:
+                writer.writerow([row.get(h) for h in headers])
+        else:
+            writer.writerow(["Aucune donnée."])
+
+    # BOM UTF-8 : Excel affiche correctement les accents français à l'ouverture
+    return buf.getvalue().encode("utf-8-sig")
 
 
 def build_word(

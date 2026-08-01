@@ -16,6 +16,12 @@ const STAT_LABELS: Record<string, string> = {
   sermons: "Sermons",
   articles: "Blog",
   eglises: "Églises",
+  depenses: "Dépenses",
+  actualites: "Actualités",
+  leadership: "Leadership",
+  ministeres: "Ministères",
+  prieres: "Demandes de prière",
+  benevolat: "Bénévolat",
 };
 
 const FORMAT_LABELS: Record<string, string> = {
