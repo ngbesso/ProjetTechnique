@@ -401,10 +401,7 @@ def upload_attachment(
 )
 def delete_attachment(donation_id: int, db: Session = Depends(get_db)):
     donation = _load_admin(db, donation_id)
-    try:
-        storage.delete_file(f"{_ATTACHMENT_PREFIX}/{donation_id}")
-    except Exception:
-        pass
+    storage.delete_file_quiet(f"{_ATTACHMENT_PREFIX}/{donation_id}")
     donation.attachment_url = None
     donation.attachment_name = None
     db.commit()

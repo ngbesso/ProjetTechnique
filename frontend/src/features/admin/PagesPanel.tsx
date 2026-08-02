@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { TemplateSettingField } from "./ParametresPanel";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
+import { fetchChurches, updateChurch } from "../../lib/api/churches";
 import { fetchSettings, updateSetting } from "../../lib/api/settings";
 import {
   fetchMenuAdmin,
@@ -12,7 +14,7 @@ import {
   deleteSiteLogo,
   siteLogoUrl,
 } from "../../lib/api/content";
-import type { MenuItem } from "../../types";
+import type { Church, MenuItem } from "../../types";
 
 const TARGET_PAGE_LABELS: Record<string, string> = {
   home: "Accueil",
@@ -95,6 +97,124 @@ function SettingTextField({ settingKey, title, description, placeholder }: Setti
   );
 }
 
+// ── Nous joindre (coordonnées du pied de page) ───────────────────────────────
+
+/** Les coordonnées affichées dans le pied de page sont celles de l'église mère
+ *  (SiteFooter lit motherChurch.address/phone/email). Ce bloc édite donc ce
+ *  même enregistrement via l'API churches, plutôt que d'introduire un réglage
+ *  parallèle qui divergerait de la fiche Église. */
+function ContactBlock() {
+  const [church, setChurch] = useState<Church | null>(null);
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchChurches()
+      .then((list) => {
+        const mother = list.find((c) => c.is_mother) ?? null;
+        setChurch(mother);
+        setAddress(mother?.address ?? "");
+        setPhone(mother?.phone ?? "");
+        setEmail(mother?.email ?? "");
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dirty =
+    !!church &&
+    (address.trim() !== (church.address ?? "") ||
+      phone.trim() !== (church.phone ?? "") ||
+      email.trim() !== (church.email ?? ""));
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!church) return;
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      const updated = await updateChurch(church.id, {
+        address: address.trim() || null,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+      });
+      setChurch(updated);
+      setAddress(updated.address ?? "");
+      setPhone(updated.phone ?? "");
+      setEmail(updated.email ?? "");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.card}>
+      <h3 className={styles.cardTitle}>Nous joindre</h3>
+      <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+        Coordonnées affichées dans le pied de page du site public.
+      </p>
+
+      {loading ? (
+        <p className={styles.stateMsg}>Chargement…</p>
+      ) : !church ? (
+        <p className={styles.errorMsg} role="alert">Église mère introuvable.</p>
+      ) : (
+        <form onSubmit={handleSave}>
+          <div className={styles.formGrid}>
+            <input
+              className={styles.input}
+              placeholder="Adresse"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+            <input
+              className={styles.input}
+              type="tel"
+              placeholder="Téléphone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="Courriel"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div style={{ marginTop: "1rem" }}>
+            <button type="submit" className={styles.btnPrimary} disabled={saving || !dirty}>
+              {saving ? "…" : "Enregistrer"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <p className={styles.helpText}>
+        Ces coordonnées sont celles de l'église mère
+        {church ? ` (${church.name})` : ""} — elles sont également modifiables depuis le
+        panneau Églises, et toute modification ici s'y reflète.
+      </p>
+      {saved && (
+        <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>
+          Enregistré ✓
+        </p>
+      )}
+      {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+    </section>
+  );
+}
+
 // ── Menu principal (réordonnable) ─────────────────────────────────────────────
 
 function MenuManager() {
@@ -107,6 +227,7 @@ function MenuManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   function load() {
     setLoading(true);
@@ -173,8 +294,10 @@ function MenuManager() {
       await updateMenuItem(id, { label });
       setEditingId(null);
       load();
+      toast.success(`Entrée « ${label} » renommée.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
+      toast.error(err, "Modification impossible.");
     }
   }
 
@@ -197,8 +320,10 @@ function MenuManager() {
     try {
       await deleteMenuItem(item.id);
       load();
+      toast.success(`Entrée « ${item.label} » retirée du menu.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de suppression");
+      toast.error(err, "Suppression impossible.");
     }
   }
 
@@ -275,6 +400,7 @@ function MenuManager() {
       </form>
 
       {dialog}
+      {toasts}
     </section>
   );
 }
@@ -287,6 +413,8 @@ function LogoUploader() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   useEffect(() => {
     fetchSettings()
@@ -309,21 +437,32 @@ function LogoUploader() {
     try {
       const res = await uploadSiteLogo(file);
       setLogoUrl(siteLogoUrl(res.site_logo_url));
+      toast.success("Logo mis à jour.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de téléversement");
+      toast.error(err, "Téléversement impossible.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleRemove() {
+    const ok = await confirm({
+      title: "Supprimer le logo du site ?",
+      description: "L'en-tête du site public reprendra l'icône générique.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
     setSaving(true);
     setError("");
     try {
       await deleteSiteLogo();
       setLogoUrl(null);
+      toast.success("Logo supprimé.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de suppression");
+      toast.error(err, "Suppression impossible.");
     } finally {
       setSaving(false);
     }
@@ -379,15 +518,21 @@ function LogoUploader() {
         </div>
       )}
       {error && <p className={styles.errorMsg} role="alert" style={{ marginTop: ".75rem" }}>{error}</p>}
+      {dialog}
+      {toasts}
     </section>
   );
 }
 
 // ── Panel principal ───────────────────────────────────────────────────────────
 
+// Les 4 statistiques du hero de la page d'accueil (valeur + libellé chacune).
+const HERO_STATS = [1, 2, 3, 4] as const;
+
 export function PagesPanel() {
   return (
     <div className={styles.rbacWrapper}>
+      <ContactBlock />
       <LogoUploader />
       <SettingTextField settingKey="site_name" title="Nom du site" description="Affiché dans l'en-tête et le pied de page." />
       <SettingTextField settingKey="site_tagline" title="Slogan" description="Affiché sous le nom du site, dans l'en-tête." />
@@ -395,6 +540,30 @@ export function PagesPanel() {
       <SettingTextField settingKey="hero_eyebrow" title="Accueil — petit texte du hero" description="Court texte au-dessus du grand titre de la page d'accueil." />
       <SettingTextField settingKey="hero_title" title="Accueil — titre principal" description="Grand titre de la page d'accueil." />
       <TemplateSettingField settingKey="hero_subtitle" title="Accueil — sous-titre" description="Texte sous le grand titre de la page d'accueil." />
+
+      <p className={styles.sectionLabel}>Accueil — statistiques</p>
+      <p className={styles.helpNote}>
+        Dans le champ <em>valeur</em>, {"{eglises}"} et {"{membres}"} sont remplacés à
+        l'affichage par les comptages réels de la base (églises affiliées, membres actifs).
+        Toute autre saisie est affichée telle quelle, par exemple «&nbsp;40 ans&nbsp;».
+        Laisser la valeur vide masque la statistique.
+      </p>
+      {HERO_STATS.map((n) => (
+        <div key={n}>
+          <SettingTextField
+            settingKey={`hero_stat${n}_value`}
+            title={`Statistique ${n} — valeur`}
+            description="Chiffre mis en avant dans la bande du hero. Laisser vide pour masquer cette statistique."
+            placeholder="120+"
+          />
+          <SettingTextField
+            settingKey={`hero_stat${n}_label`}
+            title={`Statistique ${n} — libellé`}
+            description="Texte affiché sous le chiffre."
+            placeholder="Églises affiliées"
+          />
+        </div>
+      ))}
 
       <SettingTextField settingKey="about_eyebrow" title="Qui sommes-nous — petit texte" description="Court texte au-dessus du titre de la section « Qui sommes-nous »." />
       <SettingTextField settingKey="about_title" title="Qui sommes-nous — titre" description="Titre de la section « Qui sommes-nous »." />

@@ -6,27 +6,10 @@ import { useNavigate } from "../../context/RouterContext";
 import { useParameters } from "../../hooks/useParameters";
 import { fetchChurches } from "../../lib/api/churches";
 import { getEvents } from "../../lib/api/events";
-import { formatDate } from "../../lib/format";
+import { formatDateRange } from "../../lib/format";
 import type { Church, District, EventItem } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
-
-function formatDateRange(startIso: string, endIso: string | null): string {
-  const start = new Date(startIso);
-  const startLabel = formatDate(startIso);
-  const timeLabel = start.toLocaleTimeString("fr-CA", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  if (!endIso) return `${startLabel} · ${timeLabel}`;
-  const end = new Date(endIso);
-  const sameDay = start.toDateString() === end.toDateString();
-  if (sameDay) {
-    const endTime = end.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-    return `${startLabel} · ${timeLabel} – ${endTime}`;
-  }
-  return `${startLabel} – ${formatDate(endIso)}`;
-}
 
 function formatPrice(price: number | null): string {
   if (!price) return "Gratuit";

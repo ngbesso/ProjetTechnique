@@ -24,8 +24,17 @@ class PrayerRequest(Base):
         Enum(PrayerRequestStatus, native_enum=False, length=20),
         default=PrayerRequestStatus.new,
     )
+    # Prise en charge : membre de l'équipe pastorale qui s'est assigné la
+    # demande (null = personne). Conservée si le compte est supprimé.
+    handled_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), default=None, index=True
+    )
+    handled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     member = relationship("Member", lazy="select")
+    handler = relationship("User", lazy="select")

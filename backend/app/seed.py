@@ -38,6 +38,12 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "event_category": ["Conférence", "Colloque", "Croisade", "Retraite", "Formation"],
     "intervenant_category": ["Pasteur", "Conférencier", "Diacre"],
     "leader_role": ["Pasteur", "Ancien", "Diacre", "Responsable de département"],
+    "member_request_type": [
+        "Modification de mes informations",
+        "Rejoindre un ministère",
+        "Question administrative",
+        "Autre",
+    ],
     "ministry": [
         "Jeunesse",
         "Département des dames",
@@ -466,6 +472,17 @@ def seed_settings(db: Session) -> None:
             "Des Églises affiliées partout, une mission commune — "
             "servir, former et rayonner ensemble."
         ),
+        # {eglises} et {membres} sont remplacés à l'affichage par les comptages
+        # réels (GET /stats/public) ; une valeur sans jeton est affichée telle
+        # quelle, ce qui permet de repasser en saisie manuelle depuis l'admin.
+        "hero_stat1_value": "{eglises}",
+        "hero_stat1_label": "Églises affiliées",
+        "hero_stat2_value": "{membres}",
+        "hero_stat2_label": "Membres actifs",
+        "hero_stat3_value": "8",
+        "hero_stat3_label": "Pays",
+        "hero_stat4_value": "40 ans",
+        "hero_stat4_label": "De mission",
         "about_eyebrow": "Qui sommes-nous",
         "about_title": "Ce qui nous rassemble et nous guide",
         "about_description": (

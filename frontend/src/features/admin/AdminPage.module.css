@@ -296,6 +296,35 @@
   margin: 0 0 1.1rem;
 }
 
+/* Intertitre regroupant plusieurs cartes de réglages (ex. « Accueil —
+   statistiques »). Même traitement que le .sectionLabel des autres panneaux. */
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7c3aed;
+  margin: 0.5rem 0 0.85rem;
+}
+
+.sectionLabel::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #ede9fe;
+}
+
+/* Note explicative placée sous un .sectionLabel, avant les cartes du groupe. */
+.helpNote {
+  margin: -0.35rem 0 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* ── Carte liste (en-tête / filtres / corps) ──────────────────── */
 .listCard {
   background: var(--card-bg);

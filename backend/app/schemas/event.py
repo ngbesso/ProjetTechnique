@@ -26,6 +26,9 @@ class EventCreate(BaseModel):
     cancel_deadline_hours: int | None = Field(default=None, ge=0)
     confirmation_message: str | None = None
     reminder_message: str | None = None
+    volunteer_capacity: int | None = Field(default=None, gt=0)
+    volunteer_auto_approve: bool = False
+    volunteer_message: str | None = None
 
     @field_validator("date_start")
     @classmethod
@@ -74,6 +77,9 @@ class EventUpdate(BaseModel):
     cancel_deadline_hours: int | None = Field(default=None, ge=0)
     confirmation_message: str | None = None
     reminder_message: str | None = None
+    volunteer_capacity: int | None = Field(default=None, gt=0)
+    volunteer_auto_approve: bool | None = None
+    volunteer_message: str | None = None
 
     @model_validator(mode="after")
     def format_requirements(self) -> "EventUpdate":
@@ -108,6 +114,9 @@ class EventRead(BaseModel):
     cancel_deadline_hours: int | None
     confirmation_message: str | None
     reminder_message: str | None
+    volunteer_capacity: int | None
+    volunteer_auto_approve: bool
+    volunteer_message: str | None
     created_by: int | None
     created_at: datetime
     updated_at: datetime
@@ -117,6 +126,23 @@ class EventRead(BaseModel):
     image_url: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class VolunteerOpportunity(BaseModel):
+    """Événement ouvert au bénévolat, avec le nombre de places restantes."""
+
+    event_id: int
+    title: str
+    date_start: datetime
+    location: str | None
+    church_id: int | None
+    volunteer_capacity: int
+    volunteer_spots_left: int
+    volunteer_message: str | None
+
+
+class VolunteerAnnouncementResult(BaseModel):
+    recipients: int
 
 
 class ResendCancelLinkRequest(BaseModel):

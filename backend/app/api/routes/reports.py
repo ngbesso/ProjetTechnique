@@ -23,6 +23,13 @@ from app.services import event_service, report_builder
 
 router = APIRouter(prefix="/admin", tags=["rapports"])
 
+# Volontairement gardé sous get_current_admin (permission globale « * ») plutôt
+# que sous une permission dédiée : un même point d'entrée exporte les
+# statistiques de n'importe lequel des douze domaines ci-dessous. Une permission
+# propre du type « report:read » contournerait le cloisonnement par module, en
+# donnant accès à des exports (membres, dons…) que son détenteur ne peut pas
+# forcément consulter dans l'application. Même raisonnement dans dashboard.py.
+
 DOMAIN_FETCHERS = {
     "membres": lambda db, user: get_members_stats(current_user=user, db=db),
     "dons": lambda db, user: get_donations_stats(db=db, _admin=user),

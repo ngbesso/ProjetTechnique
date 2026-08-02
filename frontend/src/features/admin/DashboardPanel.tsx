@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./DashboardPanel.module.css";
+import { IconClock } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { fetchDashboardStats, ActivityType, DashboardStats } from "../../lib/api/dashboard";
 import { formatDateTime } from "../../lib/format";
@@ -10,15 +11,6 @@ interface DashboardPanelProps {
 }
 
 // ── Icônes KPI ────────────────────────────────────────────────────────────────
-
-function IconClock() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
 
 function IconBell() {
   return (

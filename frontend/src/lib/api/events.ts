@@ -10,6 +10,7 @@ import type {
   EventStats,
   EventStatus,
   MyEventRegistration,
+  VolunteerOpportunity,
 } from "../../types";
 
 export interface EventQuery {
@@ -107,4 +108,14 @@ export function uploadEventImage(id: number, file: File): Promise<EventItem> {
 
 export function getEventImageUrl(id: number): Promise<{ url: string }> {
   return http.get<{ url: string }>(`/events/${id}/image`);
+}
+
+// ── Bénévolat ──────────────────────────────────────────────────────────────
+
+export function getVolunteerOpportunities(): Promise<VolunteerOpportunity[]> {
+  return http.get<VolunteerOpportunity[]>("/events/volunteer-opportunities");
+}
+
+export function resendVolunteerAnnouncement(id: number): Promise<{ recipients: number }> {
+  return http.post<{ recipients: number }>(`/events/${id}/volunteer-announcement`, {});
 }

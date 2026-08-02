@@ -152,16 +152,19 @@
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 .hero {
   display: grid;
-  grid-template-columns: 55% 45%;
-  grid-template-rows: 1fr auto;
+  /* Le carrousel occupe la moitié dominante (plus large que l'ancien panneau
+     visuel, qui prenait 45%). */
+  grid-template-columns: 46% 54%;
   background: var(--deep-violet);
-  min-height: 500px;
+  min-height: 440px;
 }
 
+/* Colonne gauche : bloc de bienvenue. */
 .heroContent {
   grid-column: 1;
   grid-row: 1;
-  padding: 5rem 3.5rem 3.5rem;
+  min-width: 0;
+  padding: 2.75rem 3.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -181,58 +184,57 @@
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   line-height: 1.2;
-  margin: 0 0 1.25rem;
+  margin: 0 0 1rem;
 }
 
 .heroSubtitle {
   font-size: 1.05rem;
   opacity: 0.85;
   line-height: 1.7;
-  margin: 0 0 2.5rem;
+  margin: 0 0 1.75rem;
   max-width: 420px;
 }
 
 .heroActions {
   display: flex;
-  gap: 1rem;
+  /* Espacement horizontal aéré entre les deux boutons, mais interligne
+     conservé à 1rem : quand flex-wrap les empile en mobile, 1.75rem de
+     séparation verticale les ferait paraître dissociés. */
+  column-gap: 1.75rem;
+  row-gap: 1rem;
   flex-wrap: wrap;
 }
 
-.heroVisual {
+/* Colonne droite du hero : accueille le carrousel d'actualités. Reprend le
+   dégradé et les décorations de l'ancien panneau visuel, pour que la colonne
+   garde la même identité et reste habitée si aucune actualité n'est mise en avant. */
+.heroCarousel {
   grid-column: 2;
   grid-row: 1;
   background: linear-gradient(135deg, #3d3790 0%, #6c63c9 55%, #2a2660 100%);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 
-.heroVisual::before {
+.heroCarousel::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
     radial-gradient(circle at 30% 60%, rgba(255,255,255,0.06) 0%, transparent 50%),
     radial-gradient(circle at 75% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
-}
-
-.heroVisual::after {
-  content: '+';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 11rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.07);
-  line-height: 1;
   pointer-events: none;
 }
 
 /* ── Stats bar ────────────────────────────────────────────────────────────── */
+/* Bandeau pleine largeur, juste sous le hero : il prolonge le violet profond
+   du hero et sert de transition vers les sections claires qui suivent. */
 .statsBar {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--deep-violet);
   display: flex;
   border-top: 1px solid rgba(255,255,255,0.1);
 }
@@ -712,11 +714,13 @@
   .formationImg { height: 220px; }
 }
 
-@media (max-width: 700px) {
-  .hero { grid-template-columns: 1fr; }
-  .heroVisual { height: 200px; order: -1; }
-  .heroContent { padding: 2.5rem 1.5rem; grid-column: 1; grid-row: 2; }
-  .statsBar { grid-row: 3; flex-wrap: wrap; }
+/* Sous 768px, les deux colonnes du hero s'empilent : bloc de bienvenue d'abord,
+   carrousel en dessous (ordre naturel du DOM, aucun `order` nécessaire). */
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; }
+  .heroContent { grid-column: 1; grid-row: 1; padding: 2.5rem 1.5rem; }
+  .heroCarousel { grid-column: 1; grid-row: 2; }
+  .statsBar { flex-wrap: wrap; }
   .statItem { flex: 1 0 40%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
 }
 

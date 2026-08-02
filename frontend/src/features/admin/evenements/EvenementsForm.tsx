@@ -28,6 +28,43 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "review", label: "Révision" },
 ];
 
+/** Interrupteur on/off — même rendu que celui d'origine, factorisé car
+ *  utilisé par « inscrits visibles » et « auto-approbation des bénévoles ». */
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 48,
+        height: 26,
+        borderRadius: 999,
+        border: "none",
+        background: checked ? "var(--vivid-violet)" : "#d1d5db",
+        cursor: "pointer",
+        position: "relative",
+        transition: "background .2s",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 3,
+          left: checked ? 25 : 3,
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: "#fff",
+          boxShadow: "0 1px 3px rgba(0,0,0,.3)",
+          transition: "left .2s",
+        }}
+      />
+    </button>
+  );
+}
+
 function StepProgress({ current }: { current: number }) {
   return (
     <div className={styles.stepProgress}>
@@ -381,41 +418,10 @@ export function EvenementsForm({
               </Field>
 
               <Field label="Nombre d'inscrits visible publiquement">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={form.show_registration_count ?? true}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      show_registration_count: !(form.show_registration_count ?? true),
-                    })
-                  }
-                  style={{
-                    width: 48,
-                    height: 26,
-                    borderRadius: 999,
-                    border: "none",
-                    background: (form.show_registration_count ?? true) ? "var(--vivid-violet)" : "#d1d5db",
-                    cursor: "pointer",
-                    position: "relative",
-                    transition: "background .2s",
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 3,
-                      left: (form.show_registration_count ?? true) ? 25 : 3,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      background: "#fff",
-                      boxShadow: "0 1px 3px rgba(0,0,0,.3)",
-                      transition: "left .2s",
-                    }}
-                  />
-                </button>
+                <Toggle
+                  checked={form.show_registration_count ?? true}
+                  onChange={(v) => setForm({ ...form, show_registration_count: v })}
+                />
               </Field>
 
               <Field label="Statut">
@@ -429,6 +435,51 @@ export function EvenementsForm({
                   ))}
                 </select>
               </Field>
+
+              <div className={styles.fullWidth}>
+                <p className={styles.imageHint} style={{ fontWeight: 600, marginBottom: 0 }}>
+                  Bénévolat
+                </p>
+              </div>
+
+              <Field label="Nombre de bénévoles souhaité">
+                <input
+                  className={styles.input}
+                  type="number"
+                  min={1}
+                  placeholder="Vide = pas de recherche de bénévoles"
+                  value={form.volunteer_capacity ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      volunteer_capacity: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
+                />
+              </Field>
+
+              <Field label="Approuver automatiquement les bénévoles">
+                <Toggle
+                  checked={form.volunteer_auto_approve ?? false}
+                  onChange={(v) => setForm({ ...form, volunteer_auto_approve: v })}
+                />
+              </Field>
+
+              <div className={styles.fullWidth}>
+                <Field label="Message de l'annonce aux membres">
+                  <textarea
+                    className={styles.textarea}
+                    placeholder="Texte envoyé aux membres pour annoncer la recherche de bénévoles (optionnel)"
+                    value={form.volunteer_message ?? ""}
+                    onChange={(e) => setForm({ ...form, volunteer_message: e.target.value })}
+                  />
+                </Field>
+                <p className={styles.imageHint}>
+                  L'annonce part automatiquement aux membres de l'église organisatrice
+                  à la publication d'un événement cherchant des bénévoles. Au-delà de
+                  la capacité, les demandes passent en liste d'attente.
+                </p>
+              </div>
             </div>
           )}
 
@@ -602,6 +653,16 @@ export function EvenementsForm({
                 <span className={styles.reviewLabel}>Délai d'annulation</span>
                 <span className={styles.reviewValue}>
                   {form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS} h avant l'événement
+                </span>
+              </div>
+              <div className={styles.reviewRow}>
+                <span className={styles.reviewLabel}>Bénévoles souhaités</span>
+                <span className={styles.reviewValue}>
+                  {form.volunteer_capacity
+                    ? `${form.volunteer_capacity}${
+                        form.volunteer_auto_approve ? " — approbation automatique" : ""
+                      }`
+                    : "Aucune recherche de bénévoles"}
                 </span>
               </div>
               <div className={styles.reviewRow}>
