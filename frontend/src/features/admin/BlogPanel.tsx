@@ -4,6 +4,7 @@ import coverStyles from "./BlogPanel.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../hooks/usePosts";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchPostCategories, fetchPostsStats, uploadPostCover, deletePostCover, coverUrl } from "../../lib/api/posts";
 import { IconCheckCircle, IconEye, IconFileEdit } from "../../components/ui/icons";
@@ -108,6 +109,7 @@ export function BlogPanel() {
   const { user } = useAuth();
   const { posts, loading, error, loadAdmin, add, edit, remove } = usePosts();
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   // Create form
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -174,6 +176,7 @@ export function BlogPanel() {
       setCreateCover(null);
       setShowCreateModal(false);
       loadAdmin();
+      toast.success(`Article « ${created.title} » créé.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de la création");
     } finally {
@@ -221,6 +224,7 @@ export function BlogPanel() {
       }
       setEditingPost(null);
       loadAdmin();
+      toast.success(`Article « ${editForm.title.trim()} » modifié.`);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
     } finally {
@@ -229,8 +233,12 @@ export function BlogPanel() {
   }
 
   async function handleStatusChange(id: number, status: PostStatus) {
-    try { await edit(id, { status }); }
-    catch (err) { alert(err instanceof Error ? err.message : "Mise à jour impossible"); }
+    try {
+      await edit(id, { status });
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[status]}.`);
+    } catch (err) {
+      toast.error(err, "Mise à jour impossible.");
+    }
   }
 
   async function handleDelete(id: number, title: string) {
@@ -241,8 +249,12 @@ export function BlogPanel() {
       variant: "danger",
     });
     if (!ok) return;
-    try { await remove(id); }
-    catch (err) { alert(err instanceof Error ? err.message : "Suppression impossible"); }
+    try {
+      await remove(id);
+      toast.success(`Article « ${title} » supprimé.`);
+    } catch (err) {
+      toast.error(err, "Suppression impossible.");
+    }
   }
 
   const columns = [
@@ -496,6 +508,7 @@ export function BlogPanel() {
       )}
 
       {dialog}
+      {toasts}
     </div>
   );
 }

@@ -14,6 +14,14 @@ const DEFAULT_SETTINGS = {
   hero_title: "Bienvenue dans notre communauté de foi",
   hero_subtitle:
     "Des Églises affiliées partout, une mission commune — servir, former et rayonner ensemble.",
+  hero_stat1_value: "120+",
+  hero_stat1_label: "Églises affiliées",
+  hero_stat2_value: "15 000",
+  hero_stat2_label: "Membres actifs",
+  hero_stat3_value: "8",
+  hero_stat3_label: "Pays",
+  hero_stat4_value: "40 ans",
+  hero_stat4_label: "De mission",
   about_eyebrow: "Qui sommes-nous",
   about_title: "Ce qui nous rassemble et nous guide",
   about_description:

@@ -4,6 +4,7 @@ import styles from "./LeadershipPanel.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { useLeaders } from "../../hooks/useLeaders";
 import { useParameters } from "../../hooks/useParameters";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
@@ -52,6 +53,7 @@ export function LeadershipPanel() {
   const { churches, load: loadChurches } = useChurches();
   const { values: roleValues, load: loadRoles } = useParameters("leader_role");
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   const canManage = hasPermission(user, "leader:manage");
 
@@ -139,12 +141,15 @@ export function LeadershipPanel() {
         email: form.email || null,
         phone: form.phone || null,
       };
-      if (editingId !== null) {
-        await edit(editingId, payload);
+      const wasEditing = editingId !== null;
+      if (wasEditing) {
+        await edit(editingId!, payload);
       } else {
         await add(payload);
       }
+      const name = `${payload.first_name} ${payload.last_name}`;
       cancelEdit();
+      toast.success(wasEditing ? `Fiche de ${name} modifiée.` : `${name} ajouté au leadership.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur");
     } finally {
@@ -162,8 +167,9 @@ export function LeadershipPanel() {
     if (!ok) return;
     try {
       await remove(id);
+      toast.success(`« ${name} » retiré du leadership.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Suppression impossible");
+      toast.error(err, "Suppression impossible.");
     }
   }
 
@@ -177,8 +183,9 @@ export function LeadershipPanel() {
     if (!ok) return;
     try {
       await edit(l.id, { is_published: !l.is_published });
+      toast.success(l.is_published ? "Fiche dépubliée." : "Fiche publiée.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Opération impossible");
+      toast.error(err, "Opération impossible.");
     }
   }
 
@@ -187,8 +194,9 @@ export function LeadershipPanel() {
     setUploadingId(l.id);
     try {
       await uploadPhoto(l.id, file);
+      toast.success("Photo mise à jour.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Envoi de la photo impossible");
+      toast.error(err, "Envoi de la photo impossible.");
     } finally {
       setUploadingId(null);
       const input = photoInputs.current[l.id];
@@ -535,6 +543,7 @@ export function LeadershipPanel() {
       </div>
 
       {dialog}
+      {toasts}
     </div>
   );
 }

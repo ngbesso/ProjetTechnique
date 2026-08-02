@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useExpenses } from "../../hooks/useExpenses";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import {
   fetchExpenseCategories,
@@ -38,6 +39,7 @@ const col = createColumnHelper<Expense>();
 export function DepensesPanel() {
   const { expenses, loading, error, load, add, edit, remove } = useExpenses();
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
   const [categories, setCategories] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState("");
 
@@ -87,6 +89,7 @@ export function DepensesPanel() {
       }
       setShowCreateModal(false);
       load({ category: filterCategory || undefined });
+      toast.success(`Dépense « ${created.category} » enregistrée.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de la création");
     } finally {
@@ -122,6 +125,7 @@ export function DepensesPanel() {
       }
       setEditingExpense(null);
       load({ category: filterCategory || undefined });
+      toast.success(`Dépense « ${editForm.category} » modifiée.`);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
     } finally {
@@ -139,8 +143,9 @@ export function DepensesPanel() {
     if (!ok) return;
     try {
       await remove(id);
+      toast.success(`Dépense « ${category} » supprimée.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Suppression impossible");
+      toast.error(err, "Suppression impossible.");
     }
   }
 
@@ -149,8 +154,9 @@ export function DepensesPanel() {
     try {
       await uploadExpenseAttachment(expenseId, file);
       load({ category: filterCategory || undefined });
+      toast.success("Pièce jointe ajoutée.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Téléversement impossible");
+      toast.error(err, "Téléversement impossible.");
     } finally {
       setUploadingId(null);
     }
@@ -341,6 +347,7 @@ export function DepensesPanel() {
       )}
 
       {dialog}
+      {toasts}
     </div>
   );
 }

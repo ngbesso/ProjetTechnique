@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.models.church import Church
 from app.models.event import Event, EventStatus
 from app.models.leader import Leader
+from app.models.rbac import Role
 
 
 def _mother_id(db) -> int:
@@ -127,6 +128,29 @@ def test_admin_creates_sexe_value(client, make_user, auth_header):
     assert body["label"] == "Non-binaire"
     assert body["category"] == "sexe"
     assert body["position"] == 10
+
+
+def test_parameter_manage_permission_is_enough(
+    client, make_user, auth_header, db_session
+):
+    """La permission dédiée parameter:manage donne accès aux listes de valeurs,
+    sans ouvrir le reste de l'administration."""
+    make_user("admin@p.com", roles=["admin"])
+    h_admin = auth_header("admin@p.com")
+    client.post("/admin/roles", json={"name": "gestionnaire_listes"}, headers=h_admin)
+    role = db_session.scalar(select(Role).where(Role.name == "gestionnaire_listes"))
+    client.put(
+        f"/admin/roles/{role.id}/permissions",
+        json={"codes": ["parameter:manage"]},
+        headers=h_admin,
+    )
+    make_user("listes@p.com", roles=["gestionnaire_listes"])
+    h = auth_header("listes@p.com")
+
+    r = client.post("/parameters/sexe", json={"label": "Valeur RBAC test"}, headers=h)
+    assert r.status_code == 201
+    assert client.delete(f"/parameters/{r.json()['id']}", headers=h).status_code == 204
+    assert client.get("/admin/roles", headers=h).status_code == 403
 
 
 def test_admin_creates_district_value(client, make_user, auth_header):

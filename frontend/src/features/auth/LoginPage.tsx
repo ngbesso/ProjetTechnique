@@ -2,13 +2,15 @@ import { useState } from "react";
 import styles from "./LoginPage.module.css";
 import { login } from "../../lib/api/auth";
 import { hasPermission, useAuth } from "../../context/AuthContext";
-import { useNavigate } from "../../context/RouterContext";
-import { SiteHeader } from "../../components/layout/SiteHeader";
+import { Link, useNavigate } from "../../context/RouterContext";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import { useSiteContent } from "../../hooks/useSiteContent";
+import { siteLogoUrl } from "../../lib/api/content";
 
 export function LoginPage() {
   const { setUser } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useSiteContent();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,21 +35,33 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <SiteHeader />
-
-      <section className={styles.hero}>
-        <div className={styles.heroInner}>
-          <span className={styles.heroEyebrow}>Bienvenue</span>
-          <h1 className={styles.heroTitle}>Connexion</h1>
-          <p className={styles.heroSub}>
-            Accédez à votre espace membre ou d'administration.
-          </p>
-        </div>
-        <div className={styles.heroDecor} aria-hidden="true" />
-      </section>
+      {/* En-tête minimal : uniquement le logo, cliquable pour revenir à l'accueil. */}
+      <header className={styles.minimalHeader}>
+        <Link page="home" className={styles.logo}>
+          {siteLogoUrl(settings.site_logo_url) ? (
+            <img
+              src={siteLogoUrl(settings.site_logo_url)!}
+              alt={settings.site_name}
+              className={styles.logoIcon}
+              style={{ objectFit: "contain" }}
+            />
+          ) : (
+            <div className={styles.logoIcon}>+</div>
+          )}
+          <div className={styles.logoText}>
+            <span className={styles.logoTitle}>{settings.site_name}</span>
+            <span className={styles.logoSubtitle}>{settings.site_tagline}</span>
+          </div>
+        </Link>
+      </header>
 
       <main className={styles.main}>
         <div className={styles.formCard}>
+          <div className={styles.welcome}>
+            <h1 className={styles.welcomeTitle}>Bienvenue</h1>
+            <p className={styles.welcomeSub}>Connectez-vous à votre espace.</p>
+          </div>
+
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <div>
               <label className={styles.label} htmlFor="email">

@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
+import { TODAY, YESTERDAY } from "../../lib/format";
 import { validatePhone, validateAddress } from "../../lib/validation";
 import type { Member, MemberUpdateInput } from "../../types";
-
-const TODAY = new Date().toISOString().split("T")[0];
 
 type FieldErrors = { telephone?: string; address?: string };
 
@@ -92,7 +91,7 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                             <input className={styles.input} placeholder="Téléphone" type="tel"
                                 value={form.telephone ?? ""}
                                 onChange={(e) => { setForm({ ...form, telephone: e.target.value || null }); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }} />
-                            <input className={styles.input} type="date" placeholder="Date de naissance" max={TODAY}
+                            <input className={styles.input} type="date" placeholder="Date de naissance" max={YESTERDAY}
                                 value={form.birth_date ?? ""}
                                 onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })} />
                             <select className={styles.select} value={form.family_status ?? ""}

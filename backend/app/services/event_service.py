@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,8 @@ from app.models.event import (
     EventStatus,
     RegistrationStatus,
 )
+from app.models.user import User
+from app.models.volunteer_request import VolunteerRequest, VolunteerRequestStatus
 from app.schemas.event import (
     EventCreate,
     EventStats,
@@ -16,6 +19,78 @@ from app.schemas.event import (
     StatusBreakdownItem,
     TopEventItem,
 )
+
+
+def is_organisateur_only(user: User) -> bool:
+    """Vrai si l'utilisateur détient le rôle « organisateur » et n'est pas
+    administrateur global — il doit alors être restreint à ses propres
+    événements (event.created_by)."""
+    if user.has_global_permission("*"):
+        return False
+    return any(a.role.name == "organisateur" for a in user.role_assignments)
+
+
+def assert_owns_event(user: User, event: Event) -> None:
+    if is_organisateur_only(user) and event.created_by != user.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Vous ne pouvez gérer que les événements que vous avez créés",
+        )
+
+
+# ── Bénévolat ────────────────────────────────────────────────────────────────
+
+
+def count_approved_volunteers(db: Session, event_id: int) -> int:
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(VolunteerRequest)
+            .where(
+                VolunteerRequest.event_id == event_id,
+                VolunteerRequest.status == VolunteerRequestStatus.approved,
+            )
+        )
+        or 0
+    )
+
+
+def volunteer_spots_left(db: Session, event: Event) -> int | None:
+    """Places de bénévoles restantes, ou None si la capacité est illimitée."""
+    if event.volunteer_capacity is None:
+        return None
+    return max(event.volunteer_capacity - count_approved_volunteers(db, event.id), 0)
+
+
+def list_volunteer_opportunities(db: Session, *, limit: int = 50) -> list[tuple[Event, int]]:
+    """Événements publiés, à venir, cherchant des bénévoles et dont la capacité
+    n'est pas encore atteinte — retourne (événement, places restantes). Un
+    événement complet en disparaît donc automatiquement."""
+    approved_counts = dict(
+        db.execute(
+            select(VolunteerRequest.event_id, func.count(VolunteerRequest.id))
+            .where(VolunteerRequest.status == VolunteerRequestStatus.approved)
+            .group_by(VolunteerRequest.event_id)
+        ).all()
+    )
+    events = db.scalars(
+        select(Event)
+        .where(
+            Event.status == EventStatus.published,
+            Event.date_start >= datetime.now(timezone.utc),
+            Event.volunteer_capacity.isnot(None),
+        )
+        .order_by(Event.date_start)
+    ).all()
+
+    opportunities: list[tuple[Event, int]] = []
+    for event in events:
+        spots_left = event.volunteer_capacity - approved_counts.get(event.id, 0)
+        if spots_left > 0:
+            opportunities.append((event, spots_left))
+        if len(opportunities) >= limit:
+            break
+    return opportunities
 
 
 def _apply_filters(

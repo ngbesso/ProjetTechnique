@@ -4,13 +4,15 @@ import styles from "./EvenementsPanel.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { useEvents } from "../../hooks/useEvents";
 import { useParameters } from "../../hooks/useParameters";
 import { exportEventRegistrations, uploadEventImage } from "../../lib/api/events";
 import { EvenementsForm } from "./evenements/EvenementsForm";
 import { EvenementsList } from "./evenements/EvenementsList";
 import { EvenementsParticipantsModal } from "./evenements/EvenementsParticipantsModal";
-import { EMPTY, eventToForm } from "./evenements/shared";
+import { EvenementsVolunteersModal } from "./evenements/EvenementsVolunteersModal";
+import { EMPTY, STATUS_LABELS, eventToForm } from "./evenements/shared";
 import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
 import type { EventInput, EventItem, EventStatus } from "../../types";
 
@@ -34,6 +36,7 @@ export function EvenementsPanel() {
   const { values: intervenantCategoryValues, load: loadIntervenantCategories } =
     useParameters("intervenant_category");
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   const canManage = hasPermission(user, "event:manage");
 
@@ -42,6 +45,7 @@ export function EvenementsPanel() {
   const isEditing = editingEvent !== null;
 
   const [participantsEvent, setParticipantsEvent] = useState<EventItem | null>(null);
+  const [volunteersEvent, setVolunteersEvent] = useState<EventItem | null>(null);
   const [exporting, setExporting] = useState(false);
   const [view, setView] = useState<"liste" | "statistiques">("liste");
 
@@ -69,12 +73,18 @@ export function EvenementsPanel() {
   }
 
   async function handleFormSubmit(payload: EventInput, imageFile: File | null) {
+    const wasEditing = editingEvent !== null;
     const saved = editingEvent ? await edit(editingEvent.id, payload) : await add(payload);
     if (imageFile) {
       await uploadEventImage(saved.id, imageFile);
       loadAdmin();
     }
     cancelEdit();
+    toast.success(
+      wasEditing
+        ? `Événement « ${saved.title} » modifié.`
+        : `Événement « ${saved.title} » créé.`,
+    );
   }
 
   async function handleDelete(id: number, title: string) {
@@ -87,16 +97,18 @@ export function EvenementsPanel() {
     if (!ok) return;
     try {
       await remove(id);
+      toast.success(`Événement « ${title} » supprimé.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Suppression impossible");
+      toast.error(err, "Suppression impossible.");
     }
   }
 
   async function handleStatusChange(id: number, status: EventStatus) {
     try {
       await edit(id, { status });
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[status]}.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Mise à jour impossible");
+      toast.error(err, "Mise à jour impossible.");
     }
   }
 
@@ -119,7 +131,7 @@ export function EvenementsPanel() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Export impossible");
+      toast.error(err, "Export impossible.");
     } finally {
       setExporting(false);
     }
@@ -178,6 +190,7 @@ export function EvenementsPanel() {
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           onOpenParticipants={openParticipants}
+          onOpenVolunteers={setVolunteersEvent}
         />
       )}
 
@@ -192,7 +205,15 @@ export function EvenementsPanel() {
         />
       )}
 
+      {volunteersEvent && (
+        <EvenementsVolunteersModal
+          event={volunteersEvent}
+          onClose={() => setVolunteersEvent(null)}
+        />
+      )}
+
       {dialog}
+      {toasts}
     </div>
   );
 }

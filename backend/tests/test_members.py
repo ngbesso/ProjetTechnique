@@ -95,13 +95,22 @@ def test_request_birth_date_future_rejected(client, db_session):
     assert r.status_code == 422
 
 
-def test_request_birth_date_today_accepted(client, fake_email, db_session):
+def test_request_birth_date_today_rejected(client, db_session):
+    """Contrairement à la date de conversion, le jour même est refusé."""
     r = _request(
         client,
         _mother_id(db_session),
         "born@b.com",
         birth_date=date.today().isoformat(),
     )
+    assert r.status_code == 422
+
+
+def test_request_birth_date_yesterday_accepted(client, fake_email, db_session):
+    from datetime import timedelta
+
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    r = _request(client, _mother_id(db_session), "hier@b.com", birth_date=yesterday)
     assert r.status_code == 201
 
 

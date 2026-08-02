@@ -5,6 +5,7 @@ import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
@@ -35,6 +36,7 @@ export function EglisesPanel() {
     const { churches, loading, error, load, add, edit, remove } = useChurches();
     const { values: districtValues, load: loadDistricts } = useParameters("district");
     const { confirm, dialog } = useConfirm();
+    const { toast, toasts } = useToast();
     const [form, setForm] = useState<ChurchInput>(EMPTY);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -120,7 +122,13 @@ export function EglisesPanel() {
             } else {
                 await add(payload);
             }
+            const wasEditing = editingId !== null;
             cancelEdit();
+            toast.success(
+                wasEditing
+                    ? `Église « ${payload.name} » modifiée.`
+                    : `Église « ${payload.name} » créée.`,
+            );
         } catch (err) {
             setFormError(err instanceof Error ? err.message : "Erreur");
         } finally {
@@ -138,8 +146,9 @@ export function EglisesPanel() {
         if (!ok) return;
         try {
             await remove(id);
+            toast.success(`Église « ${name} » supprimée.`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Suppression impossible");
+            toast.error(err, "Suppression impossible.");
         }
     }
 
@@ -154,8 +163,13 @@ export function EglisesPanel() {
         try {
             await edit(c.id, { is_active: !c.is_active });
             if (c.is_active && editingId === c.id) cancelEdit();
+            toast.success(
+                c.is_active
+                    ? `Église « ${c.name} » désactivée.`
+                    : `Église « ${c.name} » réactivée.`,
+            );
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Opération impossible");
+            toast.error(err, "Opération impossible.");
         }
     }
 
@@ -419,6 +433,7 @@ export function EglisesPanel() {
             </div>
 
             {dialog}
+            {toasts}
         </div>
     );
 }

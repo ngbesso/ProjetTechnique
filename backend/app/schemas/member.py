@@ -4,8 +4,19 @@ from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 def _no_future_date(v: date | None, field_name: str) -> date | None:
+    """Rejette une date postérieure à aujourd'hui. Le jour même reste accepté :
+    une conversion peut légitimement être enregistrée le jour où elle a lieu."""
     if v is not None and v > datetime.now(timezone.utc).date():
         raise ValueError(f"La {field_name} ne peut pas être une date future.")
+    return v
+
+
+def _birth_date_in_past(v: date | None) -> date | None:
+    """Règle propre à la date de naissance : contrairement à _no_future_date,
+    le jour même est refusé (un membre inscrit le jour de sa naissance n'a pas
+    de sens dans le registre)."""
+    if v is not None and v >= datetime.now(timezone.utc).date():
+        raise ValueError("La date de naissance doit être antérieure à aujourd'hui.")
     return v
 
 
@@ -23,8 +34,8 @@ class MembershipRequest(BaseModel):
 
     @field_validator("birth_date")
     @classmethod
-    def birth_date_not_future(cls, v: date | None) -> date | None:
-        return _no_future_date(v, "date de naissance")
+    def birth_date_is_past(cls, v: date | None) -> date | None:
+        return _birth_date_in_past(v)
 
     @field_validator("telephone")
     @classmethod
@@ -61,8 +72,8 @@ class MemberUpdate(BaseModel):
 
     @field_validator("birth_date")
     @classmethod
-    def birth_date_not_future(cls, v: date | None) -> date | None:
-        return _no_future_date(v, "date de naissance")
+    def birth_date_is_past(cls, v: date | None) -> date | None:
+        return _birth_date_in_past(v)
 
     @field_validator("conversion_date")
     @classmethod

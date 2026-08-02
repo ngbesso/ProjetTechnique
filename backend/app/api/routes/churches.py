@@ -15,6 +15,7 @@ from app.schemas.church import (
     ChurchUpdate,
     DistrictCount,
 )
+from app.services import stats_service
 
 
 def _check_email_unique(
@@ -74,12 +75,7 @@ def get_church(church_id: int, db: Annotated[Session, Depends(get_db)]):
 def get_churches_stats(db: Annotated[Session, Depends(get_db)]):
     """Nombre total d'Églises, actives/inactives et répartition par district."""
     total = db.scalar(select(func.count()).select_from(Church)) or 0
-    active = (
-        db.scalar(
-            select(func.count()).select_from(Church).where(Church.is_active.is_(True))
-        )
-        or 0
-    )
+    active = stats_service.count_active_churches(db)
     rows = db.execute(
         select(Church.district, func.count(Church.id))
         .where(Church.district.isnot(None))

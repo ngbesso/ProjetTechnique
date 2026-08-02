@@ -17,7 +17,10 @@ PERMISSIONS: dict[str, str] = {
     "post:manage": "Gérer les articles de blog",
     "news:manage": "Gérer les actualités",
     "content:manage": "Gérer les pages et le menu (CMS)",
+    "settings:manage": "Gérer les réglages du site et du système",
+    "parameter:manage": "Gérer les listes de valeurs paramétrables",
     "prayer:manage": "Gérer les demandes de prière",
+    "member_request:manage": "Gérer les demandes libres des membres",
     "volunteer:manage": "Gérer les demandes de bénévolat",
     "finance:manage": "Gérer les finances (dons, dépenses, rapports)",
     "leader:manage": "Gérer les membres du leadership",
@@ -32,7 +35,16 @@ DEFAULT_ROLES: dict[str, dict] = {
     },
     "organisateur": {
         "description": "Organisateur d'événements",
-        "permissions": ["event:manage"],
+        # volunteer:manage lui donne accès aux demandes de bénévolat, mais
+        # uniquement pour les événements qu'il a lui-même créés (le périmètre
+        # est appliqué dans volunteer_requests.py).
+        "permissions": ["event:manage", "volunteer:manage"],
+    },
+    "equipe_pastorale": {
+        "description": "Équipe pastorale (demandes de prière)",
+        # Attribuable par église via UserRole.church_id : l'équipe ne voit
+        # alors que les demandes des membres de son église.
+        "permissions": ["prayer:manage"],
     },
 }
 
@@ -43,4 +55,6 @@ GLOBAL_PERMISSIONS: set[str] = {
     "user:manage",
     "church:manage",
     "content:manage",
+    "settings:manage",
+    "parameter:manage",
 }

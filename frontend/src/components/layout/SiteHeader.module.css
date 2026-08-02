@@ -204,6 +204,103 @@ a.navLink:hover {
   color: var(--deep-violet);
 }
 
+/* ── Menu mobile ────────────────────────────────────────────────────────── */
+
+/* Masqué par défaut : la nav complète est visible au-dessus de 768px. */
+.burger {
+  display: none;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--deep-violet);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.burger:hover {
+  border-color: var(--vivid-violet);
+  background: rgba(83, 74, 183, 0.06);
+}
+
+/* Panneau plein écran sous l'en-tête (64px de haut). */
+.mobilePanel {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileLink {
+  padding: 0.85rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-main);
+  text-decoration: none;
+  border-radius: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobileLink:hover {
+  color: var(--vivid-violet);
+  background: rgba(83, 74, 183, 0.06);
+}
+
+.mobileLinkActive {
+  color: var(--vivid-violet);
+  background: rgba(83, 74, 183, 0.08);
+  font-weight: 600;
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 0.75rem;
+}
+
+/* Boutons pleine largeur dans le panneau, contrairement à ceux de l'en-tête. */
+.mobileActions .btnPrimary,
+.mobileActions .btnSecondary,
+.mobileActions .linkMuted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+}
+
+.mobileUser {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--deep-violet);
+  padding-bottom: 0.25rem;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 /* Écrans intermédiaires (ex. ~1024px) : la nav pleine largeur ne tient plus
@@ -228,6 +325,8 @@ a.navLink:hover {
   }
 }
 
+/* Sous 768px, toute la navigation et les actions de session passent dans le
+   panneau ouvert par le burger : l'en-tête ne garde que le logo et le burger. */
 @media (max-width: 768px) {
   .inner {
     padding: 0 1rem;
@@ -238,15 +337,15 @@ a.navLink:hover {
     display: none;
   }
 
-  .btnSecondary {
+  .actions {
     display: none;
   }
 
-  .userName {
-    display: none;
+  .burger {
+    display: flex;
   }
 
-  .linkMuted {
-    display: none;
+  .mobilePanel {
+    display: flex;
   }
 }

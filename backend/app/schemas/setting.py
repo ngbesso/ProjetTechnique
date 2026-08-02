@@ -19,7 +19,27 @@ SETTING_META: dict[str, str] = {
     "hero_eyebrow": "Petit texte au-dessus du titre principal de l'accueil",
     "hero_title": "Titre principal de la page d'accueil",
     "hero_subtitle": "Sous-titre de la page d'accueil",
-    "about_eyebrow": "Petit texte au-dessus du titre de la section « Qui sommes-nous »",
+    "hero_stat1_value": (
+        "Statistique 1 de l'accueil — valeur, vide = masquée "
+        "(variables : {eglises}, {membres})"
+    ),
+    "hero_stat1_label": "Statistique 1 de l'accueil — libellé",
+    "hero_stat2_value": (
+        "Statistique 2 de l'accueil — valeur, vide = masquée "
+        "(variables : {eglises}, {membres})"
+    ),
+    "hero_stat2_label": "Statistique 2 de l'accueil — libellé",
+    "hero_stat3_value": (
+        "Statistique 3 de l'accueil — valeur, vide = masquée "
+        "(variables : {eglises}, {membres})"
+    ),
+    "hero_stat3_label": "Statistique 3 de l'accueil — libellé",
+    "hero_stat4_value": (
+        "Statistique 4 de l'accueil — valeur, vide = masquée "
+        "(variables : {eglises}, {membres})"
+    ),
+    "hero_stat4_label": "Statistique 4 de l'accueil — libellé",
+    "about_eyebrow":"Petit texte au-dessus du titre de la section « Qui sommes-nous »",
     "about_title": "Titre de la section « Qui sommes-nous »",
     "about_description": "Paragraphe de présentation de la section « Qui sommes-nous »",
     "social_youtube_url": "Lien YouTube (pied de page)",
@@ -38,6 +58,14 @@ PUBLIC_SETTINGS: set[str] = {
     "hero_eyebrow",
     "hero_title",
     "hero_subtitle",
+    "hero_stat1_value",
+    "hero_stat1_label",
+    "hero_stat2_value",
+    "hero_stat2_label",
+    "hero_stat3_value",
+    "hero_stat3_label",
+    "hero_stat4_value",
+    "hero_stat4_label",
     "about_eyebrow",
     "about_title",
     "about_description",

@@ -10,6 +10,7 @@ VALID_CATEGORIES = {
     "ministry",
     "expense_category",
     "leader_role",
+    "member_request_type",
 }
 
 
