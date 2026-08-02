@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { fetchSettings, updateSetting } from "../../lib/api/settings";
 import type { AppSetting, ParameterValue } from "../../types";
 
@@ -243,6 +244,7 @@ const SECTIONS = [
     { category: "intervenant_category", label: "Catégories d'intervenant" },
     { category: "ministry", label: "Ministères" },
     { category: "leader_role", label: "Rôles de leadership" },
+    { category: "member_request_type", label: "Types de demande des membres" },
 ] as const;
 
 type Category = typeof SECTIONS[number]["category"];
@@ -261,6 +263,7 @@ const RESTRICTION_OPTIONS = [
 function CategoryEditor({ category, title }: CategoryEditorProps) {
     const { values, loading, error, load, add, rename, remove } = useParameters(category);
     const { confirm, dialog } = useConfirm();
+    const { toast, toasts } = useToast();
     const [newLabel, setNewLabel] = useState("");
     const [newRestriction, setNewRestriction] = useState("");
     const [adding, setAdding] = useState(false);
@@ -283,6 +286,7 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
             await add(label, isMinistry ? (newRestriction || null) : undefined);
             setNewLabel("");
             setNewRestriction("");
+            toast.success(`« ${label} » ajouté.`);
         } catch (err) {
             setAddError(err instanceof Error ? err.message : "Erreur");
         } finally {
@@ -303,6 +307,7 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
         try {
             await rename(id, label, isMinistry ? (editRestriction || null) : undefined);
             setEditingId(null);
+            toast.success(`« ${label} » modifié.`);
         } catch (err) {
             setAddError(err instanceof Error ? err.message : "Erreur");
         }
@@ -317,8 +322,13 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
         if (!ok) return;
         try {
             await remove(id);
+            toast.success(`« ${label} » supprimé.`);
         } catch (err) {
+            // Le backend refuse (409) la suppression d'une valeur encore
+            // utilisée : le motif doit rester lisible, d'où le toast d'erreur
+            // en plus du message inline.
             setAddError(err instanceof Error ? err.message : "Erreur de suppression");
+            toast.error(err, "Suppression impossible.");
         }
     }
 
@@ -407,6 +417,7 @@ function CategoryEditor({ category, title }: CategoryEditorProps) {
             )}
 
             {dialog}
+            {toasts}
         </section>
     );
 }

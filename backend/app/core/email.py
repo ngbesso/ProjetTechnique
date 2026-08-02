@@ -207,6 +207,35 @@ def prayer_request_handled(sender: EmailSender, to: str, name: str) -> None:
     )
 
 
+def member_request_received(
+    sender: EmailSender, to: str, member_name: str, request_type: str, message: str
+) -> None:
+    sender.send(
+        to,
+        f"Nouvelle demande d'un membre — {request_type}",
+        f"{member_name} a soumis une demande « {request_type} ».\n\n"
+        f"Message :\n{message}",
+    )
+
+
+def member_request_resolved(
+    sender: EmailSender,
+    to: str,
+    name: str,
+    request_type: str,
+    response: str | None = None,
+) -> None:
+    """Prévient le membre que sa demande a été traitée, avec la réponse de
+    l'administration si elle a été renseignée."""
+    details = f"\n\nRéponse de l'administration :\n{response}" if response else ""
+    sender.send(
+        to,
+        f"Votre demande a été traitée — {request_type}",
+        f"Bonjour {name}, votre demande « {request_type} » a été traitée."
+        f"{details}",
+    )
+
+
 def volunteer_request_received(
     sender: EmailSender,
     to: str,
@@ -240,6 +269,32 @@ def volunteer_request_reviewed(
             f"Bonjour {name}, votre demande de bénévolat pour « {event_title} » "
             "n'a pas été retenue cette fois-ci. Merci de votre intérêt.",
         )
+
+
+def volunteer_opportunity_announcement(
+    sender: EmailSender,
+    to: str,
+    event_title: str,
+    event_date: str,
+    spots_left: int | None,
+    message: str | None = None,
+) -> None:
+    """Annonce aux membres qu'un événement recherche des bénévoles."""
+    places = (
+        f"{spots_left} place(s) encore disponible(s)."
+        if spots_left is not None
+        else "Le nombre de places n'est pas limité."
+    )
+    body = message.strip() if message and message.strip() else (
+        f"Nous recherchons des bénévoles pour l'événement « {event_title} », "
+        f"prévu le {event_date}."
+    )
+    sender.send(
+        to,
+        f"Appel aux bénévoles — {event_title}",
+        f"{body}\n\n{places}\n\n"
+        "Rendez-vous dans votre espace membre, section Bénévolat, pour vous proposer.",
+    )
 
 
 def birthday_greeting(sender: EmailSender, to: str, message: str) -> None:

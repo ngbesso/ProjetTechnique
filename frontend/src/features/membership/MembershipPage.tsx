@@ -6,14 +6,13 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { requestMembership } from "../../lib/api/members";
 import { fetchPublicSettings } from "../../lib/api/settings";
+import { YESTERDAY } from "../../lib/format";
 import { validatePhone, validateEmail, validateAddress } from "../../lib/validation";
 import type { MembershipInput } from "../../types";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
 
 type FieldErrors = { telephone?: string; email?: string; address?: string };
-
-const TODAY = new Date().toISOString().split("T")[0];
 
 const WHY_ITEMS = [
   {
@@ -80,8 +79,8 @@ export function MembershipPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.church_id) { setError("Veuillez choisir une église."); return; }
-    if (form.birth_date && form.birth_date > TODAY) {
-      setError("La date de naissance ne peut pas être une date future.");
+    if (form.birth_date && form.birth_date > YESTERDAY) {
+      setError("La date de naissance doit être antérieure à aujourd'hui.");
       return;
     }
 
@@ -340,7 +339,7 @@ export function MembershipPage() {
                     <div className={styles.col}>
                       <label className={styles.label}>Date de naissance</label>
                       <input className={styles.input} type="date" value={form.birth_date}
-                        max={TODAY}
+                        max={YESTERDAY}
                         onChange={(e) => set("birth_date", e.target.value)} />
                     </div>
                     <div className={styles.col}>

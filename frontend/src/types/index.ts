@@ -275,6 +275,11 @@ export interface RoleAssignmentInput {
   church_id: number;
 }
 
+export interface OrganiserEventCount {
+  user_id: number;
+  event_count: number;
+}
+
 export type MemberStatus = "pending" | "active" | "inactive" | "rejected";
 
 export interface Member {
@@ -457,6 +462,9 @@ export interface EventItem {
   cancel_deadline_hours: number | null;
   confirmation_message: string | null;
   reminder_message: string | null;
+  volunteer_capacity: number | null;
+  volunteer_auto_approve: boolean;
+  volunteer_message: string | null;
   created_by: number | null;
   created_at: string;
   updated_at: string;
@@ -493,6 +501,20 @@ export interface EventInput {
   cancel_deadline_hours?: number | null;
   confirmation_message?: string | null;
   reminder_message?: string | null;
+  volunteer_capacity?: number | null;
+  volunteer_auto_approve?: boolean;
+  volunteer_message?: string | null;
+}
+
+export interface VolunteerOpportunity {
+  event_id: number;
+  title: string;
+  date_start: string;
+  location: string | null;
+  church_id: number | null;
+  volunteer_capacity: number;
+  volunteer_spots_left: number;
+  volunteer_message: string | null;
 }
 
 export interface EventRegistrationInput {
@@ -654,6 +676,43 @@ export interface PrayerRequest {
 export interface PrayerRequestAdmin extends PrayerRequest {
   member_name: string;
   member_email: string;
+  handled_by: number | null;
+  handled_by_email: string | null;
+  handled_at: string | null;
+}
+
+// ── Demandes libres des membres ──────────────────────────────────────────────
+
+export type MemberRequestStatus = "new" | "in_progress" | "resolved";
+
+export interface MemberRequestInput {
+  request_type: string;
+  message: string;
+}
+
+export interface MemberRequest {
+  id: number;
+  member_id: number;
+  request_type: string;
+  message: string;
+  status: MemberRequestStatus;
+  admin_response: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface MemberRequestAdmin extends MemberRequest {
+  member_name: string;
+  member_email: string;
+  handled_by: number | null;
+  handled_by_email: string | null;
+}
+
+export interface MemberRequestAdminStats {
+  new: number;
+  in_progress: number;
+  resolved: number;
+  total: number;
 }
 
 // ── Demandes de bénévolat ─────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ from app.core.email import (
     event_registration_received,
     get_email_sender,
     render_template,
+    volunteer_opportunity_announcement,
 )
 from app.core.security import (
     create_cancel_registration_token,
@@ -42,7 +43,7 @@ from app.models.event import (
     EventStatus,
     RegistrationStatus,
 )
-from app.models.member import Member
+from app.models.member import Member, MemberStatus
 from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.event import (
@@ -55,6 +56,8 @@ from app.schemas.event import (
     RegistrationCreate,
     RegistrationRead,
     ResendCancelLinkRequest,
+    VolunteerAnnouncementResult,
+    VolunteerOpportunity,
 )
 from app.services import event_service, storage
 
@@ -107,21 +110,36 @@ def _assert_cancel_deadline_not_passed(event: Event) -> None:
         )
 
 
-def _is_organisateur_only(user: User) -> bool:
-    """Vrai si l'utilisateur détient le rôle « organisateur » et n'est pas
-    administrateur global — il doit alors être restreint à ses propres
-    événements (event.created_by)."""
-    if user.has_global_permission("*"):
-        return False
-    return any(a.role.name == "organisateur" for a in user.role_assignments)
+# Réexportés depuis event_service pour que les autres routeurs (bénévolat)
+# partagent exactement la même règle de propriété.
+_is_organisateur_only = event_service.is_organisateur_only
+_assert_owns_event = event_service.assert_owns_event
 
 
-def _assert_owns_event(user: User, event: Event) -> None:
-    if _is_organisateur_only(user) and event.created_by != user.id:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Vous ne pouvez gérer que les événements que vous avez créés",
+def _send_volunteer_announcement(
+    background: BackgroundTasks, sender: EmailSender, db: Session, event: Event
+) -> int:
+    """Annonce la recherche de bénévoles aux membres actifs de l'église
+    organisatrice — ou à tous les membres actifs si l'événement est de portée
+    mission (church_id null). Retourne le nombre de destinataires."""
+    query = select(Member).where(Member.status == MemberStatus.active)
+    if event.church_id is not None:
+        query = query.where(Member.church_id == event.church_id)
+    recipients = list(db.scalars(query).all())
+
+    spots_left = event_service.volunteer_spots_left(db, event)
+    date_label = _format_date_fr(event.date_start)
+    for member in recipients:
+        background.add_task(
+            volunteer_opportunity_announcement,
+            sender,
+            member.email,
+            event.title,
+            date_label,
+            spots_left,
+            event.volunteer_message,
         )
+    return len(recipients)
 
 
 def _send_registration_confirmation(
@@ -202,6 +220,9 @@ def _to_read(db: Session, event: Event, *, reveal_online_link: bool = True) -> E
         cancel_deadline_hours=event.cancel_deadline_hours,
         confirmation_message=event.confirmation_message,
         reminder_message=event.reminder_message,
+        volunteer_capacity=event.volunteer_capacity,
+        volunteer_auto_approve=event.volunteer_auto_approve,
+        volunteer_message=event.volunteer_message,
         created_by=event.created_by,
         created_at=event.created_at,
         updated_at=event.updated_at,
@@ -325,6 +346,28 @@ def get_events_stats(
     return event_service.get_admin_stats(db, created_by=created_by)
 
 
+@router.get("/volunteer-opportunities", response_model=list[VolunteerOpportunity])
+def list_volunteer_opportunities(
+    db: Annotated[Session, Depends(get_db)],
+    limit: int = Query(50, ge=1, le=200),
+):
+    """Événements publiés, à venir, cherchant encore des bénévoles. Un événement
+    dont la capacité est atteinte en disparaît automatiquement."""
+    return [
+        VolunteerOpportunity(
+            event_id=event.id,
+            title=event.title,
+            date_start=event.date_start,
+            location=event.location,
+            church_id=event.church_id,
+            volunteer_capacity=event.volunteer_capacity,
+            volunteer_spots_left=spots_left,
+            volunteer_message=event.volunteer_message,
+        )
+        for event, spots_left in event_service.list_volunteer_opportunities(db, limit=limit)
+    ]
+
+
 @router.get("/registrations/me", response_model=list[MyEventRegistration])
 def list_my_registrations(
     db: Annotated[Session, Depends(get_db)],
@@ -369,11 +412,17 @@ def get_event(event_id: int, db: Annotated[Session, Depends(get_db)]):
 )
 def create_event(
     payload: EventCreate,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
 ):
-    """Crée un événement — réservé aux gestionnaires (permission event:manage)."""
+    """Crée un événement — réservé aux gestionnaires (permission event:manage).
+    Si l'événement est publié d'emblée et cherche des bénévoles, l'annonce part
+    automatiquement aux membres concernés."""
     event = event_service.create_event(db, payload, created_by=current_user.id)
+    if event.volunteer_capacity is not None and event.status == EventStatus.published:
+        _send_volunteer_announcement(background, sender, db, event)
     return _to_read(db, event)
 
 
@@ -381,15 +430,47 @@ def create_event(
 def update_event(
     event_id: int,
     payload: EventUpdate,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
 ):
     """Modifie un événement — réservé aux gestionnaires (un organisateur ne peut
-    modifier que les événements qu'il a créés)."""
+    modifier que les événements qu'il a créés). La publication d'un événement
+    cherchant des bénévoles déclenche l'annonce aux membres concernés."""
     event = _load(db, event_id)
     _assert_owns_event(current_user, event)
+    was_published = event.status == EventStatus.published
     event = event_service.update_event(db, event, payload)
+    newly_published = not was_published and event.status == EventStatus.published
+    if event.volunteer_capacity is not None and newly_published:
+        _send_volunteer_announcement(background, sender, db, event)
     return _to_read(db, event)
+
+
+@router.post(
+    "/{event_id}/volunteer-announcement",
+    response_model=VolunteerAnnouncementResult,
+    dependencies=[can_manage],
+)
+def resend_volunteer_announcement(
+    event_id: int,
+    background: BackgroundTasks,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+):
+    """Relance manuellement l'annonce de recherche de bénévoles — réservé à
+    l'organisateur propriétaire de l'événement et aux administrateurs."""
+    event = _load(db, event_id)
+    _assert_owns_event(current_user, event)
+    if event.volunteer_capacity is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Cet événement ne recherche pas de bénévoles",
+        )
+    recipients = _send_volunteer_announcement(background, sender, db, event)
+    return VolunteerAnnouncementResult(recipients=recipients)
 
 
 @router.delete(

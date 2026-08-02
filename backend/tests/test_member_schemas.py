@@ -49,9 +49,16 @@ class TestBirthDateRequest:
         with pytest.raises(ValidationError):
             MembershipRequest(**_base(birth_date=_future(1)))
 
-    def test_today_accepted(self):
-        obj = MembershipRequest(**_base(birth_date=date.today()))
-        assert obj.birth_date == date.today()
+    def test_today_raises(self):
+        """Le jour même est refusé pour la naissance (mais accepté pour la
+        conversion, voir TestConversionDate)."""
+        with pytest.raises(ValidationError, match="antérieure à aujourd'hui"):
+            MembershipRequest(**_base(birth_date=date.today()))
+
+    def test_yesterday_accepted(self):
+        yesterday = date.today() - timedelta(days=1)
+        obj = MembershipRequest(**_base(birth_date=yesterday))
+        assert obj.birth_date == yesterday
 
     def test_past_accepted(self):
         obj = MembershipRequest(**_base(birth_date=_past()))
@@ -74,9 +81,13 @@ class TestBirthDateUpdate:
         with pytest.raises(ValidationError):
             MemberUpdate(birth_date=_future())
 
-    def test_today_accepted(self):
-        obj = MemberUpdate(birth_date=date.today())
-        assert obj.birth_date == date.today()
+    def test_today_raises(self):
+        with pytest.raises(ValidationError, match="antérieure à aujourd'hui"):
+            MemberUpdate(birth_date=date.today())
+
+    def test_yesterday_accepted(self):
+        yesterday = date.today() - timedelta(days=1)
+        assert MemberUpdate(birth_date=yesterday).birth_date == yesterday
 
     def test_none_accepted(self):
         assert MemberUpdate(birth_date=None).birth_date is None

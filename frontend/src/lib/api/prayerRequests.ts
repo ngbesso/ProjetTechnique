@@ -28,3 +28,7 @@ export function updatePrayerRequestStatus(
 ): Promise<PrayerRequestAdmin> {
   return http.patch<PrayerRequestAdmin>(`/prayer-requests/${id}`, { status });
 }
+
+export function claimPrayerRequest(id: number): Promise<PrayerRequestAdmin> {
+  return http.post<PrayerRequestAdmin>(`/prayer-requests/${id}/claim`, {});
+}

@@ -22,6 +22,9 @@ class PrayerRequestRead(BaseModel):
 class PrayerRequestAdminRead(PrayerRequestRead):
     member_name: str
     member_email: str
+    handled_by: int | None = None
+    handled_by_email: str | None = None
+    handled_at: datetime | None = None
 
 
 class PrayerRequestUpdate(BaseModel):

@@ -8,62 +8,81 @@
   background: var(--neutral-bg);
 }
 
-/* ── Hero ─────────────────────────────────────────────── */
+/* ── En-tête minimal (logo seul) ──────────────────────── */
 
-.hero {
-  position: relative;
-  background: linear-gradient(135deg, #1e1458 0%, #3b2f8a 50%, #5b21b6 100%);
-  color: #fff;
-  padding: 5rem 2rem 5.5rem;
-  overflow: hidden;
-}
-
-.heroInner {
-  position: relative;
-  z-index: 2;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.heroEyebrow {
-  display: inline-flex;
+.minimalHeader {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.78rem;
+  padding: 1.25rem 2rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Logo repris à l'identique de SiteHeader, pour rester cohérent visuellement. */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoIcon {
+  width: 34px;
+  height: 34px;
+  background: var(--vivid-violet);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 0.3rem 0.9rem;
-  border-radius: 99px;
-  margin-bottom: 1.25rem;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 6px rgba(83, 74, 183, 0.35);
 }
 
-.heroTitle {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 900;
-  margin: 0 0 1rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+.logoText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
 }
 
-.heroSub {
-  font-size: 1.05rem;
-  opacity: 0.8;
-  max-width: 520px;
+.logoTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+}
+
+.logoSubtitle {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ── Message de bienvenue ─────────────────────────────── */
+
+.welcome {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.welcomeTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--deep-violet);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.welcomeSub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
   margin: 0;
-  line-height: 1.6;
-}
-
-.heroDecor {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 80% 20%, rgba(139,92,246,0.35) 0%, transparent 40%),
-    radial-gradient(circle at 15% 80%, rgba(99,102,241,0.25) 0%, transparent 35%);
+  line-height: 1.5;
 }
 
 .main {

@@ -4,7 +4,9 @@ import { useUsers } from "../../hooks/useUsers";
 import { useRbac } from "../../hooks/useRbac";
 import { useChurches } from "../../hooks/useChurches";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import type { UserAdmin } from "../../types";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
+import type { AssignmentRead, UserAdmin } from "../../types";
 
 const col = createColumnHelper<UserAdmin>();
 
@@ -22,6 +24,8 @@ export function UsersPanel() {
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState("");
     const [createSuccess, setCreateSuccess] = useState("");
+    const { confirm, dialog } = useConfirm();
+    const { toast, toasts } = useToast();
 
     useEffect(() => { load(); loadRbac(); loadChurches(); }, [load, loadRbac, loadChurches]);
 
@@ -36,10 +40,45 @@ export function UsersPanel() {
             await create(email);
             setNewEmail("");
             setCreateSuccess(`Compte créé pour ${email} — un lien d'activation lui a été envoyé par courriel.`);
+            toast.success(`Compte créé pour ${email}.`);
         } catch (err) {
             setCreateError(err instanceof Error ? err.message : "Erreur");
+            toast.error(err, "Création impossible.");
         } finally {
             setCreating(false);
+        }
+    }
+
+    /** Retrait d'un rôle : confirmé, comme toute action destructrice. */
+    async function handleRevoke(u: UserAdmin, a: AssignmentRead) {
+        const ok = await confirm({
+            title: `Retirer le rôle « ${a.role} » à ${u.email} ?`,
+            description: `La portée concernée est « ${a.church_name} ».`,
+            confirmLabel: "Retirer",
+            variant: "danger",
+        });
+        if (!ok) return;
+        try {
+            await revoke({ user_id: u.id, role_id: a.role_id, church_id: a.church_id });
+            toast.success(`Rôle « ${a.role} » retiré à ${u.email}.`);
+        } catch (err) {
+            toast.error(err, "Retrait impossible.");
+        }
+    }
+
+    async function handleToggleActive(u: UserAdmin) {
+        const action = u.is_active ? "Désactiver" : "Réactiver";
+        const ok = await confirm({
+            title: `${action} le compte ${u.email} ?`,
+            variant: u.is_active ? "danger" : "default",
+            confirmLabel: action,
+        });
+        if (!ok) return;
+        try {
+            await toggleActive(u.id, !u.is_active);
+            toast.success(u.is_active ? "Compte désactivé." : "Compte réactivé.");
+        } catch (err) {
+            toast.error(err, "Opération impossible.");
         }
     }
 
@@ -57,8 +96,10 @@ export function UsersPanel() {
         try {
             await assign({ user_id: +uId, role_id: +rId, church_id: +cId });
             setUId(""); setRId(""); setCId("");
+            toast.success("Rôle attribué.");
         } catch (err) {
             setAssignError(err instanceof Error ? err.message : "Erreur");
+            toast.error(err, "Attribution impossible.");
         }
     }
 
@@ -76,7 +117,7 @@ export function UsersPanel() {
                             <span key={`${a.role_id}-${a.church_id}`} className={styles.badge}>
                                 {a.role} @ {a.church_name}
                                 <button className={styles.chipX} title="Retirer"
-                                    onClick={() => revoke({ user_id: u.id, role_id: a.role_id, church_id: a.church_id })}>×</button>
+                                    onClick={() => handleRevoke(u, a)}>×</button>
                             </span>
                         ))}
                     </div>
@@ -97,7 +138,7 @@ export function UsersPanel() {
             cell: (info) => {
                 const u = info.row.original;
                 return (
-                    <button className={styles.btnOutline} onClick={() => toggleActive(u.id, !u.is_active)}>
+                    <button className={styles.btnOutline} onClick={() => handleToggleActive(u)}>
                         {u.is_active ? "Désactiver" : "Réactiver"}
                     </button>
                 );
@@ -188,6 +229,8 @@ export function UsersPanel() {
                             />
                         )}
             </section>
+            {dialog}
+            {toasts}
         </>
     );
 }

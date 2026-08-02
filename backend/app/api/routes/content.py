@@ -127,10 +127,7 @@ def upload_logo(
 
 @router.delete("/logo", status_code=204, dependencies=[can_manage])
 def delete_logo(db: Annotated[Session, Depends(get_db)]):
-    try:
-        storage.delete_file(_LOGO_KEY)
-    except Exception:
-        pass
+    storage.delete_file_quiet(_LOGO_KEY)
     setting = db.get(AppSetting, _LOGO_SETTING_KEY)
     if setting is not None:
         setting.value = ""
