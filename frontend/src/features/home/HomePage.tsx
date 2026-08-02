@@ -9,8 +9,10 @@ import {
 import { Link, useNavigate } from "../../context/RouterContext";
 import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
-import { useSiteContent } from "../../hooks/useSiteContent";
+import { useSiteContent, type SiteSettings } from "../../hooks/useSiteContent";
 import { getEvents } from "../../lib/api/events";
+import { fetchPublicStats, type PublicStats } from "../../lib/api/stats";
+import { renderTemplate, stripTokens } from "../../lib/template";
 import { NewsCarousel } from "./NewsCarousel";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
@@ -19,12 +21,52 @@ import type { EventItem } from "../../types";
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 
-const STATS = [
-  { value: "120+", label: "Églises affiliées" },
-  { value: "15 000", label: "Membres actifs" },
-  { value: "8", label: "Pays" },
-  { value: "40 ans", label: "De mission" },
-] as const;
+// Les 4 statistiques sont configurables depuis l'admin (Pages → « Accueil —
+// statistiques »). Leur valeur accepte les jetons {eglises} et {membres},
+// remplacés par les comptages réels renvoyés par GET /stats/public. Si ce
+// comptage n'est pas disponible, les jetons sont effacés plutôt qu'affichés
+// tels quels — une valeur qui n'était qu'un jeton devient alors vide, et une
+// statistique dont la valeur est vide n'est pas affichée.
+function heroStats(settings: SiteSettings, counts: PublicStats | null) {
+  const resolve = (value: string) =>
+    counts
+      ? renderTemplate(value, {
+          eglises: String(counts.affiliated_churches),
+          membres: String(counts.active_members),
+        })
+      : stripTokens(value);
+  return [
+    { value: resolve(settings.hero_stat1_value), label: settings.hero_stat1_label },
+    { value: resolve(settings.hero_stat2_value), label: settings.hero_stat2_label },
+    { value: resolve(settings.hero_stat3_value), label: settings.hero_stat3_label },
+    { value: resolve(settings.hero_stat4_value), label: settings.hero_stat4_label },
+  ].filter((s) => s.value.trim() !== "");
+}
+
+/** Bande de statistiques affichée sous le hero, sur toute la largeur.
+ *  Exportée pour être testée isolément (voir StatsBar.test.tsx). */
+export function StatsBar() {
+  const { settings } = useSiteContent();
+  const [counts, setCounts] = useState<PublicStats | null>(null);
+
+  useEffect(() => {
+    fetchPublicStats().then(setCounts).catch(() => {});
+  }, []);
+
+  const stats = heroStats(settings, counts);
+  if (stats.length === 0) return null;
+
+  return (
+    <div className={styles.statsBar}>
+      {stats.map((s, i) => (
+        <div key={i} className={styles.statItem}>
+          <span className={styles.statValue}>{s.value}</span>
+          <span className={styles.statLabel}>{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const PILLARS = [
   { label: "Vision", icon: "👁", desc: "Une église par communauté, un disciple par foyer." },
@@ -69,6 +111,7 @@ function Hero() {
   const { settings } = useSiteContent();
   return (
     <section className={styles.hero}>
+      {/* Colonne gauche : bloc de bienvenue */}
       <div className={styles.heroContent}>
         <p className={styles.heroEyebrow}>{settings.hero_eyebrow}</p>
         <h1 className={styles.heroTitle}>{settings.hero_title}</h1>
@@ -100,14 +143,12 @@ function Hero() {
           </button>
         </div>
       </div>
-      <div className={styles.heroVisual} aria-hidden="true" />
-      <div className={styles.statsBar}>
-        {STATS.map((s) => (
-          <div key={s.label} className={styles.statItem}>
-            <span className={styles.statValue}>{s.value}</span>
-            <span className={styles.statLabel}>{s.label}</span>
-          </div>
-        ))}
+
+      {/* Colonne droite : carrousel d'actualités. Le dégradé du panneau est
+          conservé en fond, de sorte que la colonne reste habitée même lorsque
+          aucune actualité n'est mise en avant (NewsCarousel ne rend rien). */}
+      <div className={styles.heroCarousel}>
+        <NewsCarousel />
       </div>
     </section>
   );
@@ -343,8 +384,8 @@ export function HomePage() {
     <div className={styles.page}>
       <SiteHeader activePage="home" />
       <main>
-        <NewsCarousel />
         <Hero />
+        <StatsBar />
         <AboutSection />
         <SermonsSection />
         <EventsSection />
