@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
-import { fetchPrayerRequestsAdmin, updatePrayerRequestStatus } from "../../lib/api/prayerRequests";
+import {
+  claimPrayerRequest,
+  fetchPrayerRequestsAdmin,
+  updatePrayerRequestStatus,
+} from "../../lib/api/prayerRequests";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { useToast } from "../../hooks/useToast";
 import { formatDateTime } from "../../lib/format";
 import type { PrayerRequestAdmin, PrayerRequestStatus } from "../../types";
 
@@ -16,6 +21,15 @@ const STATUS_BADGE_CLASS: Record<PrayerRequestStatus, string> = {
   handled: "badgeActive",
 };
 
+/** Filtre local sur la prise en charge (le backend ne filtre que par statut). */
+type AssignmentFilter = "all" | "unassigned" | "mine";
+
+const ASSIGNMENT_LABELS: Record<AssignmentFilter, string> = {
+  all: "Toutes",
+  unassigned: "Non prises en charge",
+  mine: "Les miennes",
+};
+
 const col = createColumnHelper<PrayerRequestAdmin>();
 
 export function PrieresPanel() {
@@ -24,6 +38,9 @@ export function PrieresPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [assignment, setAssignment] = useState<AssignmentFilter>("all");
+  const [claimingId, setClaimingId] = useState<number | null>(null);
+  const { toast, toasts } = useToast();
 
   const canManage = hasPermission(user, "prayer:manage");
 
@@ -46,10 +63,30 @@ export function PrieresPanel() {
     try {
       await updatePrayerRequestStatus(id, "handled");
       load();
+      toast.success("Demande marquée comme traitée.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Mise à jour impossible");
+      toast.error(err, "Mise à jour impossible.");
     }
   }
+
+  async function handleClaim(id: number) {
+    setClaimingId(id);
+    try {
+      await claimPrayerRequest(id);
+      load();
+      toast.success("Demande prise en charge.");
+    } catch (err) {
+      toast.error(err, "Prise en charge impossible.");
+    } finally {
+      setClaimingId(null);
+    }
+  }
+
+  const visibleRequests = requests.filter((r) => {
+    if (assignment === "unassigned") return r.handled_by === null;
+    if (assignment === "mine") return r.handled_by === user?.id;
+    return true;
+  });
 
   const columns = [
     col.accessor("member_name", { header: "Membre" }),
@@ -73,6 +110,26 @@ export function PrieresPanel() {
         );
       },
     }),
+    col.display({
+      id: "handled_by",
+      header: "Prise en charge",
+      cell: (info) => {
+        const r = info.row.original;
+        if (!r.handled_by_email) {
+          return <span style={{ color: "var(--text-muted)" }}>Non assignée</span>;
+        }
+        return (
+          <>
+            <div>{r.handled_by_email}</div>
+            {r.handled_at && (
+              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                {formatDateTime(r.handled_at)}
+              </div>
+            )}
+          </>
+        );
+      },
+    }),
     ...(canManage
       ? [
           col.display({
@@ -80,13 +137,24 @@ export function PrieresPanel() {
             header: "",
             cell: (info) => {
               const r = info.row.original;
-              return r.status === "new" ? (
+              return (
                 <div className={styles.actions}>
-                  <button className={styles.btnPrimarySm} onClick={() => handleMarkHandled(r.id)}>
-                    Marquer traitée
-                  </button>
+                  {r.handled_by === null && (
+                    <button
+                      className={styles.btnOutlineSm}
+                      disabled={claimingId === r.id}
+                      onClick={() => handleClaim(r.id)}
+                    >
+                      {claimingId === r.id ? "…" : "Je m'en occupe"}
+                    </button>
+                  )}
+                  {r.status === "new" && (
+                    <button className={styles.btnPrimarySm} onClick={() => handleMarkHandled(r.id)}>
+                      Marquer traitée
+                    </button>
+                  )}
                 </div>
-              ) : null;
+              );
             },
           }),
         ]
@@ -102,7 +170,7 @@ export function PrieresPanel() {
       <section className={styles.listCard}>
         <div className={styles.listHeader}>
           <h3 className={styles.cardTitle} style={{ margin: 0 }}>
-            Demandes de prière ({requests.length})
+            Demandes de prière ({visibleRequests.length})
           </h3>
         </div>
 
@@ -117,17 +185,27 @@ export function PrieresPanel() {
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
             ))}
           </select>
+          <select
+            className={styles.select}
+            value={assignment}
+            onChange={(e) => setAssignment(e.target.value as AssignmentFilter)}
+          >
+            {(Object.keys(ASSIGNMENT_LABELS) as AssignmentFilter[]).map((a) => (
+              <option key={a} value={a}>{ASSIGNMENT_LABELS[a]}</option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.listBody}>
           <DataTable
             columns={columns}
-            data={requests}
+            data={visibleRequests}
             getRowId={(r) => r.id}
             emptyMessage="Aucune demande de prière."
           />
         </div>
       </section>
+      {toasts}
     </div>
   );
 }

@@ -10,6 +10,8 @@ import {
     removeMinistryAffiliation,
 } from "../../lib/api/ministryAffiliations";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { formatDate } from "../../lib/format";
 import type { Member, MinistryMember, MinistryStatsItem } from "../../types";
 
@@ -83,6 +85,8 @@ export function MinisteresPanel() {
     const [selectedAddIds, setSelectedAddIds] = useState<Set<number>>(new Set());
     const [adding, setAdding] = useState(false);
     const [addResult, setAddResult] = useState("");
+    const { confirm, dialog } = useConfirm();
+    const { toast, toasts } = useToast();
 
     useEffect(() => { loadMinistries(); }, [loadMinistries]);
 
@@ -115,30 +119,50 @@ export function MinisteresPanel() {
     }
 
     async function handleRemoveOne(m: MinistryMember) {
+        const name = `${m.first_name} ${m.last_name}`;
+        const ok = await confirm({
+            title: `Retirer ${name} du ministère « ${selected} » ?`,
+            description: "Le membre reste inscrit, seule son affiliation à ce ministère est retirée.",
+            confirmLabel: "Retirer",
+            variant: "danger",
+        });
+        if (!ok) return;
         setRemoving(true);
         setError("");
         try {
             await removeMinistryAffiliation(m.id, m.affiliation_id);
             loadMembers(selected, memberQuery);
+            toast.success(`${name} retiré du ministère.`);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur");
+            toast.error(err, "Retrait impossible.");
         } finally {
             setRemoving(false);
         }
     }
 
     async function handleRemoveSelected() {
+        const targets = members.filter((m) => selectedRemoveIds.has(m.id));
+        if (targets.length === 0) return;
+        const ok = await confirm({
+            title: `Retirer ${targets.length} membre(s) du ministère « ${selected} » ?`,
+            description: "Les membres restent inscrits, seule leur affiliation à ce ministère est retirée.",
+            confirmLabel: "Retirer",
+            variant: "danger",
+        });
+        if (!ok) return;
         setRemoving(true);
         setError("");
         try {
-            const targets = members.filter((m) => selectedRemoveIds.has(m.id));
             for (const m of targets) {
                 await removeMinistryAffiliation(m.id, m.affiliation_id);
             }
             setSelectedRemoveIds(new Set());
             loadMembers(selected, memberQuery);
+            toast.success(`${targets.length} membre(s) retiré(s) du ministère.`);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur");
+            toast.error(err, "Retrait impossible.");
         } finally {
             setRemoving(false);
         }
@@ -199,8 +223,10 @@ export function MinisteresPanel() {
             setCandidates([]);
             setCandidateQuery("");
             loadMembers(selected, memberQuery);
+            toast.success(`${result.added.length} membre(s) ajouté(s) au ministère.`);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur");
+            toast.error(err, "Ajout impossible.");
         } finally {
             setAdding(false);
         }
@@ -399,6 +425,8 @@ export function MinisteresPanel() {
                     )}
                 </>
             )}
+            {dialog}
+            {toasts}
         </div>
     );
 }

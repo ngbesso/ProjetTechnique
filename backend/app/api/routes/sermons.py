@@ -4,11 +4,9 @@ from typing import Annotated
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_global_permission
-from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.sermon import Sermon, SermonFormat, SermonStatus
 from app.models.user import User
@@ -17,16 +15,15 @@ from app.schemas.sermon import (
     SermonAdminStats,
     SermonRead,
     SermonUpdate,
-    TopSermonItem,
 )
-from app.services import storage
+from app.services import sermon_service, storage
 
 router = APIRouter(prefix="/sermons", tags=["sermons"])
 can_manage = Depends(require_global_permission("sermon:manage"))
 
 
 def _load(db: Session, sermon_id: int) -> Sermon:
-    sermon = db.get(Sermon, sermon_id)
+    sermon = sermon_service.get_sermon(db, sermon_id)
     if not sermon:
         raise HTTPException(404, "Sermon introuvable")
     return sermon
@@ -39,6 +36,14 @@ def _load_published(db: Session, sermon_id: int) -> Sermon:
     return sermon
 
 
+def _format_of(file: UploadFile) -> SermonFormat:
+    return (
+        SermonFormat.video
+        if (file.content_type or "").startswith("video")
+        else SermonFormat.audio
+    )
+
+
 @router.get("", response_model=Page[SermonRead])
 def list_sermons(
     db: Annotated[Session, Depends(get_db)],
@@ -48,20 +53,9 @@ def list_sermons(
     limit: int = 20,
     offset: int = 0,
 ):
-    query = select(Sermon).where(Sermon.status == SermonStatus.published)
-    if q:
-        term = f"%{q}%"
-        query = query.where(
-            Sermon.title.ilike(term)
-            | Sermon.preacher.ilike(term)
-            | Sermon.series.ilike(term)
-            | Sermon.description.ilike(term)
-        )
-    if series:
-        query = query.where(Sermon.series == series)
-    if format:
-        query = query.where(Sermon.format == format)
-    rows, total = paginate(db, query.order_by(Sermon.sermon_date.desc()), limit, offset)
+    rows, total = sermon_service.list_published(
+        db, q=q, series=series, format=format, limit=limit, offset=offset
+    )
     return Page[SermonRead](items=rows, total=total, limit=limit, offset=offset)
 
 
@@ -76,68 +70,27 @@ def list_sermons_admin(
     offset: int = 0,
 ):
     """Liste tous les sermons avec filtres — réservé aux gestionnaires."""
-    query = select(Sermon)
-    if q:
-        term = f"%{q}%"
-        query = query.where(
-            Sermon.title.ilike(term)
-            | Sermon.preacher.ilike(term)
-            | Sermon.series.ilike(term)
-        )
-    if status:
-        query = query.where(Sermon.status == status)
-    if series:
-        query = query.where(Sermon.series == series)
-    if format:
-        query = query.where(Sermon.format == format)
-    rows, total = paginate(db, query.order_by(Sermon.created_at.desc()), limit, offset)
+    rows, total = sermon_service.list_all(
+        db, q=q, status=status, series=series, format=format, limit=limit, offset=offset
+    )
     return Page[SermonRead](items=rows, total=total, limit=limit, offset=offset)
 
 
 @router.get("/admin/stats", response_model=SermonAdminStats, dependencies=[can_manage])
 def get_sermons_stats(db: Annotated[Session, Depends(get_db)]):
     """Publiés/brouillons, total des vues et top 5 des sermons les plus vus."""
-    status_rows = db.execute(
-        select(Sermon.status, func.count(Sermon.id)).group_by(Sermon.status)
-    ).all()
-    status_map: dict[SermonStatus, int] = dict(status_rows)
-
-    total_views = db.scalar(select(func.coalesce(func.sum(Sermon.views), 0))) or 0
-
-    top_rows = db.scalars(
-        select(Sermon).order_by(Sermon.views.desc()).limit(5)
-    ).all()
-
-    return SermonAdminStats(
-        published=status_map.get(SermonStatus.published, 0),
-        draft=status_map.get(SermonStatus.draft, 0),
-        total_views=total_views,
-        top_sermons=[
-            TopSermonItem(id=s.id, title=s.title, preacher=s.preacher, views=s.views)
-            for s in top_rows
-        ],
-    )
+    return sermon_service.get_admin_stats(db)
 
 
 @router.get("/series", response_model=list[str])
 def list_series(db: Annotated[Session, Depends(get_db)]):
     """Retourne les noms de séries distincts (sermons publiés uniquement)."""
-    rows = db.scalars(
-        select(Sermon.series)
-        .where(Sermon.status == SermonStatus.published, Sermon.series.isnot(None))
-        .distinct()
-        .order_by(Sermon.series)
-    ).all()
-    return list(rows)
+    return sermon_service.list_series(db)
 
 
 @router.get("/{sermon_id}", response_model=SermonRead)
 def get_sermon(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
-    sermon = _load_published(db, sermon_id)
-    sermon.views += 1
-    db.commit()
-    db.refresh(sermon)
-    return sermon
+    return sermon_service.increment_views(db, _load_published(db, sermon_id))
 
 
 def _stream_response(sermon: Sermon, request: Request) -> StreamingResponse:
@@ -201,44 +154,28 @@ def create_sermon(
     series: Annotated[str | None, Form()] = None,
     status_: Annotated[SermonStatus, Form(alias="status")] = SermonStatus.draft,
 ):
-    fmt = (
-        SermonFormat.video
-        if (file.content_type or "").startswith("video")
-        else SermonFormat.audio
-    )
-    sermon = Sermon(
+    sermon = sermon_service.create_sermon(
+        db,
         title=title,
         preacher=preacher,
         sermon_date=sermon_date,
         description=description,
         series=series,
-        format=fmt,
-        file_key="",
+        format=_format_of(file),
         status=status_,
         uploaded_by=current_user.id,
     )
-    db.add(sermon)
-    db.flush()  # obtient sermon.id
-
+    # La clé dépend de l'id, disponible seulement après le flush du service.
     file_key = f"sermons/{sermon.id}/{file.filename}"
     storage.upload_file(file.file, file_key, file.content_type)
-    sermon.file_key = file_key
-
-    db.commit()
-    db.refresh(sermon)
-    return sermon
+    return sermon_service.attach_media(db, sermon, file_key=file_key)
 
 
 @router.patch("/{sermon_id}", response_model=SermonRead, dependencies=[can_manage])
 def update_sermon(
     sermon_id: int, data: SermonUpdate, db: Annotated[Session, Depends(get_db)]
 ):
-    sermon = _load(db, sermon_id)
-    for k, v in data.model_dump(exclude_unset=True).items():
-        setattr(sermon, k, v)
-    db.commit()
-    db.refresh(sermon)
-    return sermon
+    return sermon_service.update_sermon(db, _load(db, sermon_id), data)
 
 
 @router.post("/{sermon_id}/media", response_model=SermonRead, dependencies=[can_manage])
@@ -250,18 +187,11 @@ def replace_sermon_media(
     sermon = _load(db, sermon_id)
     if sermon.file_key:
         storage.delete_file_quiet(sermon.file_key)
-    fmt = (
-        SermonFormat.video
-        if (file.content_type or "").startswith("video")
-        else SermonFormat.audio
-    )
     new_key = f"sermons/{sermon.id}/{file.filename}"
     storage.upload_file(file.file, new_key, file.content_type)
-    sermon.file_key = new_key
-    sermon.format = fmt
-    db.commit()
-    db.refresh(sermon)
-    return sermon
+    return sermon_service.attach_media(
+        db, sermon, file_key=new_key, format=_format_of(file)
+    )
 
 
 @router.delete("/{sermon_id}", status_code=204, dependencies=[can_manage])
@@ -269,5 +199,4 @@ def delete_sermon(sermon_id: int, db: Annotated[Session, Depends(get_db)]):
     sermon = _load(db, sermon_id)
     if sermon.file_key:
         storage.delete_file(sermon.file_key)
-    db.delete(sermon)
-    db.commit()
+    sermon_service.delete_sermon(db, sermon)

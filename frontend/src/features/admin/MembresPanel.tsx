@@ -4,26 +4,20 @@ import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useMembers } from "../../hooks/useMembers";
 import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { fetchMembersStats } from "../../lib/api/members";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
-import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
+import type { ConfirmOptions } from "../../components/ui/ConfirmDialog";
+import { IconCheckCircle, IconClock, IconXCircle } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { FamilyStatusBreakdown } from "./FamilyStatusBreakdown";
 import { MemberDetailModal, STATUS_META } from "./MemberDetailModal";
 import { MemberEditModal } from "./MemberEditModal";
 import { MemberImportSection } from "./MemberImportSection";
-import type { Member, MemberStatus, MemberStatusStats } from "../../types";
+import type { Member, MemberStatus, MemberStatusStats, MemberUpdateInput } from "../../types";
 
 // ── Icônes KPI ────────────────────────────────────────────────────────────────
-
-function IconClock() {
-    return (
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-        </svg>
-    );
-}
 
 function IconMinusCircle() {
     return (
@@ -53,6 +47,8 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const [selected, setSelected] = useState<Member | null>(null);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
     const [stats, setStats] = useState<MemberStatusStats | null>(null);
+    const { confirm, dialog } = useConfirm();
+    const { toast, toasts } = useToast();
 
     const canApprove = hasPermission(user, "member:approve");
     const canImport = hasPermission(user, "member:create");
@@ -64,6 +60,46 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
         loadFamilyStatusValues();
         fetchMembersStats().then(setStats).catch(() => {});
     }, [load, loadChurches, loadFamilyStatusValues, initialStatus]);
+
+    /** Enrobe une action de changement de statut : confirmation quand elle est
+     *  destructrice (refus, désactivation), toast dans tous les cas. */
+    function statusAction(
+        run: (id: number) => Promise<unknown>,
+        successMessage: string,
+        confirmOptions?: ConfirmOptions,
+    ) {
+        return async (id: number) => {
+            if (confirmOptions && !(await confirm(confirmOptions))) return;
+            try {
+                await run(id);
+                fetchMembersStats().then(setStats).catch(() => {});
+                toast.success(successMessage);
+            } catch (err) {
+                toast.error(err, "Opération impossible.");
+            }
+        };
+    }
+
+    const handleApprove = statusAction(approve, "Membre approuvé — un courriel d'activation lui a été envoyé.");
+    const handleReject = statusAction(reject, "Demande d'adhésion refusée.", {
+        title: "Refuser cette demande d'adhésion ?",
+        description: "Le demandeur ne pourra pas accéder à son espace membre.",
+        confirmLabel: "Refuser",
+        variant: "danger",
+    });
+    const handleDeactivate = statusAction(deactivate, "Membre désactivé.", {
+        title: "Désactiver ce membre ?",
+        description: "Il perd l'accès à son espace, sa fiche est conservée.",
+        confirmLabel: "Désactiver",
+        variant: "danger",
+    });
+    const handleActivate = statusAction(activate, "Membre réactivé.");
+
+    async function handleEditSave(id: number, payload: MemberUpdateInput) {
+        const updated = await edit(id, payload);
+        toast.success("Fiche membre mise à jour.");
+        return updated;
+    }
 
     function applyFilters(overrides?: { q?: string; status?: string; family_status?: string }) {
         load({
@@ -111,21 +147,21 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                         )}
                         {canApprove && m.status === "pending" && (
                             <>
-                                <button className={styles.btnPrimarySm} onClick={() => approve(m.id)}>
+                                <button className={styles.btnPrimarySm} onClick={() => handleApprove(m.id)}>
                                     Approuver
                                 </button>
-                                <button className={styles.btnDanger} onClick={() => reject(m.id)}>
+                                <button className={styles.btnDanger} onClick={() => handleReject(m.id)}>
                                     Refuser
                                 </button>
                             </>
                         )}
                         {canApprove && m.status === "active" && (
-                            <button className={styles.btnOutline} onClick={() => deactivate(m.id)}>
+                            <button className={styles.btnOutline} onClick={() => handleDeactivate(m.id)}>
                                 Désactiver
                             </button>
                         )}
                         {canApprove && m.status === "inactive" && (
-                            <button className={styles.btnPrimarySm} onClick={() => activate(m.id)}>
+                            <button className={styles.btnPrimarySm} onClick={() => handleActivate(m.id)}>
                                 Activer
                             </button>
                         )}
@@ -198,10 +234,10 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                     church={churches.find((c) => c.id === selected.church_id)}
                     canApprove={!!canApprove}
                     onClose={() => setSelected(null)}
-                    onApprove={approve}
-                    onReject={reject}
-                    onDeactivate={deactivate}
-                    onActivate={activate}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onDeactivate={handleDeactivate}
+                    onActivate={handleActivate}
                 />
             )}
 
@@ -209,9 +245,11 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
                 <MemberEditModal
                     member={editingMember}
                     onClose={() => setEditingMember(null)}
-                    onSave={edit}
+                    onSave={handleEditSave}
                 />
             )}
+            {dialog}
+            {toasts}
         </div>
     );
 }

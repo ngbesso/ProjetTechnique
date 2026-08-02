@@ -9,6 +9,7 @@ import { AssistantPanel } from "./AssistantPanel";
 import { BenevolatPanel } from "./BenevolatPanel";
 import { BlogPanel } from "./BlogPanel";
 import { DashboardPanel } from "./DashboardPanel";
+import { DemandesMembresPanel } from "./DemandesMembresPanel";
 import { DepensesPanel } from "./DepensesPanel";
 import { EglisesPanel } from "./EglisesPanel";
 import { EvenementsPanel } from "./EvenementsPanel";
@@ -16,6 +17,7 @@ import { LeadershipPanel } from "./LeadershipPanel";
 import { MembresPanel } from "./MembresPanel";
 import { NewsPanel } from "./NewsPanel";
 import { MinisteresPanel } from "./MinisteresPanel";
+import { OrganisateursPanel } from "./OrganisateursPanel";
 import { PagesPanel } from "./PagesPanel";
 import { ParametresPanel } from "./ParametresPanel";
 import { PrieresPanel } from "./PrieresPanel";
@@ -41,8 +43,10 @@ export type Section =
   | "blog"
   | "actualites"
   | "evenements"
+  | "organisateurs"
   | "prieres"
   | "benevolat"
+  | "demandes-membres"
   | "pages"
   | "utilisateurs"
   | "parametres"
@@ -70,8 +74,10 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: "blog", label: "Blog", icon: "✍️", group: "Contenu" },
   { id: "actualites", label: "Actualités", icon: "📰", group: "Contenu" },
   { id: "evenements", label: "Événements", icon: "📅", group: "Contenu" },
+  { id: "organisateurs", label: "Organisateurs", icon: "🎫", globalOnly: true, group: "Contenu" },
   { id: "prieres", label: "Demandes de prière", icon: "🙏", group: "Demandes" },
   { id: "benevolat", label: "Bénévolat", icon: "🤝", group: "Demandes" },
+  { id: "demandes-membres", label: "Demandes des membres", icon: "📋", group: "Demandes" },
   { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true, group: "Système" },
   { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true, group: "Système" },
   { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true, group: "Système" },
@@ -268,6 +274,8 @@ export function AdminPage() {
               <SermonsPanel />
           ) : section === "evenements" ? (
               <EvenementsPanel />
+          ) : section === "organisateurs" ? (
+              <OrganisateursPanel />
           ) : section === "blog" ? (
               <BlogPanel />
           ) : section === "actualites" ? (
@@ -276,6 +284,8 @@ export function AdminPage() {
               <PrieresPanel />
           ) : section === "benevolat" ? (
               <BenevolatPanel />
+          ) : section === "demandes-membres" ? (
+              <DemandesMembresPanel />
           ) : section === "pages" ? (
               <PagesPanel />
           ) : section === "parametres" ? (

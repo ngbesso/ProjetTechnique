@@ -4,6 +4,7 @@ import coverStyles from "./BlogPanel.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNews } from "../../hooks/useNews";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchNewsCategories, uploadNewsCover, deleteNewsCover, newsCoverUrl } from "../../lib/api/news";
 import { formatDate } from "../../lib/format";
@@ -108,6 +109,7 @@ export function NewsPanel() {
   const { user } = useAuth();
   const { news, loading, error, loadAdmin, add, edit, remove } = useNews();
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState<NewsInput>(EMPTY);
@@ -170,6 +172,7 @@ export function NewsPanel() {
       setCreateCover(null);
       setShowCreateModal(false);
       loadAdmin();
+      toast.success(`Actualité « ${created.title} » créée.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de la création");
     } finally {
@@ -221,6 +224,7 @@ export function NewsPanel() {
       }
       setEditingNews(null);
       loadAdmin();
+      toast.success(`Actualité « ${editForm.title.trim()} » modifiée.`);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
     } finally {
@@ -229,13 +233,21 @@ export function NewsPanel() {
   }
 
   async function handleStatusChange(id: number, status: NewsStatus) {
-    try { await edit(id, { status }); }
-    catch (err) { alert(err instanceof Error ? err.message : "Mise à jour impossible"); }
+    try {
+      await edit(id, { status });
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[status]}.`);
+    } catch (err) {
+      toast.error(err, "Mise à jour impossible.");
+    }
   }
 
   async function handleToggleFeatured(id: number, is_featured: boolean) {
-    try { await edit(id, { is_featured }); }
-    catch (err) { alert(err instanceof Error ? err.message : "Mise à jour impossible"); }
+    try {
+      await edit(id, { is_featured });
+      toast.success(is_featured ? "Actualité mise en avant." : "Actualité retirée de la une.");
+    } catch (err) {
+      toast.error(err, "Mise à jour impossible.");
+    }
   }
 
   async function handleDelete(id: number, title: string) {
@@ -246,8 +258,12 @@ export function NewsPanel() {
       variant: "danger",
     });
     if (!ok) return;
-    try { await remove(id); }
-    catch (err) { alert(err instanceof Error ? err.message : "Suppression impossible"); }
+    try {
+      await remove(id);
+      toast.success(`Actualité « ${title} » supprimée.`);
+    } catch (err) {
+      toast.error(err, "Suppression impossible.");
+    }
   }
 
   const columns = [
@@ -500,6 +516,7 @@ export function NewsPanel() {
       )}
 
       {dialog}
+      {toasts}
     </div>
   );
 }

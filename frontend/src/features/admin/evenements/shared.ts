@@ -1,6 +1,7 @@
 // Constantes et utilitaires partagés entre EvenementsForm, EvenementsList et
 // EvenementsPanel (orchestrateur) — évite de dupliquer les libellés et les
 // conversions de dates/formulaire entre ces fichiers.
+import { renderTemplate } from "../../../lib/template";
 import type { Church, EventFormat, EventInput, EventItem, EventStatus } from "../../../types";
 
 export function churchLabel(churches: Church[], churchId: number | null): string {
@@ -38,6 +39,9 @@ export const EMPTY: EventInput = {
   cancel_deadline_hours: DEFAULT_CANCEL_DEADLINE_HOURS,
   confirmation_message: DEFAULT_CONFIRMATION_MESSAGE,
   reminder_message: DEFAULT_REMINDER_MESSAGE,
+  volunteer_capacity: null,
+  volunteer_auto_approve: false,
+  volunteer_message: "",
 };
 
 export const FORMAT_LABELS: Record<EventFormat, string> = {
@@ -89,6 +93,9 @@ export function eventToForm(e: EventItem): EventInput {
     cancel_deadline_hours: e.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS,
     confirmation_message: e.confirmation_message ?? "",
     reminder_message: e.reminder_message ?? "",
+    volunteer_capacity: e.volunteer_capacity,
+    volunteer_auto_approve: e.volunteer_auto_approve,
+    volunteer_message: e.volunteer_message ?? "",
   };
 }
 
@@ -110,14 +117,10 @@ export function renderMessagePreview(template: string, form: EventInput): string
         day: "numeric", month: "long", year: "numeric",
       })
     : "15 août 2026";
-  const values: Record<string, string> = {
-    "{prenom}": "Jean",
-    "{titre}": form.title || "Titre de l'événement",
-    "{date}": demoDate,
-    "{delai}": String(form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS),
-  };
-  return Object.entries(values).reduce(
-    (acc, [token, value]) => acc.split(token).join(value),
-    template,
-  );
+  return renderTemplate(template, {
+    prenom: "Jean",
+    titre: form.title || "Titre de l'événement",
+    date: demoDate,
+    delai: String(form.cancel_deadline_hours ?? DEFAULT_CANCEL_DEADLINE_HOURS),
+  });
 }

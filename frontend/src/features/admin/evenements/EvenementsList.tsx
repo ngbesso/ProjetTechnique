@@ -3,7 +3,7 @@ import adminStyles from "../AdminPage.module.css";
 import styles from "../EvenementsPanel.module.css";
 import { DataTable, createColumnHelper } from "../../../components/ui/DataTable";
 import { KpiCard } from "../../../components/ui/KpiCard";
-import { IconCheckCircle, IconFileEdit, IconXCircle } from "../../../components/ui/icons";
+import { IconCalendar, IconCheckCircle, IconFileEdit, IconXCircle } from "../../../components/ui/icons";
 import { formatDateTime } from "../../../lib/format";
 import type { EventAdminQuery } from "../../../lib/api/events";
 import { STATUS_LABELS, churchLabel, formatPrice } from "./shared";
@@ -24,17 +24,6 @@ const STATUS_TABS: { id: "all" | EventStatus; label: string }[] = [
   { id: "completed", label: "Terminés" },
 ];
 
-function IconCalendar() {
-  return (
-    <svg viewBox="0 0 24 24">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
 const col = createColumnHelper<EventItem>();
 
 interface EvenementsListProps {
@@ -49,6 +38,7 @@ interface EvenementsListProps {
   onDelete: (id: number, title: string) => void;
   onStatusChange: (id: number, status: EventStatus) => void;
   onOpenParticipants: (e: EventItem) => void;
+  onOpenVolunteers: (e: EventItem) => void;
 }
 
 export function EvenementsList({
@@ -63,6 +53,7 @@ export function EvenementsList({
   onDelete,
   onStatusChange,
   onOpenParticipants,
+  onOpenVolunteers,
 }: EvenementsListProps) {
   const [filterQ, setFilterQ] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -181,6 +172,9 @@ export function EvenementsList({
                   </select>
                   <button className={adminStyles.btnOutlineSm} onClick={() => onOpenParticipants(e)}>
                     Participants
+                  </button>
+                  <button className={adminStyles.btnOutlineSm} onClick={() => onOpenVolunteers(e)}>
+                    Bénévoles
                   </button>
                   <button className={adminStyles.btnDanger} onClick={() => onDelete(e.id, e.title)}>
                     Supprimer

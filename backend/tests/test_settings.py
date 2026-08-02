@@ -6,6 +6,7 @@ from datetime import date
 from sqlalchemy import select
 
 from app.models.church import Church
+from app.models.rbac import Role
 
 
 def _mother_id(db) -> int:
@@ -43,6 +44,27 @@ def test_admin_can_list_settings(client, make_user, auth_header):
     assert r.status_code == 200
     keys = [s["key"] for s in r.json()]
     assert "auto_approve_members" in keys
+
+
+def test_settings_manage_permission_is_enough(client, make_user, auth_header, db_session):
+    """La permission dédiée settings:manage donne accès aux réglages, sans
+    ouvrir le reste de l'administration."""
+    make_user("admin@s.com", roles=["admin"])
+    h_admin = auth_header("admin@s.com")
+    client.post("/admin/roles", json={"name": "gestionnaire_reglages"}, headers=h_admin)
+    role = db_session.scalar(select(Role).where(Role.name == "gestionnaire_reglages"))
+    client.put(
+        f"/admin/roles/{role.id}/permissions",
+        json={"codes": ["settings:manage"]},
+        headers=h_admin,
+    )
+    make_user("reglages@s.com", roles=["gestionnaire_reglages"])
+    h = auth_header("reglages@s.com")
+
+    assert client.get("/settings", headers=h).status_code == 200
+    r = client.put("/settings/site_name", json={"value": "Nouveau nom"}, headers=h)
+    assert r.status_code == 200
+    assert client.get("/admin/roles", headers=h).status_code == 403
 
 
 def test_settings_response_shape(client, make_user, auth_header):

@@ -3,6 +3,7 @@ import styles from "./AdminPage.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { useSermons } from "../../hooks/useSermons";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import { fetchSermonAdminMediaUrl, fetchSermonSeries, fetchSermonsStats } from "../../lib/api/sermons";
 import { IconCheckCircle, IconEye, IconFileEdit } from "../../components/ui/icons";
@@ -30,6 +31,7 @@ export function SermonsPanel() {
   const { user } = useAuth();
   const { sermons, loading, error, loadAdmin, add, edit, replaceMedia, remove } = useSermons();
   const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState<SermonInput>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
@@ -97,6 +99,7 @@ export function SermonsPanel() {
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setShowCreateModal(false);
+      toast.success(`Sermon « ${form.title.trim()} » créé.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
     } finally {
@@ -107,8 +110,9 @@ export function SermonsPanel() {
   async function handleStatusChange(id: number, status: SermonStatus) {
     try {
       await edit(id, { status });
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[status]}.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Mise à jour impossible");
+      toast.error(err, "Mise à jour impossible.");
     }
   }
 
@@ -122,8 +126,9 @@ export function SermonsPanel() {
     if (!ok) return;
     try {
       await remove(id);
+      toast.success(`Sermon « ${title} » supprimé.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Suppression impossible");
+      toast.error(err, "Suppression impossible.");
     }
   }
 
@@ -178,6 +183,7 @@ export function SermonsPanel() {
         await replaceMedia(editingSermon.id, editFile);
       }
       setEditingSermon(null);
+      toast.success(`Sermon « ${editForm.title.trim()} » modifié.`);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erreur lors de la modification");
     } finally {
@@ -602,6 +608,7 @@ export function SermonsPanel() {
       )}
 
       {dialog}
+      {toasts}
     </div>
   );
 }

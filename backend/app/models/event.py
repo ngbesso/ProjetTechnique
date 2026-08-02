@@ -75,6 +75,12 @@ class Event(Base):
     cancel_deadline_hours: Mapped[int | None] = mapped_column(Integer, default=None)
     confirmation_message: Mapped[str | None] = mapped_column(Text, default=None)
     reminder_message: Mapped[str | None] = mapped_column(Text, default=None)
+    # Bénévolat : nombre de bénévoles souhaité (null = illimité), approbation
+    # automatique des demandes tant que la capacité n'est pas atteinte, et
+    # texte de l'annonce envoyée aux membres.
+    volunteer_capacity: Mapped[int | None] = mapped_column(Integer, default=None)
+    volunteer_auto_approve: Mapped[bool] = mapped_column(Boolean, default=False)
+    volunteer_message: Mapped[str | None] = mapped_column(Text, default=None)
     # Utilisateur ayant créé l'événement (renseigné automatiquement) — sert à
     # restreindre les organisateurs à leurs propres événements.
     created_by: Mapped[int | None] = mapped_column(

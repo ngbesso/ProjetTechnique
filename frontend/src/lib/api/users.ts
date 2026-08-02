@@ -1,7 +1,10 @@
 import { http } from "./client";
-import type { UserAdmin, RoleAssignmentInput } from "../../types";
+import type { OrganiserEventCount, UserAdmin, RoleAssignmentInput } from "../../types";
 
 export function fetchUsers() { return http.get<UserAdmin[]>("/admin/users"); }
+export function fetchOrganisateursStats() {
+    return http.get<OrganiserEventCount[]>("/admin/organisateurs/stats");
+}
 export function createUser(email: string) {
     return http.post<UserAdmin>("/admin/users", { email });
 }

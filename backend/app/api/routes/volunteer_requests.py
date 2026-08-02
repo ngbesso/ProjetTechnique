@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_member, require_global_permission
+from app.api.deps import get_current_member, get_current_user, require_permissions
 from app.core.config import settings
 from app.core.email import (
     EmailSender,
@@ -15,6 +15,7 @@ from app.core.email import (
 from app.db.session import get_db
 from app.models.event import Event
 from app.models.member import Member
+from app.models.user import User
 from app.models.volunteer_request import VolunteerRequest, VolunteerRequestStatus
 from app.schemas.volunteer_request import (
     VolunteerEventCount,
@@ -24,9 +25,13 @@ from app.schemas.volunteer_request import (
     VolunteerRequestRead,
     VolunteerRequestUpdate,
 )
+from app.services import event_service
 
 router = APIRouter(prefix="/volunteer-requests", tags=["bénévolat"])
-can_manage = Depends(require_global_permission("volunteer:manage"))
+# Un organisateur détient volunteer:manage via un rôle porté sur son église, pas
+# sur l'église mère : la vérification porte sur l'union des permissions, et le
+# périmètre est ensuite restreint aux événements dont il est propriétaire.
+can_manage = Depends(require_permissions("volunteer:manage"))
 
 
 def _load(db: Session, request_id: int) -> VolunteerRequest:
@@ -34,6 +39,28 @@ def _load(db: Session, request_id: int) -> VolunteerRequest:
     if req is None:
         raise HTTPException(404, "Demande introuvable")
     return req
+
+
+def _initial_status(db: Session, event: Event) -> VolunteerRequestStatus:
+    """Approuve d'emblée si l'auto-approbation est active et qu'il reste de la
+    place (capacité null = illimitée) ; sinon la demande reste en attente, ce
+    qui constitue de fait une liste d'attente."""
+    if not event.volunteer_auto_approve:
+        return VolunteerRequestStatus.pending
+    if event.volunteer_capacity is None:
+        return VolunteerRequestStatus.approved
+    approved = event_service.count_approved_volunteers(db, event.id)
+    if approved < event.volunteer_capacity:
+        return VolunteerRequestStatus.approved
+    return VolunteerRequestStatus.pending
+
+
+def _owned_event_ids(db: Session, user: User) -> list[int] | None:
+    """Identifiants des événements que l'utilisateur peut gérer, ou None s'il
+    a accès à tout (administrateur global)."""
+    if not event_service.is_organisateur_only(user):
+        return None
+    return list(db.scalars(select(Event.id).where(Event.created_by == user.id)).all())
 
 
 def _to_read(req: VolunteerRequest) -> VolunteerRequestRead:
@@ -73,6 +100,7 @@ def create_volunteer_request(
         member_id=current_member.id,
         event_id=payload.event_id,
         message=payload.message,
+        status=_initial_status(db, event),
     )
     db.add(req)
     db.commit()
@@ -86,6 +114,17 @@ def create_volunteer_request(
         event.title,
         req.message,
     )
+    # Approbation automatique : le membre est prévenu immédiatement, sans
+    # passer par une revue manuelle.
+    if req.status == VolunteerRequestStatus.approved:
+        background.add_task(
+            volunteer_request_reviewed,
+            sender,
+            current_member.email,
+            current_member.full_name,
+            event.title,
+            VolunteerRequestStatus.approved.value,
+        )
     return _to_read(req)
 
 
@@ -108,11 +147,16 @@ def list_my_volunteer_requests(
 )
 def list_volunteer_requests_admin(
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: VolunteerRequestStatus | None = None,
     event_id: int | None = None,
 ):
-    """Liste toutes les demandes de bénévolat, filtrable par statut et par événement."""
+    """Liste les demandes de bénévolat, filtrable par statut et par événement.
+    Un organisateur ne voit que celles des événements qu'il a créés."""
     query = select(VolunteerRequest)
+    owned_ids = _owned_event_ids(db, current_user)
+    if owned_ids is not None:
+        query = query.where(VolunteerRequest.event_id.in_(owned_ids))
     if status:
         query = query.where(VolunteerRequest.status == status)
     if event_id:
@@ -124,12 +168,20 @@ def list_volunteer_requests_admin(
 @router.get(
     "/admin/stats", response_model=VolunteerRequestAdminStats, dependencies=[can_manage]
 )
-def get_volunteer_requests_stats(db: Annotated[Session, Depends(get_db)]):
-    """Répartition par statut et top 5 événements par nombre de demandes."""
+def get_volunteer_requests_stats(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Répartition par statut et top 5 événements par nombre de demandes —
+    restreintes aux événements de l'organisateur, le cas échéant."""
+    owned_ids = _owned_event_ids(db, current_user)
+    scope = (
+        [VolunteerRequest.event_id.in_(owned_ids)] if owned_ids is not None else []
+    )
     status_rows = db.execute(
-        select(VolunteerRequest.status, func.count(VolunteerRequest.id)).group_by(
-            VolunteerRequest.status
-        )
+        select(VolunteerRequest.status, func.count(VolunteerRequest.id))
+        .where(*scope)
+        .group_by(VolunteerRequest.status)
     ).all()
     status_map: dict[VolunteerRequestStatus, int] = dict(status_rows)
     pending = status_map.get(VolunteerRequestStatus.pending, 0)
@@ -139,6 +191,7 @@ def get_volunteer_requests_stats(db: Annotated[Session, Depends(get_db)]):
     event_rows = db.execute(
         select(Event.id, Event.title, func.count(VolunteerRequest.id))
         .join(VolunteerRequest, VolunteerRequest.event_id == Event.id)
+        .where(*scope)
         .group_by(Event.id, Event.title)
         .order_by(func.count(VolunteerRequest.id).desc())
         .limit(5)
@@ -166,10 +219,14 @@ def update_volunteer_request(
     payload: VolunteerRequestUpdate,
     background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     sender: Annotated[EmailSender, Depends(get_email_sender)],
 ):
-    """Approuve ou refuse une demande de bénévolat — envoie un courriel au membre."""
+    """Approuve ou refuse une demande de bénévolat — envoie un courriel au membre.
+    Un organisateur ne peut traiter que les demandes de ses propres événements."""
     req = _load(db, request_id)
+    if req.event is not None:
+        event_service.assert_owns_event(current_user, req.event)
     req.status = payload.status
     db.commit()
     db.refresh(req)

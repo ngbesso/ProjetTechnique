@@ -3,6 +3,7 @@ import styles from "./AdminPage.module.css";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { fetchVolunteerRequestsAdmin, updateVolunteerRequestStatus } from "../../lib/api/volunteerRequests";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { useToast } from "../../hooks/useToast";
 import { formatDateTime } from "../../lib/format";
 import type { VolunteerRequestAdmin, VolunteerRequestStatus } from "../../types";
 
@@ -26,6 +27,7 @@ export function BenevolatPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const { toast, toasts } = useToast();
 
   const canManage = hasPermission(user, "volunteer:manage");
 
@@ -48,8 +50,9 @@ export function BenevolatPanel() {
     try {
       await updateVolunteerRequestStatus(id, status);
       load();
+      toast.success(status === "approved" ? "Demande approuvée." : "Demande refusée.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Mise à jour impossible");
+      toast.error(err, "Mise à jour impossible.");
     }
   }
 
@@ -135,6 +138,7 @@ export function BenevolatPanel() {
           />
         </div>
       </section>
+      {toasts}
     </div>
   );
 }

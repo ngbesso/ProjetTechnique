@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
@@ -12,6 +12,7 @@ from app.core.email import EmailSender, admin_account_created_invite, get_email_
 from app.core.security import create_setup_token, hash_password
 from app.db.session import get_db
 from app.models.church import Church
+from app.models.event import Event
 from app.models.rbac import Role, UserRole
 from app.models.user import User
 from app.schemas.user import (
@@ -28,6 +29,11 @@ manage_rbac = Depends(require_global_permission("rbac:manage"))
 
 class AdminUserCreate(BaseModel):
     email: EmailStr
+
+
+class OrganiserEventCount(BaseModel):
+    user_id: int
+    event_count: int
 
 
 def _to_read(u: User) -> UserAdminRead:
@@ -51,6 +57,22 @@ def _to_read(u: User) -> UserAdminRead:
 @router.get("/users", response_model=list[UserAdminRead], dependencies=[manage_users])
 def list_users(db: Annotated[Session, Depends(get_db)]):
     return [_to_read(u) for u in db.scalars(select(User).order_by(User.email)).all()]
+
+
+@router.get(
+    "/organisateurs/stats",
+    response_model=list[OrganiserEventCount],
+    dependencies=[manage_users],
+)
+def get_organisateurs_stats(db: Annotated[Session, Depends(get_db)]):
+    """Nombre d'événements créés par utilisateur (Event.created_by) — alimente
+    la colonne « événements créés » du panneau Organisateurs."""
+    rows = db.execute(
+        select(Event.created_by, func.count(Event.id))
+        .where(Event.created_by.isnot(None))
+        .group_by(Event.created_by)
+    ).all()
+    return [OrganiserEventCount(user_id=uid, event_count=count) for uid, count in rows]
 
 
 @router.post(
