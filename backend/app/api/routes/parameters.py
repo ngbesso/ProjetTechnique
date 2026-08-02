@@ -1,63 +1,31 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin
+from app.api.deps import require_global_permission
 from app.db.session import get_db
-from app.models.church import Church
-from app.models.donation import Donation
-from app.models.event import Event
-from app.models.expense import Expense
-from app.models.leader import Leader
-from app.models.member import Member
-from app.models.ministry_affiliation import MemberMinistryAffiliation
 from app.models.parameter import ParameterValue
-from app.models.user import User
 from app.schemas.parameter import (
     VALID_CATEGORIES,
     ParameterValueCreate,
     ParameterValueRead,
     ParameterValueUpdate,
 )
+from app.services import parameter_service
 
 router = APIRouter(prefix="/parameters", tags=["paramètres"])
-
-# Catégorie -> tables/colonnes dont les enregistrements référencent une valeur
-# (modèle, nom de colonne, nom singulier pour le message d'erreur). Ajouter une
-# entrée ici suffit pour protéger une future catégorie contre la suppression
-# de valeurs encore utilisées — aucune autre logique à dupliquer.
-_USAGE_MAP: dict[str, list[tuple[type, str, str]]] = {
-    "sexe": [(Member, "sexe", "membre")],
-    "family_status": [(Member, "family_status", "membre")],
-    "district": [(Church, "district", "église"), (Event, "district", "événement")],
-    "donation_category": [(Donation, "category", "don")],
-    "event_category": [(Event, "category", "événement")],
-    "intervenant_category": [(Event, "intervenant_category", "événement")],
-    "ministry": [(MemberMinistryAffiliation, "ministry", "affiliation de membre")],
-    "expense_category": [(Expense, "category", "dépense")],
-    "leader_role": [(Leader, "role", "membre du leadership")],
-}
+# Les listes de valeurs (sexes, districts, catégories…) alimentent tous les
+# modules : leur édition relève d'une permission d'organisation dédiée, la
+# lecture restant publique puisque les formulaires du site s'en servent.
+can_manage = Depends(require_global_permission("parameter:manage"))
 
 
-def _usage_count(db: Session, pv: ParameterValue) -> list[tuple[str, int]]:
-    """Compte, pour chaque table associée à la catégorie de pv, le nombre
-    d'enregistrements dont la colonne vaut le libellé de pv."""
-    usage: list[tuple[str, int]] = []
-    for model, column_name, noun in _USAGE_MAP.get(pv.category, []):
-        column = getattr(model, column_name)
-        count = (
-            db.scalar(
-                select(func.count())
-                .select_from(model)
-                .where(cast(column, String) == pv.label)
-            )
-            or 0
-        )
-        if count:
-            usage.append((noun, count))
-    return usage
+def _load(db: Session, value_id: int) -> ParameterValue:
+    value = parameter_service.get_value(db, value_id)
+    if not value:
+        raise HTTPException(404, "Valeur introuvable")
+    return value
 
 
 def _check_category(category: str) -> None:
@@ -78,18 +46,18 @@ def _check_restricted_to_sexe(category: str, restricted_to_sexe: str | None) -> 
 @router.get("/{category}", response_model=list[ParameterValueRead])
 def list_values(category: str, db: Annotated[Session, Depends(get_db)]):
     _check_category(category)
-    return db.scalars(
-        select(ParameterValue)
-        .where(ParameterValue.category == category)
-        .order_by(ParameterValue.position, ParameterValue.label)
-    ).all()
+    return parameter_service.list_values(db, category)
 
 
-@router.post("/{category}", response_model=ParameterValueRead, status_code=201)
+@router.post(
+    "/{category}",
+    response_model=ParameterValueRead,
+    status_code=201,
+    dependencies=[can_manage],
+)
 def create_value(
     category: str,
     data: ParameterValueCreate,
-    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
     _check_category(category)
@@ -97,65 +65,52 @@ def create_value(
     if not label:
         raise HTTPException(422, "Le libellé ne peut pas être vide")
     _check_restricted_to_sexe(category, data.restricted_to_sexe)
-    existing = db.scalar(
-        select(ParameterValue).where(
-            ParameterValue.category == category,
-            ParameterValue.label == label,
-        )
-    )
-    if existing:
+    if parameter_service.find_by_label(db, category, label):
         raise HTTPException(409, "Cette valeur existe déjà")
-    pv = ParameterValue(
+    return parameter_service.create_value(
+        db,
         category=category,
         label=label,
         position=data.position,
         restricted_to_sexe=data.restricted_to_sexe,
     )
-    db.add(pv)
-    db.commit()
-    db.refresh(pv)
-    return pv
 
 
-@router.patch("/{id}", response_model=ParameterValueRead)
+@router.patch("/{id}", response_model=ParameterValueRead, dependencies=[can_manage])
 def update_value(
     id: int,
     data: ParameterValueUpdate,
-    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    pv = db.get(ParameterValue, id)
-    if not pv:
-        raise HTTPException(404, "Valeur introuvable")
+    value = _load(db, id)
+    label: str | None = None
     if data.label is not None:
         label = data.label.strip()
         if not label:
             raise HTTPException(422, "Le libellé ne peut pas être vide")
-        pv.label = label
-    if data.position is not None:
-        pv.position = data.position
-    if "restricted_to_sexe" in data.model_fields_set:
-        _check_restricted_to_sexe(pv.category, data.restricted_to_sexe)
-        pv.restricted_to_sexe = data.restricted_to_sexe
-    db.commit()
-    db.refresh(pv)
-    return pv
+    set_restriction = "restricted_to_sexe" in data.model_fields_set
+    if set_restriction:
+        _check_restricted_to_sexe(value.category, data.restricted_to_sexe)
+    return parameter_service.update_value(
+        db,
+        value,
+        label=label,
+        position=data.position,
+        restricted_to_sexe=data.restricted_to_sexe,
+        set_restriction=set_restriction,
+    )
 
 
-@router.delete("/{id}", status_code=204)
+@router.delete("/{id}", status_code=204, dependencies=[can_manage])
 def delete_value(
     id: int,
-    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    pv = db.get(ParameterValue, id)
-    if not pv:
-        raise HTTPException(404, "Valeur introuvable")
-    usage = _usage_count(db, pv)
+    value = _load(db, id)
+    usage = parameter_service.usage_count(db, value)
     if usage:
         detail = " et ".join(f"{count} {noun}(s)" for noun, count in usage)
         raise HTTPException(
-            409, f"Impossible de supprimer « {pv.label} » : utilisé par {detail}."
+            409, f"Impossible de supprimer « {value.label} » : utilisé par {detail}."
         )
-    db.delete(pv)
-    db.commit()
+    parameter_service.delete_value(db, value)
