@@ -13,7 +13,10 @@
   left: 0;
   width: var(--sidebar-w);
   height: 100vh;
-  background: var(--deep-violet);
+  background: var(--sidebar-bg);
+  /* Sans ce filet, le menu clair se confond avec le contenu et la hiérarchie
+     visuelle disparaît. */
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -25,7 +28,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.5rem 1.25rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .brandIcon {
@@ -45,14 +48,14 @@
 .brandName {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--sidebar-text-strong);
   margin: 0;
   line-height: 1.2;
 }
 
 .brandSub {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--sidebar-group);
   margin: 0.1rem 0 0;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -68,13 +71,14 @@
 }
 
 .navItem {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.65rem;
   width: 100%;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--sidebar-text);
   padding: 0.6rem 0.875rem;
   border-radius: var(--radius);
   font-size: 0.875rem;
@@ -85,75 +89,181 @@
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-strong);
 }
 
+/* Entrée active à l'intérieur d'un groupe : barre d'accent à gauche et fond
+   blanc qui la détache du lavande, sans rivaliser avec le filet du groupe. */
 .navItemActive {
-  background: var(--vivid-violet) !important;
-  color: #fff !important;
+  background: #fff;
+  color: var(--sidebar-text-strong);
   font-weight: 600;
 }
 
+.navItemActive::before {
+  content: "";
+  position: absolute;
+  left: -0.5rem;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--sidebar-accent);
+}
+
+/* Entrée hors groupe (Tableau de bord, Assistant IA) : le pavé plein est
+   conservé, elle n'a pas de filet auquel se rattacher. */
+.navItemActiveSolo {
+  background: var(--sidebar-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.navItemActiveSolo:hover {
+  background: var(--sidebar-accent);
+  color: #fff;
+}
+
+/* Libellé de l'entrée, isolé pour pouvoir disparaître dans le rail réduit. */
+.navLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .navIcon {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
-  text-align: center;
+  height: 20px;
   flex-shrink: 0;
 }
 
+.navIcon svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Groupes du menu ────────────────────────────────────────── */
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.navSolo {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Libellé discret, sans icône : un en-tête de groupe ne doit pas se lire
+   comme une entrée de menu. */
 .navGroupLabel {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  justify-content: space-between;
   width: 100%;
   background: transparent;
   border: none;
-  margin-top: 0.6rem;
-  padding: 0.6rem 0.875rem;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.875rem 0.3rem;
   border-radius: var(--radius);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
 
-.navGroupLabel .navIcon {
-  font-size: 0.9rem;
+.navGroupText {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sidebar-group);
+  transition: color 0.12s;
 }
 
 .navGroupLabel:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--sidebar-hover);
 }
 
-.navSubItem {
-  padding-left: 2.1rem;
+.navGroupLabel:hover .navGroupText {
+  color: var(--sidebar-text-strong);
+}
+
+.navChevron {
+  display: flex;
+  align-items: center;
+  color: var(--sidebar-group);
+  transition: transform 0.15s, color 0.12s;
+}
+
+.navChevron svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.navChevronOpen {
+  transform: rotate(90deg);
+}
+
+.navGroupLabel:hover .navChevron {
+  color: var(--sidebar-text-strong);
+}
+
+/* Filet vertical rattachant les entrées d'un même groupe. Il court sur le
+   conteneur (et non sur chaque entrée) pour rester continu malgré l'espacement
+   entre les entrées. */
+.navGroupItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  /* Aligné sur le début du libellé du groupe (padding de .navGroupLabel). */
+  margin-left: 0.875rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--sidebar-rule);
+}
+
+/* Indentation réduite par rapport aux 2.1rem d'avant : le filet porte
+   désormais le rattachement visuel, l'entrée n'a plus besoin d'être décalée. */
+.navGroupItems .navItem {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 /* ── Sidebar footer ─────────────────────────────────────────── */
 .sidebarFooter {
   padding: 1rem 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .backBtn {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
   border-radius: var(--radius);
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
   cursor: pointer;
   width: 100%;
-  transition: border-color 0.12s, color 0.12s;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 
 .backBtn:hover {
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
+  border-color: var(--sidebar-accent);
+  color: var(--sidebar-text-strong);
+  background: var(--sidebar-hover);
 }
 
 /* ── Main area ──────────────────────────────────────────────── */
@@ -621,11 +731,24 @@
 @media (max-width: 768px) {
   .sidebar { width: 56px; }
   .main { margin-left: 56px; }
-  .brandName, .brandSub, .navItem span:not(.navIcon), .backBtn { display: none; }
+  .brandName, .brandSub, .navLabel, .navBadge, .backBtn { display: none; }
   .navItem { justify-content: center; padding: 0.75rem; }
   .sidebarBrand { padding: 1rem 0.5rem; justify-content: center; }
   .topBar { padding: 0.75rem 1rem; }
   .content { padding: 1rem; }
+
+  /* Rail de 56px : le filet et l'indentation du groupe n'y tiennent pas. Le
+     chevron reste seul comme bouton de dépliage, sinon un groupe replié
+     rendrait ses entrées inatteignables. */
+  .navGroupText { display: none; }
+  .navGroupLabel { justify-content: center; padding: 0.4rem; }
+  .navGroupItems {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+  .navGroupItems .navItem { padding: 0.75rem; }
+  .navItemActive::before { left: 0; }
 }
 
 
