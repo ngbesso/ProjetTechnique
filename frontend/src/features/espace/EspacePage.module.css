@@ -9,7 +9,7 @@
 }
 
 .sidebarBrandBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sidebar-hover);
 }
 
 /* ── Sidebar : déconnexion (dernière entrée du menu) ──────────── */
@@ -20,7 +20,7 @@
   width: 100%;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--sidebar-group);
   padding: 0.6rem 0.875rem;
   border-radius: var(--radius);
   font-size: 0.875rem;
@@ -30,12 +30,14 @@
   transition: background 0.12s, color 0.12s;
   margin-top: 0.6rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--sidebar-border);
 }
 
+/* Le rouge reste (il signale une action de sortie), mais assombri : le
+   #fca5a5 d'avant était calibré pour un fond violet foncé. */
 .logoutNavItem:hover {
-  background: rgba(239, 68, 68, 0.14);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
 }
 
 /* ── Hero (profil) ──────────────────────────────────────────── */
