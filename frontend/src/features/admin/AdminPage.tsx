@@ -1,8 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import styles from "./AdminPage.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { usePendingCount } from "../../hooks/usePendingCount";
+import {
+  IconBot,
+  IconBriefcase,
+  IconCalendar,
+  IconChevronRight,
+  IconChurch,
+  IconClipboardList,
+  IconCreditCard,
+  IconDollar,
+  IconFileText,
+  IconGift,
+  IconHeart,
+  IconKey,
+  IconLayoutDashboard,
+  IconMic,
+  IconNewspaper,
+  IconPen,
+  IconSettings,
+  IconSparkles,
+  IconTicket,
+  IconTrendingUp,
+  IconUserPlus,
+  IconUsers,
+} from "../../components/ui/icons";
 import type { MemberStatus } from "../../types";
 import { AnniversairesPanel } from "./AnniversairesPanel";
 import { AssistantPanel } from "./AssistantPanel";
@@ -55,43 +79,59 @@ export type Section =
 interface NavItem {
   id: Section;
   label: string;
-  icon: string;
+  /** Icône vectorielle plutôt qu'un emoji : le rendu des emojis dépend du
+   *  système et donne un aspect non fini. */
+  icon: ComponentType;
   globalOnly?: boolean;
   group?: string;
 }
 
-const ALL_NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Tableau de bord", icon: "📊" },
-  { id: "membres", label: "Membres", icon: "👥", group: "Communauté" },
-  { id: "anniversaires", label: "Anniversaires", icon: "🎂", globalOnly: true, group: "Communauté" },
-  { id: "ministeres", label: "Ministères", icon: "🙌", group: "Communauté" },
-  { id: "eglises", label: "Églises", icon: "⛪", globalOnly: true, group: "Organisation" },
-  { id: "leadership", label: "Leadership", icon: "🧑‍💼", globalOnly: true, group: "Organisation" },
-  { id: "finances-revenus", label: "Revenus", icon: "💝", globalOnly: true, group: "Finances" },
-  { id: "finances-depenses", label: "Dépenses", icon: "💸", globalOnly: true, group: "Finances" },
-  { id: "finances-rapport", label: "Rapport", icon: "📈", globalOnly: true, group: "Finances" },
-  { id: "sermons", label: "Sermons", icon: "🎙", group: "Contenu" },
-  { id: "blog", label: "Blog", icon: "✍️", group: "Contenu" },
-  { id: "actualites", label: "Actualités", icon: "📰", group: "Contenu" },
-  { id: "evenements", label: "Événements", icon: "📅", group: "Contenu" },
-  { id: "organisateurs", label: "Organisateurs", icon: "🎫", globalOnly: true, group: "Contenu" },
-  { id: "prieres", label: "Demandes de prière", icon: "🙏", group: "Demandes" },
-  { id: "benevolat", label: "Bénévolat", icon: "🤝", group: "Demandes" },
-  { id: "demandes-membres", label: "Demandes des membres", icon: "📋", group: "Demandes" },
-  { id: "pages", label: "Pages & Menu", icon: "📄", globalOnly: true, group: "Système" },
-  { id: "utilisateurs", label: "Utilisateurs", icon: "🔑", globalOnly: true, group: "Système" },
-  { id: "parametres", label: "Paramètres", icon: "⚙️", globalOnly: true, group: "Système" },
-  { id: "assistant", label: "Assistant IA", icon: "🤖", globalOnly: true },
+export const ALL_NAV_ITEMS: NavItem[] = [
+  { id: "dashboard", label: "Tableau de bord", icon: IconLayoutDashboard },
+  { id: "membres", label: "Membres", icon: IconUsers, group: "Communauté" },
+  { id: "anniversaires", label: "Anniversaires", icon: IconGift, globalOnly: true, group: "Communauté" },
+  { id: "ministeres", label: "Ministères", icon: IconSparkles, group: "Communauté" },
+  { id: "eglises", label: "Églises", icon: IconChurch, globalOnly: true, group: "Organisation" },
+  { id: "leadership", label: "Leadership", icon: IconBriefcase, globalOnly: true, group: "Organisation" },
+  { id: "finances-revenus", label: "Revenus", icon: IconDollar, globalOnly: true, group: "Finances" },
+  { id: "finances-depenses", label: "Dépenses", icon: IconCreditCard, globalOnly: true, group: "Finances" },
+  { id: "finances-rapport", label: "Rapport", icon: IconTrendingUp, globalOnly: true, group: "Finances" },
+  { id: "sermons", label: "Sermons", icon: IconMic, group: "Contenu" },
+  { id: "blog", label: "Blog", icon: IconPen, group: "Contenu" },
+  { id: "actualites", label: "Actualités", icon: IconNewspaper, group: "Contenu" },
+  { id: "evenements", label: "Événements", icon: IconCalendar, group: "Contenu" },
+  { id: "organisateurs", label: "Organisateurs", icon: IconTicket, globalOnly: true, group: "Contenu" },
+  { id: "prieres", label: "Demandes de prière", icon: IconHeart, group: "Demandes" },
+  { id: "benevolat", label: "Bénévolat", icon: IconUserPlus, group: "Demandes" },
+  { id: "demandes-membres", label: "Demandes des membres", icon: IconClipboardList, group: "Demandes" },
+  { id: "pages", label: "Pages & Menu", icon: IconFileText, globalOnly: true, group: "Système" },
+  { id: "utilisateurs", label: "Utilisateurs", icon: IconKey, globalOnly: true, group: "Système" },
+  { id: "parametres", label: "Paramètres", icon: IconSettings, globalOnly: true, group: "Système" },
+  { id: "assistant", label: "Assistant IA", icon: IconBot, globalOnly: true },
 ];
 
-const GROUP_ICONS: Record<string, string> = {
-  "Communauté": "👨‍👩‍👧‍👦",
-  "Organisation": "🏛️",
-  "Finances": "💰",
-  "Contenu": "📰",
-  "Demandes": "📨",
-  "Système": "⚙️",
-};
+/** Entrées visibles pour un utilisateur donné : un organisateur pur n'accède
+ *  qu'aux Événements, les entrées globalOnly sont réservées à l'admin global. */
+export function visibleNavItems(
+  items: NavItem[],
+  { isGlobalAdmin, isOrganisateurOnly }: { isGlobalAdmin: boolean; isOrganisateurOnly: boolean },
+): NavItem[] {
+  if (isOrganisateurOnly) return items.filter((item) => item.id === "evenements");
+  return items.filter((item) => !item.globalOnly || isGlobalAdmin);
+}
+
+/** Découpe la liste plate en tranches consécutives partageant un même groupe.
+ *  Les entrées hors groupe forment leurs propres tranches. Sert à ce que le
+ *  filet vertical puisse courir le long d'un groupe entier. */
+export function toNavSections(items: NavItem[]): { group?: string; items: NavItem[] }[] {
+  const sections: { group?: string; items: NavItem[] }[] = [];
+  for (const item of items) {
+    const last = sections[sections.length - 1];
+    if (last && last.group === item.group) last.items.push(item);
+    else sections.push({ group: item.group, items: [item] });
+  }
+  return sections;
+}
 
 // ── Sub-panel : Placeholder ───────────────────────────────────────────────────
 
@@ -121,9 +161,7 @@ export function AdminPage() {
   const isGlobalAdmin = user?.is_global_admin ?? false;
   // Un utilisateur dont le seul rôle est « organisateur » n'a accès qu'aux Événements.
   const isOrganisateurOnly = user?.roles.length === 1 && user.roles[0] === "organisateur";
-  const NAV_ITEMS = isOrganisateurOnly
-    ? ALL_NAV_ITEMS.filter((item) => item.id === "evenements")
-    : ALL_NAV_ITEMS.filter((item) => !item.globalOnly || isGlobalAdmin);
+  const NAV_ITEMS = visibleNavItems(ALL_NAV_ITEMS, { isGlobalAdmin, isOrganisateurOnly });
 
   const [section, setSection] = useState<Section>(isOrganisateurOnly ? "evenements" : "dashboard");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
@@ -150,6 +188,7 @@ export function AdminPage() {
 
   const activeLabel =
     NAV_ITEMS.find((i) => i.id === section)?.label ?? "Administration";
+  const navSections = toNavSections(NAV_ITEMS);
 
   return (
     <div className={styles.layout}>
@@ -164,39 +203,68 @@ export function AdminPage() {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV_ITEMS.map((item, i) => {
-            const showGroupLabel = item.group && NAV_ITEMS[i - 1]?.group !== item.group;
-            const groupExpanded = item.group ? expandedGroups.has(item.group) : true;
+          {navSections.map((navSection) => {
+            const grouped = navSection.group !== undefined;
+            const expanded = grouped ? expandedGroups.has(navSection.group!) : true;
+            const entries = navSection.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = section === item.id;
+              // Le pavé plein n'est conservé que pour les entrées hors groupe ;
+              // dans un groupe, l'entrée active se signale par une barre
+              // d'accent et un fond très discret.
+              const activeClass = isActive
+                ? grouped
+                  ? styles.navItemActive
+                  : styles.navItemActiveSolo
+                : "";
+              return (
+                <button
+                  key={item.id}
+                  className={`${styles.navItem} ${activeClass}`}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => {
+                    setSection(item.id);
+                    setMembresInitialStatus(undefined);
+                  }}
+                >
+                  <span className={styles.navIcon}>
+                    <Icon />
+                  </span>
+                  {/* Le libellé est enveloppé pour pouvoir être masqué dans le
+                      rail réduit (<768px), où seule l'icône reste. */}
+                  <span className={styles.navLabel}>{item.label}</span>
+                  {item.id === "membres" && pendingCount > 0 && (
+                    <span className={styles.navBadge}>{pendingCount}</span>
+                  )}
+                </button>
+              );
+            });
+
+            if (!grouped) {
+              return (
+                <div key={navSection.items[0].id} className={styles.navSolo}>
+                  {entries}
+                </div>
+              );
+            }
+
             return (
-              <div key={item.id}>
-                {showGroupLabel && (
-                  <button
-                    type="button"
-                    className={styles.navGroupLabel}
-                    onClick={() => toggleGroup(item.group!)}
+              <div key={navSection.group} className={styles.navGroup}>
+                <button
+                  type="button"
+                  className={styles.navGroupLabel}
+                  aria-expanded={expanded}
+                  onClick={() => toggleGroup(navSection.group!)}
+                >
+                  <span className={styles.navGroupText}>{navSection.group}</span>
+                  <span
+                    className={`${styles.navChevron} ${expanded ? styles.navChevronOpen : ""}`}
+                    aria-hidden
                   >
-                    <span className={styles.navIcon}>{GROUP_ICONS[item.group!] ?? "📁"}</span>
-                    <span style={{ flex: 1, textAlign: "left" }}>{item.group}</span>
-                    <span style={{ transform: groupExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>
-                      ›
-                    </span>
-                  </button>
-                )}
-                {(!item.group || groupExpanded) && (
-                  <button
-                    className={`${styles.navItem} ${item.group ? styles.navSubItem : ""} ${section === item.id ? styles.navItemActive : ""}`}
-                    onClick={() => {
-                      setSection(item.id);
-                      setMembresInitialStatus(undefined);
-                    }}
-                  >
-                    <span className={styles.navIcon}>{item.icon}</span>
-                    {item.label}
-                    {item.id === "membres" && pendingCount > 0 && (
-                      <span className={styles.navBadge}>{pendingCount}</span>
-                    )}
-                  </button>
-                )}
+                    <IconChevronRight />
+                  </span>
+                </button>
+                {expanded && <div className={styles.navGroupItems}>{entries}</div>}
               </div>
             );
           })}
