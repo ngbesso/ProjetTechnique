@@ -1,9 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import admin from "../admin/AdminPage.module.css";
 import styles from "./EspacePage.module.css";
 import { hasAdminAccess, useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { useChurches } from "../../hooks/useChurches";
+import {
+  IconCalendar,
+  IconClipboardList,
+  IconDollar,
+  IconHeart,
+  IconLogOut,
+  IconSparkles,
+  IconUser,
+  IconUserPlus,
+} from "../../components/ui/icons";
 import { fetchMyProfile } from "../../lib/api/members";
 import { BenevolatSection } from "./BenevolatSection";
 import { DemandesSection } from "./DemandesSection";
@@ -22,14 +32,16 @@ type Section =
   | "benevolat"
   | "demandes";
 
-const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
-  { id: "profil", label: "Mon profil", icon: "👤" },
-  { id: "dons", label: "Mes dons", icon: "💝" },
-  { id: "inscriptions", label: "Mes inscriptions", icon: "🎓" },
-  { id: "ministeres", label: "Ministères", icon: "🙌" },
-  { id: "priere", label: "Demande de prière", icon: "🙏" },
-  { id: "benevolat", label: "Bénévolat", icon: "🤝" },
-  { id: "demandes", label: "Mes demandes", icon: "📋" },
+// Mêmes icônes que les entrées équivalentes du menu d'administration, pour
+// que le vocabulaire visuel soit commun aux deux espaces.
+const NAV_ITEMS: { id: Section; label: string; icon: ComponentType }[] = [
+  { id: "profil", label: "Mon profil", icon: IconUser },
+  { id: "dons", label: "Mes dons", icon: IconDollar },
+  { id: "inscriptions", label: "Mes inscriptions", icon: IconCalendar },
+  { id: "ministeres", label: "Ministères", icon: IconSparkles },
+  { id: "priere", label: "Demande de prière", icon: IconHeart },
+  { id: "benevolat", label: "Bénévolat", icon: IconUserPlus },
+  { id: "demandes", label: "Mes demandes", icon: IconClipboardList },
 ];
 
 /** Type présélectionné par le lien « Demander une modification » du profil. */
@@ -89,19 +101,30 @@ export function EspacePage() {
         </button>
 
         <nav className={admin.sidebarNav}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              className={`${admin.navItem} ${section === item.id ? admin.navItemActive : ""}`}
-              onClick={() => setSection(item.id)}
-            >
-              <span className={admin.navIcon}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = section === item.id;
+            return (
+              <button
+                key={item.id}
+                // Aucune entrée n'appartient à un groupe ici : c'est le même cas
+                // que « Tableau de bord » côté admin, donc le pavé plein.
+                className={`${admin.navItem} ${isActive ? admin.navItemActiveSolo : ""}`}
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => setSection(item.id)}
+              >
+                <span className={admin.navIcon}>
+                  <Icon />
+                </span>
+                <span className={admin.navLabel}>{item.label}</span>
+              </button>
+            );
+          })}
           <button className={styles.logoutNavItem} onClick={logout}>
-            <span className={admin.navIcon}>🚪</span>
-            Se déconnecter
+            <span className={admin.navIcon}>
+              <IconLogOut />
+            </span>
+            <span className={admin.navLabel}>Se déconnecter</span>
           </button>
         </nav>
       </aside>

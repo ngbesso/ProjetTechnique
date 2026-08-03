@@ -28,3 +28,7 @@ npm-debug.log*
 
 # Données locales (volumes montés)
 data/
+
+# Claude Code
+.claude/
+CLAUDE.md

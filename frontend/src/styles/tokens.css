@@ -1,8 +1,21 @@
 /* ── Design tokens (global, importé dans main.tsx) ───────── */
 :root {
   --deep-violet: #2a2660;
-  --vivid-violet: #534ab7;
-  --vivid-violet-hover: #3f389a;
+  --vivid-violet: #6b63a6;
+  --vivid-violet-hover: #574f8d;
+
+  /* Menu latéral (administration et espace membre) — thème lavande clair.
+     Regroupé ici parce que EspacePage.module.css habille lui aussi des
+     éléments de ce menu (marque, déconnexion) et doit suivre la même palette. */
+  --sidebar-bg: #f2f0fa;
+  --sidebar-border: #e2ddf1;
+  --sidebar-text: #574e88;
+  --sidebar-text-strong: #453c78;
+  --sidebar-group: #847ca8;
+  --sidebar-rule: #e0daf0;
+  --sidebar-accent: #6b63a6;
+  --sidebar-hover: rgba(107, 99, 166, 0.08);
+
   --neutral-bg: #f5f5f7;
   --card-bg: #ffffff;
   --text-main: #1a1a2e;
