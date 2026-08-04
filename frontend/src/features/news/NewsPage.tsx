@@ -201,7 +201,7 @@ export function NewsPage() {
       <main className={styles.main}>
         <div className={styles.filterBar}>
           <div className={styles.filterSearch}>
-            <span className={styles.filterSearchIcon}>🔍</span>
+            <span className={styles.filterSearchIcon} aria-hidden>🔍</span>
             <input
               className={styles.filterInput}
               placeholder="Rechercher…"
@@ -240,7 +240,7 @@ export function NewsPage() {
         {error && <p className={styles.errorMsg}>{error}</p>}
         {!loading && news.length === 0 && (
           <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>📰</p>
+            <p className={styles.emptyIcon} aria-hidden>📰</p>
             <p className={styles.emptyText}>Aucune actualité trouvée.</p>
           </div>
         )}

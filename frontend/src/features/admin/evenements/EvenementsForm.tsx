@@ -197,7 +197,7 @@ export function EvenementsForm({
     <div className={styles.modalOverlay} onClick={handleCancel}>
       <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
         <div className={styles.formHeader}>
-          <div className={styles.formHeaderIcon}>{isEditing ? "✏️" : "📅"}</div>
+          <div className={styles.formHeaderIcon} aria-hidden>{isEditing ? "✏️" : "📅"}</div>
           <div>
             <p className={styles.formHeaderTitle}>
               {isEditing ? "Modifier l'événement" : "Créer un événement"}
@@ -680,7 +680,7 @@ export function EvenementsForm({
 
           {formError && (
             <div className={styles.errorBanner} role="alert">
-              <span className={styles.errorBannerIcon}>⚠</span>
+              <span className={styles.errorBannerIcon} aria-hidden>⚠</span>
               <span>{formError}</span>
             </div>
           )}

@@ -180,6 +180,117 @@ describe("MembershipPage — envoi et confirmation", () => {
   });
 });
 
+describe("MembershipPage — validation des champs optionnels", () => {
+  it("refuse un téléphone trop court", async () => {
+    render(<MembershipPage />);
+    fillRequired();
+    const phone = document.querySelector('input[type="tel"]') as HTMLInputElement;
+    fireEvent.change(phone, { target: { value: "123" } });
+    fireEvent.submit(form());
+
+    await waitFor(() => expect(requestMembership).not.toHaveBeenCalled());
+    expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+  });
+
+  it("accepte un téléphone valide", async () => {
+    render(<MembershipPage />);
+    fillRequired();
+    const phone = document.querySelector('input[type="tel"]') as HTMLInputElement;
+    fireEvent.change(phone, { target: { value: "514-555-0100" } });
+    fireEvent.submit(form());
+
+    await waitFor(() =>
+      expect(requestMembership).toHaveBeenCalledWith(
+        expect.objectContaining({ telephone: "514-555-0100" }),
+      ),
+    );
+  });
+
+  it("efface l'erreur de champ dès la correction", async () => {
+    render(<MembershipPage />);
+    fillRequired();
+    const phone = document.querySelector('input[type="tel"]') as HTMLInputElement;
+    fireEvent.change(phone, { target: { value: "123" } });
+    fireEvent.submit(form());
+    await waitFor(() => expect(screen.getAllByRole("alert").length).toBeGreaterThan(0));
+
+    fireEvent.change(phone, { target: { value: "514-555-0100" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("n'envoie pas une adresse laissée vide", async () => {
+    render(<MembershipPage />);
+    fillRequired();
+    fireEvent.submit(form());
+
+    await waitFor(() =>
+      expect(requestMembership).toHaveBeenCalledWith(
+        expect.objectContaining({ address: undefined, telephone: undefined }),
+      ),
+    );
+  });
+
+  it("nettoie les espaces autour des champs requis", async () => {
+    render(<MembershipPage />);
+    fireEvent.change(churchSelect(), { target: { value: "7" } });
+    const [firstName, lastName] = textboxes();
+    fireEvent.change(firstName, { target: { value: "  Marie  " } });
+    fireEvent.change(lastName, { target: { value: "  Dupont  " } });
+    fireEvent.change(screen.getByPlaceholderText("vous@exemple.com"), {
+      target: { value: "  marie@exemple.com  " },
+    });
+    fireEvent.submit(form());
+
+    await waitFor(() =>
+      expect(requestMembership).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first_name: "Marie",
+          last_name: "Dupont",
+          email: "marie@exemple.com",
+        }),
+      ),
+    );
+  });
+});
+
+describe("MembershipPage — cas d'erreur de soumission", () => {
+  it("réactive le bouton après un échec, pour permettre un nouvel essai", async () => {
+    requestMembership.mockRejectedValue(new Error("Serveur indisponible"));
+    render(<MembershipPage />);
+    fillRequired();
+    fireEvent.submit(form());
+
+    await screen.findByText("Serveur indisponible");
+    const submit = screen.getByRole("button", { name: /Envoyer|Devenir membre|Soumettre/ });
+    expect(submit).not.toBeDisabled();
+  });
+
+  it("permet de renvoyer après correction d'un conflit de courriel", async () => {
+    requestMembership.mockRejectedValueOnce(new Error("Cette adresse est déjà utilisée."));
+    render(<MembershipPage />);
+    fillRequired();
+    fireEvent.submit(form());
+    await screen.findByText("Cette adresse est déjà utilisée.");
+
+    requestMembership.mockResolvedValue(makeMember({ status: "pending" }));
+    fireEvent.change(screen.getByPlaceholderText("vous@exemple.com"), {
+      target: { value: "autre@exemple.com" },
+    });
+    fireEvent.submit(form());
+
+    expect(await screen.findByText("Demande envoyée")).toBeInTheDocument();
+  });
+
+  it("affiche un message générique si l'erreur n'en porte pas", async () => {
+    requestMembership.mockRejectedValue({ code: 500 });
+    render(<MembershipPage />);
+    fillRequired();
+    fireEvent.submit(form());
+
+    expect(await screen.findByText("Une erreur est survenue.")).toBeInTheDocument();
+  });
+});
+
 describe("MembershipPage — visiteur déjà connecté", () => {
   it("propose l'espace membre au lieu du formulaire", () => {
     currentUser = makeMemberUser();

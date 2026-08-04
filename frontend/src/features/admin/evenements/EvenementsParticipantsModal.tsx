@@ -24,7 +24,7 @@ export function EvenementsParticipantsModal({
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.participantsCard} onClick={(e) => e.stopPropagation()}>
         <div className={styles.formHeader}>
-          <div className={styles.formHeaderIcon}>👥</div>
+          <div className={styles.formHeaderIcon} aria-hidden>👥</div>
           <div>
             <p className={styles.formHeaderTitle}>Participants</p>
             <p className={styles.formHeaderSub}>{event.title}</p>
@@ -48,7 +48,7 @@ export function EvenementsParticipantsModal({
             <p className={adminStyles.stateMsg}>Chargement…</p>
           ) : participants.length === 0 ? (
             <div className={styles.emptyState}>
-              <p className={styles.emptyIcon}>👥</p>
+              <p className={styles.emptyIcon} aria-hidden>👥</p>
               <p className={styles.emptyText}>Aucune inscription pour le moment.</p>
             </div>
           ) : (

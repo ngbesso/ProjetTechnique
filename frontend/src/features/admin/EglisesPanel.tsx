@@ -245,7 +245,7 @@ export function EglisesPanel() {
                 <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
                     {/* En-tête coloré */}
                     <div className={styles.formHeader}>
-                        <div className={styles.formHeaderIcon}>
+                        <div className={styles.formHeaderIcon} aria-hidden>
                             {isEditing ? "✏️" : "🏛"}
                         </div>
                         <div>
@@ -363,7 +363,7 @@ export function EglisesPanel() {
 
                         {formError && (
                             <div className={styles.errorBanner} role="alert">
-                                <span className={styles.errorBannerIcon}>⚠</span>
+                                <span className={styles.errorBannerIcon} aria-hidden>⚠</span>
                                 <span>{formError}</span>
                             </div>
                         )}

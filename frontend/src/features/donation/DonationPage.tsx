@@ -81,7 +81,7 @@ export function DonationPage() {
                       className={`${styles.churchCard} ${selectedChurch?.id === c.id ? styles.cardSelected : ""}`}
                       onClick={() => setSelectedChurch(c)}
                     >
-                      <span className={styles.cardIcon}>⛪</span>
+                      <span className={styles.cardIcon} aria-hidden>⛪</span>
                       <span className={styles.cardLabel}>{c.name}</span>
                       {c.address && (
                         <span className={styles.cardSub}>{c.address}</span>

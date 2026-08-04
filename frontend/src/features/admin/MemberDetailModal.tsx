@@ -110,7 +110,7 @@ export function MemberDetailModal({ member, church, canApprove, onClose, onAppro
             <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
 
                 <div className={styles.modalHeader}>
-                    <div className={styles.modalHeaderIcon}>👤</div>
+                    <div className={styles.modalHeaderIcon} aria-hidden>👤</div>
                     <div className={styles.modalHeaderText}>
                         <h2 className={styles.modalName}>
                             {member.first_name} {member.last_name}

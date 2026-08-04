@@ -11,7 +11,10 @@
   --sidebar-border: #e2ddf1;
   --sidebar-text: #574e88;
   --sidebar-text-strong: #453c78;
-  --sidebar-group: #847ca8;
+  /* #847ca8 à l'origine, remonté à 4,97:1 sur --sidebar-bg : l'ancienne teinte
+     plafonnait à 3,43:1, sous le seuil WCAG AA de 4,5:1. Reste plus clair que
+     --sidebar-text (6,53:1), la hiérarchie visuelle est préservée. */
+  --sidebar-group: #6b6191;
   --sidebar-rule: #e0daf0;
   --sidebar-accent: #6b63a6;
   --sidebar-hover: rgba(107, 99, 166, 0.08);
