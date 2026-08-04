@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "./RegisterPage.module.css";
 import { useNavigate } from "../../context/RouterContext";
+import { PasswordInput } from "../../components/ui/PasswordInput";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -198,10 +199,10 @@ function Step1({ data, errors, onChange, onSubmit }: Step1Props) {
           />
         </Field>
         <Field label="Mot de passe" error={errors.motDePasse}>
-          <input
-            type="password"
+          <PasswordInput
             className={`${styles.input} ${errors.motDePasse ? styles.inputError : ""}`}
             placeholder="········"
+            autoComplete="new-password"
             value={data.motDePasse}
             onChange={(e) => onChange("motDePasse", e.target.value)}
           />

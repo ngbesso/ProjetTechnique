@@ -4,6 +4,7 @@ import { login } from "../../lib/api/auth";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import { PasswordInput } from "../../components/ui/PasswordInput";
 import { useSiteContent } from "../../hooks/useSiteContent";
 import { siteLogoUrl } from "../../lib/api/content";
 
@@ -83,9 +84,8 @@ export function LoginPage() {
               <label className={styles.label} htmlFor="password">
                 Mot de passe
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 className={styles.input}
                 placeholder="········"
                 value={password}
