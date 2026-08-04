@@ -139,7 +139,7 @@ function PlaceholderPanel({ label }: { label: string }) {
   return (
     <div className={styles.card}>
       <div className={styles.placeholderBox}>
-        <p className={styles.placeholderIcon}>🚧</p>
+        <p className={styles.placeholderIcon} aria-hidden>🚧</p>
         <h3 className={styles.placeholderTitle}>Module « {label} »</h3>
         <p className={styles.placeholderText}>
           Ce module est prévu dans le carnet de produit et sera développé lors
@@ -195,7 +195,7 @@ export function AdminPage() {
       {/* ── Sidebar ── */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
-          <div className={styles.brandIcon}>+</div>
+          <div className={styles.brandIcon} aria-hidden>+</div>
           <div>
             <p className={styles.brandName}>Mission Évangélique</p>
             <p className={styles.brandSub}>Administration</p>
@@ -221,13 +221,17 @@ export function AdminPage() {
                 <button
                   key={item.id}
                   className={`${styles.navItem} ${activeClass}`}
+                  // Sous 768px le libellé est masqué en CSS et l'icône est
+                  // décorative : sans ce nom explicite, le bouton serait
+                  // annoncé « bouton » par un lecteur d'écran.
+                  aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
                   onClick={() => {
                     setSection(item.id);
                     setMembresInitialStatus(undefined);
                   }}
                 >
-                  <span className={styles.navIcon}>
+                  <span className={styles.navIcon} aria-hidden>
                     <Icon />
                   </span>
                   {/* Le libellé est enveloppé pour pouvoir être masqué dans le

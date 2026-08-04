@@ -154,7 +154,7 @@ export function SermonsPage() {
                   onClick={() => play(sermon)}
                   aria-label={`Écouter : ${sermon.title}`}
                 >
-                  <span className={styles.playIcon}>▶</span>
+                  <span className={styles.playIcon} aria-hidden>▶</span>
                   <span className={styles.formatTag}>
                     {sermon.format === "video" ? "🎬 Vidéo" : "🎧 Audio"}
                   </span>

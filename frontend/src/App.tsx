@@ -19,6 +19,7 @@ import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
 import {EspacePage} from "./features/espace/EspacePage";
 import { OrganiserEvenementsPage } from "./features/organisateur/OrganiserEvenementsPage";
 import {PrivacyPage} from "./features/legal/PrivacyPage";
+import { AboutPage } from "./features/about/AboutPage";
 import { ChatWidget } from "./components/chat/ChatWidget";
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
     return leaderId ? <LeaderDetailPage leaderId={Number(leaderId)} /> : <LeadershipPage />;
   }
   if (page === "confidentialite") return <PrivacyPage />;
+  if (page === "qui-sommes-nous") return <AboutPage />;
 
   // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"
   if (page === "mon-profil" || page === "espace") {

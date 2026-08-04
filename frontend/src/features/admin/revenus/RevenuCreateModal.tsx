@@ -109,7 +109,7 @@ export function RevenuCreateModal({ churches, onClose, onCreated }: RevenuCreate
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "620px" }}>
         <div className={styles.modalHeader}>
-          <div className={styles.modalHeaderIcon}>💝</div>
+          <div className={styles.modalHeaderIcon} aria-hidden>💝</div>
           <div className={styles.modalHeaderText}>
             <h2 className={styles.modalName}>Nouveau revenu</h2>
             <span className={styles.modalSubtitle}>Saisie manuelle d'un don, d'une dîme ou d'une offrande.</span>
@@ -172,7 +172,7 @@ export function RevenuCreateModal({ churches, onClose, onCreated }: RevenuCreate
                   selectedMember ? (
                     <span className={styles.badge}>
                       {selectedMember.first_name} {selectedMember.last_name}
-                      <button type="button" className={styles.chipX} onClick={() => setSelectedMember(null)}>×</button>
+                      <button type="button" className={styles.chipX} aria-label="Retirer le membre sélectionné" onClick={() => setSelectedMember(null)}>×</button>
                     </span>
                   ) : (
                     <>
@@ -205,7 +205,7 @@ export function RevenuCreateModal({ churches, onClose, onCreated }: RevenuCreate
                   selectedDonor ? (
                     <span className={styles.badge}>
                       {selectedDonor.name}
-                      <button type="button" className={styles.chipX} onClick={() => setSelectedDonor(null)}>×</button>
+                      <button type="button" className={styles.chipX} aria-label="Retirer le donateur sélectionné" onClick={() => setSelectedDonor(null)}>×</button>
                     </span>
                   ) : (
                     <>

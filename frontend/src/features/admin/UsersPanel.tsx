@@ -117,6 +117,7 @@ export function UsersPanel() {
                             <span key={`${a.role_id}-${a.church_id}`} className={styles.badge}>
                                 {a.role} @ {a.church_name}
                                 <button className={styles.chipX} title="Retirer"
+                                    aria-label={`Retirer le rôle ${a.role} sur ${a.church_name}`}
                                     onClick={() => handleRevoke(u, a)}>×</button>
                             </span>
                         ))}

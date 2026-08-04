@@ -93,7 +93,7 @@ export function EspacePage() {
           className={`${admin.sidebarBrand} ${styles.sidebarBrandBtn}`}
           onClick={() => navigate("home")}
         >
-          <div className={admin.brandIcon}>+</div>
+          <div className={admin.brandIcon} aria-hidden>+</div>
           <div>
             <p className={admin.brandName}>Mission Évangélique</p>
             <p className={admin.brandSub}>Mon espace</p>
@@ -110,18 +110,20 @@ export function EspacePage() {
                 // Aucune entrée n'appartient à un groupe ici : c'est le même cas
                 // que « Tableau de bord » côté admin, donc le pavé plein.
                 className={`${admin.navItem} ${isActive ? admin.navItemActiveSolo : ""}`}
+                // Le libellé disparaît dans le rail réduit : on nomme le bouton.
+                aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => setSection(item.id)}
               >
-                <span className={admin.navIcon}>
+                <span className={admin.navIcon} aria-hidden>
                   <Icon />
                 </span>
                 <span className={admin.navLabel}>{item.label}</span>
               </button>
             );
           })}
-          <button className={styles.logoutNavItem} onClick={logout}>
-            <span className={admin.navIcon}>
+          <button className={styles.logoutNavItem} aria-label="Se déconnecter" onClick={logout}>
+            <span className={admin.navIcon} aria-hidden>
               <IconLogOut />
             </span>
             <span className={admin.navLabel}>Se déconnecter</span>

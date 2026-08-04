@@ -62,7 +62,84 @@ DEFAULT_PARAMETERS: dict[str, list[str]] = {
     ],
 }
 
-MOTHER_NAME = "Église mère (Mission)"
+# Église mère du jeu de données initial. Ce n'est qu'une valeur par défaut :
+# l'application reste générique, tout se modifie depuis l'administration.
+MOTHER_NAME = "Église Évangélique de la Nouvelle Jérusalem du Canada"
+MOTHER_PASTOR = "Dr Bruel Gérançon"
+# Adresse, téléphone et courriel restent vides : ils alimentent le bloc
+# « Nous joindre » du pied de page et seront saisis depuis Pages & Menu, plutôt
+# que d'inscrire ici des coordonnées inventées. Le modèle Church n'a pas de
+# champ « ville » : Montréal figure dans le slogan du site et le texte d'accueil.
+
+# ── Contenu « Qui sommes-nous » fourni par l'organisation ────────────────────
+# Valeurs par défaut du jeu de données initial uniquement : chacune se modifie
+# depuis l'administration (Pages & Menu). Les trois listes suivent la
+# convention « une ligne = un élément ».
+
+ABOUT_WELCOME = (
+    "L'Église Évangélique de la Nouvelle Jérusalem du Canada (EENOJEC) est une "
+    "congrégation chrétienne évangélique établie à Montréal, Québec, Canada, "
+    "dirigée par un conseil d'Anciens dont le président et pasteur principal est "
+    "le Dr Bruel Gérançon. Nous sommes une Église qui adore Dieu en esprit et en "
+    "vérité, et qui dispense fidèlement la parole de Dieu, dans le but de former "
+    "des disciples pour Christ dans toutes les nations."
+)
+
+ABOUT_VISION = (
+    "Former des disciples pour Christ en les enseignant et les instruisant en "
+    "toute sagesse afin qu'ils parviennent à la mesure de la stature parfaite "
+    "de Christ."
+)
+
+ABOUT_MISSION = (
+    "Glorifier Dieu par une adoration authentique, par l'édification des frères "
+    "et sœurs, par la manifestation de la compassion envers tous, ainsi que par "
+    "l'évangélisation des perdus, dans le but de former des disciples pour Christ."
+)
+
+ABOUT_VALEURS = "\n".join(
+    [
+        "Une église remplie de l'Esprit Saint",
+        "Une église qui s'attache aux saines paroles du Seigneur Jésus-Christ",
+        "Une église qui étudie la parole de Dieu et la met en pratique",
+        "Une église qui cultive une vie de prière",
+        "Une église qui glorifie Dieu et témoigne de sa grâce",
+        "Une église qui persévère dans la communion fraternelle",
+    ]
+)
+
+ABOUT_PRINCIPES = "\n".join(
+    [
+        "La fidélité à la parole de Dieu et à la proclamation de l'Évangile "
+        "centrée sur Christ",
+        "La rigueur dans l'étude des Écritures",
+        "La nécessité de la croissance et de la maturité spirituelles du "
+        "disciple de Jésus-Christ",
+    ]
+)
+
+ABOUT_CREDO = "\n".join(
+    [
+        "Nous croyons en un seul Dieu existant en trois personnes distinctes : "
+        "le Père, le Fils et le Saint-Esprit",
+        "Nous croyons que Dieu est le créateur de l'univers",
+        "Nous croyons que la Bible est inspirée de Dieu",
+        "Nous croyons que la Bible est le seul livre sacré faisant autorité "
+        "absolue en matière de foi",
+        "Nous croyons que Jésus-Christ est Dieu fait homme",
+        "Nous croyons que Jésus-Christ est mort et ressuscité pour le pardon de "
+        "nos péchés et qu'il reviendra à la fin des temps",
+        "Nous croyons à la résurrection des morts, à la vie éternelle et au "
+        "jugement dernier",
+        "Nous croyons que la vie éternelle s'obtient uniquement par la grâce, au "
+        "moyen de la foi en Jésus-Christ",
+        "Nous croyons que le Saint-Esprit est celui promis par le Père, répandu "
+        "par le Fils",
+        "Nous croyons que le Saint-Esprit habite éternellement en chaque croyant",
+        "Nous croyons que toute personne qui professe la foi en Jésus-Christ "
+        "doit être baptisée par immersion",
+    ]
+)
 
 DEMO_POSTS: list[dict] = [
     dict(
@@ -405,7 +482,7 @@ def ensure_mother_church(db: Session) -> Church:
     """Garantit l'existence de l'unique église mère (parent_id NULL)."""
     mother = db.scalar(select(Church).where(Church.parent_id.is_(None)))
     if mother is None:
-        mother = Church(name=MOTHER_NAME)
+        mother = Church(name=MOTHER_NAME, pastor_name=MOTHER_PASTOR)
         db.add(mother)
         db.flush()
     return mother
@@ -463,37 +540,46 @@ def seed_settings(db: Session) -> None:
         "event_reminder_hours_before": "24",
         "birthday_message_template": DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
         "birthday_monthly_message_template": DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
-        "site_name": "Mission Évangélique",
-        "site_tagline": "unis dans la foi",
+        "site_name": MOTHER_NAME,
+        "site_tagline": "EENOJEC — Montréal, Québec",
         "site_logo_url": "",
         "hero_eyebrow": "Une famille de foi, au-delà des frontières",
         "hero_title": "Bienvenue dans notre communauté de foi",
         "hero_subtitle": (
-            "Des Églises affiliées partout, une mission commune — "
-            "servir, former et rayonner ensemble."
+            "Adorer Dieu en esprit et en vérité, dispenser fidèlement sa parole, "
+            "et former des disciples pour Christ dans toutes les nations."
         ),
-        # {eglises} et {membres} sont remplacés à l'affichage par les comptages
-        # réels (GET /stats/public) ; une valeur sans jeton est affichée telle
-        # quelle, ce qui permet de repasser en saisie manuelle depuis l'admin.
-        "hero_stat1_value": "{eglises}",
-        "hero_stat1_label": "Églises affiliées",
-        "hero_stat2_value": "{membres}",
-        "hero_stat2_label": "Membres actifs",
-        "hero_stat3_value": "8",
-        "hero_stat3_label": "Pays",
-        "hero_stat4_value": "40 ans",
-        "hero_stat4_label": "De mission",
         "about_eyebrow": "Qui sommes-nous",
         "about_title": "Ce qui nous rassemble et nous guide",
-        "about_description": (
-            "Fondée il y a plus de 40 ans, Mission Évangélique fédère des centaines "
-            "d'Églises autour d'une vision commune : faire des disciples dans chaque "
-            "communauté et chaque nation."
-        ),
-        "social_youtube_url": "https://youtube.com/@mission",
-        "social_facebook_url": "https://facebook.com/mission",
-        "social_instagram_url": "https://instagram.com/mission",
-        "social_whatsapp_url": "https://wa.me/15145550100",
+        "about_description": ABOUT_WELCOME,
+        # ── Les 5 piliers : résumé sur l'accueil, détail sur /qui-sommes-nous ──
+        "pillar_vision_label": "Vision",
+        "pillar_vision_desc": "Former des disciples pour Christ, jusqu'à la stature parfaite de Christ.",
+        "pillar_mission_label": "Mission",
+        "pillar_mission_desc": "Adorer, édifier, secourir et évangéliser pour former des disciples.",
+        "pillar_valeurs_label": "Valeurs",
+        "pillar_valeurs_desc": "Six engagements qui façonnent notre vie d'Église.",
+        "pillar_credo_label": "Crédo",
+        "pillar_credo_desc": "Les onze points de la foi que nous confessons.",
+        "pillar_principes_label": "Principes",
+        "pillar_principes_desc": "Fidélité à la parole, rigueur dans l'étude, croissance du disciple.",
+        # ── Page « Qui sommes-nous » ──────────────────────────────────────────
+        # Les trois listes fonctionnent en « une ligne = un élément » ; toutes
+        # ces valeurs sont modifiables depuis Pages & Menu.
+        "about_page_eyebrow": "Qui sommes-nous",
+        "about_page_title": "Notre identité",
+        "about_welcome": ABOUT_WELCOME,
+        "about_vision_text": ABOUT_VISION,
+        "about_mission_text": ABOUT_MISSION,
+        "about_valeurs_list": ABOUT_VALEURS,
+        "about_principes_list": ABOUT_PRINCIPES,
+        "about_credo_list": ABOUT_CREDO,
+        # Réseaux sociaux : laissés vides plutôt que de pointer vers des comptes
+        # fictifs — une URL vide masque simplement l'icône du pied de page.
+        "social_youtube_url": "",
+        "social_facebook_url": "",
+        "social_instagram_url": "",
+        "social_whatsapp_url": "",
     }
     for key, value in defaults.items():
         if db.get(AppSetting, key) is None:

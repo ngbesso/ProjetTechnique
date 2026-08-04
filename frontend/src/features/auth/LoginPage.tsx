@@ -42,11 +42,11 @@ export function LoginPage() {
             <img
               src={siteLogoUrl(settings.site_logo_url)!}
               alt={settings.site_name}
-              className={styles.logoIcon}
+              className={styles.logoIcon} aria-hidden
               style={{ objectFit: "contain" }}
             />
           ) : (
-            <div className={styles.logoIcon}>+</div>
+            <div className={styles.logoIcon} aria-hidden>+</div>
           )}
           <div className={styles.logoText}>
             <span className={styles.logoTitle}>{settings.site_name}</span>

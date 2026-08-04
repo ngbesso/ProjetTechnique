@@ -61,7 +61,7 @@ export function ForgotPasswordPage() {
                         {sent ? (
                             <>
                                 <div className={styles.sentBox}>
-                                    <div className={styles.sentIcon}>
+                                    <div className={styles.sentIcon} aria-hidden>
                                         <IconCheck />
                                     </div>
                                     <p className={styles.sentTitle}>Courriel envoyé</p>
