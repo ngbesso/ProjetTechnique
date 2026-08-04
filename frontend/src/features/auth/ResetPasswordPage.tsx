@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "../../context/RouterContext";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
+import { PasswordInput } from "../../components/ui/PasswordInput";
 
 function IconLock() {
     return (
@@ -65,10 +66,9 @@ export function ResetPasswordPage({ token }: { token: string }) {
                         <form onSubmit={submit} noValidate>
                             <div className={styles.fieldGroup}>
                                 <label className={styles.label} htmlFor="pwd">Nouveau mot de passe</label>
-                                <input
+                                <PasswordInput
                                     id="pwd"
                                     className={styles.input}
-                                    type="password"
                                     value={pwd}
                                     onChange={(e) => setPwd(e.target.value)}
                                     autoComplete="new-password"
@@ -78,10 +78,9 @@ export function ResetPasswordPage({ token }: { token: string }) {
                             </div>
                             <div className={styles.fieldGroup}>
                                 <label className={styles.label} htmlFor="confirm">Confirmer le mot de passe</label>
-                                <input
+                                <PasswordInput
                                     id="confirm"
                                     className={styles.input}
-                                    type="password"
                                     value={confirm}
                                     onChange={(e) => setConfirm(e.target.value)}
                                     autoComplete="new-password"

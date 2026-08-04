@@ -39,6 +39,18 @@ export function IconEye() {
   );
 }
 
+/** Œil barré — état « mot de passe visible » du bouton de révélation. */
+export function IconEyeOff() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M6.61 6.61A18.15 18.15 0 0 0 1 12s4 8 11 8a9.12 9.12 0 0 0 5.39-1.61" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export function IconClock() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
