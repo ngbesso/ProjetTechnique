@@ -41,14 +41,17 @@
 }
 
 /* ── Hero (profil) ──────────────────────────────────────────── */
+/* Même palette lavande que le menu latéral, pour que l'espace membre se lise
+   comme un seul ensemble. */
 .hero {
-  background: var(--deep-violet);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
   border-radius: 14px;
   padding: 1.5rem 1.75rem;
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  color: #fff;
+  color: var(--sidebar-text-strong);
   margin-bottom: 1.25rem;
 }
 
@@ -56,7 +59,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: var(--sidebar-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,7 +67,6 @@
   font-weight: 800;
   color: #fff;
   flex-shrink: 0;
-  border: 3px solid rgba(255, 255, 255, 0.2);
 }
 
 .heroInfo {
@@ -97,21 +99,25 @@
   letter-spacing: 0.04em;
 }
 
-.statusBadge.active { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-.statusBadge.pending { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
-.statusBadge.inactive { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-.statusBadge.rejected { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+/* Teintes conservées (vert = actif, ambre = en attente, gris = inactif,
+   rouge = refusé) : seule leur clarté est recalée, les nuances pâles d'avant
+   étaient calibrées pour un fond violet foncé et deviendraient illisibles
+   sur le lavande. */
+.statusBadge.active { background: rgba(16, 185, 129, 0.16); color: #065f46; }
+.statusBadge.pending { background: rgba(245, 158, 11, 0.18); color: #92400e; }
+.statusBadge.inactive { background: rgba(100, 116, 139, 0.16); color: #475569; }
+.statusBadge.rejected { background: rgba(239, 68, 68, 0.14); color: #b91c1c; }
 
 .memberCode {
   font-size: 0.78rem;
-  color: #a78bfa;
+  color: var(--sidebar-accent);
   font-weight: 600;
   font-family: monospace;
 }
 
 .churchTag {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--sidebar-text);
 }
 
 /* ── Champs ─────────────────────────────────────────────────── */

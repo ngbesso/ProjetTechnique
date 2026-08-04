@@ -341,7 +341,7 @@ export function SermonsPanel() {
         <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>🎙</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>🎙</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Ajouter un sermon</h2>
                 <span className={styles.modalSubtitle}>Remplissez les informations du nouveau sermon.</span>
@@ -441,7 +441,7 @@ export function SermonsPanel() {
         <div className={styles.modalOverlay} onClick={() => { setPlayingSermon(null); setMediaUrl(null); }}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>{playingSermon.format === "video" ? "🎬" : "🎧"}</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>{playingSermon.format === "video" ? "🎬" : "🎧"}</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>{playingSermon.title}</h2>
                 <span className={styles.modalSubtitle}>
@@ -496,7 +496,7 @@ export function SermonsPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditingSermon(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>✏️</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier le sermon</h2>
                 <span className={styles.modalSubtitle}>

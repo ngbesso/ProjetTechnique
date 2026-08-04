@@ -250,7 +250,7 @@ export function DepensesPanel() {
         <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>💸</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>💸</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Nouvelle dépense</h2>
                 <span className={styles.modalSubtitle}>Toute dépense doit être justifiée.</span>
@@ -301,7 +301,7 @@ export function DepensesPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditingExpense(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>✏️</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier la dépense</h2>
               </div>

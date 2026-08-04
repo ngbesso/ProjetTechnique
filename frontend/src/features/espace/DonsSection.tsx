@@ -61,7 +61,7 @@ export function DonsSection({ churchName }: DonsSectionProps) {
 
         {donations.length === 0 ? (
           <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>💝</p>
+            <p className={styles.emptyIcon} aria-hidden>💝</p>
             <p>Aucun don pour le moment.</p>
             <button className={admin.btnPrimary} onClick={() => navigate("donation")}>
               ♥ Faire un don

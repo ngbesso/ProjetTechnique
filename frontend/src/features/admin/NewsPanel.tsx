@@ -385,7 +385,7 @@ export function NewsPanel() {
         <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>📰</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>📰</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Nouvelle actualité</h2>
                 <span className={styles.modalSubtitle}>Remplissez les informations de la nouvelle actualité.</span>
@@ -449,7 +449,7 @@ export function NewsPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditingNews(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>✏️</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier l'actualité</h2>
                 <span className={styles.modalSubtitle}>{editingNews.title}</span>

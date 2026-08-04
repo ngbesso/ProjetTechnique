@@ -35,6 +35,7 @@ const PAGE_PATHS: Record<Page, string> = {
   espace: "/espace",
   "mot-de-passe-oublie": "/mot-de-passe-oublie",
   confidentialite: "/confidentialite",
+  "qui-sommes-nous": "/qui-sommes-nous",
 };
 
 function pathFor(page: Page, params?: Record<string, unknown>): string {

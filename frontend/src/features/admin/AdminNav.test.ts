@@ -54,10 +54,12 @@ describe("toNavSections", () => {
     expect(new Set(groups).size).toBe(groups.length);
   });
 
-  it("ne crée aucun groupe pour un organisateur pur — une seule entrée solo", () => {
-    // Un groupe vide afficherait un en-tête dépliable sans contenu.
+  it("ne produit qu'une tranche pour un organisateur pur", () => {
+    // « Événements » reste rattaché au groupe Contenu : la tranche conserve
+    // donc son groupe, avec une seule entrée dedans.
     const sections = toNavSections(visibleNavItems(ALL_NAV_ITEMS, ORGANISATEUR));
     expect(sections).toHaveLength(1);
+    expect(sections[0].group).toBe("Contenu");
     expect(sections[0].items).toHaveLength(1);
   });
 

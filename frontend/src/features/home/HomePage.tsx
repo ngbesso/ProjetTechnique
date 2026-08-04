@@ -11,8 +11,13 @@ import { useSermons } from "../../hooks/useSermons";
 import { usePosts } from "../../hooks/usePosts";
 import { useSiteContent, type SiteSettings } from "../../hooks/useSiteContent";
 import { getEvents } from "../../lib/api/events";
-import { fetchPublicStats, type PublicStats } from "../../lib/api/stats";
-import { renderTemplate, stripTokens } from "../../lib/template";
+import {
+  IconBook,
+  IconEye,
+  IconGem,
+  IconScale,
+  IconTarget,
+} from "../../components/ui/icons";
 import { NewsCarousel } from "./NewsCarousel";
 import { SiteHeader } from "../../components/layout/SiteHeader";
 import { SiteFooter } from "../../components/layout/SiteFooter";
@@ -20,61 +25,18 @@ import type { EventItem } from "../../types";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-
-// Les 4 statistiques sont configurables depuis l'admin (Pages → « Accueil —
-// statistiques »). Leur valeur accepte les jetons {eglises} et {membres},
-// remplacés par les comptages réels renvoyés par GET /stats/public. Si ce
-// comptage n'est pas disponible, les jetons sont effacés plutôt qu'affichés
-// tels quels — une valeur qui n'était qu'un jeton devient alors vide, et une
-// statistique dont la valeur est vide n'est pas affichée.
-function heroStats(settings: SiteSettings, counts: PublicStats | null) {
-  const resolve = (value: string) =>
-    counts
-      ? renderTemplate(value, {
-          eglises: String(counts.affiliated_churches),
-          membres: String(counts.active_members),
-        })
-      : stripTokens(value);
+/** Les 5 piliers résumés sur l'accueil. Libellé et description viennent des
+ *  réglages ; l'icône reste en dur, c'est un choix de gabarit, pas du contenu.
+ *  Le détail complet vit sur la page « Qui sommes-nous ». */
+function pillars(settings: SiteSettings) {
   return [
-    { value: resolve(settings.hero_stat1_value), label: settings.hero_stat1_label },
-    { value: resolve(settings.hero_stat2_value), label: settings.hero_stat2_label },
-    { value: resolve(settings.hero_stat3_value), label: settings.hero_stat3_label },
-    { value: resolve(settings.hero_stat4_value), label: settings.hero_stat4_label },
-  ].filter((s) => s.value.trim() !== "");
+    { key: "vision", label: settings.pillar_vision_label, icon: IconEye, desc: settings.pillar_vision_desc },
+    { key: "mission", label: settings.pillar_mission_label, icon: IconTarget, desc: settings.pillar_mission_desc },
+    { key: "valeurs", label: settings.pillar_valeurs_label, icon: IconGem, desc: settings.pillar_valeurs_desc },
+    { key: "credo", label: settings.pillar_credo_label, icon: IconBook, desc: settings.pillar_credo_desc },
+    { key: "principes", label: settings.pillar_principes_label, icon: IconScale, desc: settings.pillar_principes_desc },
+  ].filter((p) => p.label.trim() !== "");
 }
-
-/** Bande de statistiques affichée sous le hero, sur toute la largeur.
- *  Exportée pour être testée isolément (voir StatsBar.test.tsx). */
-export function StatsBar() {
-  const { settings } = useSiteContent();
-  const [counts, setCounts] = useState<PublicStats | null>(null);
-
-  useEffect(() => {
-    fetchPublicStats().then(setCounts).catch(() => {});
-  }, []);
-
-  const stats = heroStats(settings, counts);
-  if (stats.length === 0) return null;
-
-  return (
-    <div className={styles.statsBar}>
-      {stats.map((s, i) => (
-        <div key={i} className={styles.statItem}>
-          <span className={styles.statValue}>{s.value}</span>
-          <span className={styles.statLabel}>{s.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const PILLARS = [
-  { label: "Vision", icon: "👁", desc: "Une église par communauté, un disciple par foyer." },
-  { label: "Mission", icon: "🎯", desc: "Évangéliser, enraciner et envoyer." },
-  { label: "Valeurs", icon: "💎", desc: "Intégrité, amour fraternel, excellence." },
-  { label: "Crédo", icon: "📖", desc: "La Bible, seule règle de foi et de vie." },
-  { label: "Principes", icon: "⚖️", desc: "Gouvernance partagée, transparence et service." },
-] as const;
 
 function formatSermonDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
@@ -157,6 +119,7 @@ function Hero() {
 
 
 function AboutSection() {
+  const navigate = useNavigate();
   const { settings } = useSiteContent();
   return (
     <section id="qui-sommes-nous" className={styles.aboutSection}>
@@ -165,18 +128,28 @@ function AboutSection() {
           <p className={styles.aboutEyebrow}>{settings.about_eyebrow}</p>
           <h2 className={styles.aboutTitle}>{settings.about_title}</h2>
           <p className={styles.aboutDesc}>{settings.about_description}</p>
-          <a href="#qui-sommes-nous" className={styles.textLink}>
+          <Link page="qui-sommes-nous" className={styles.textLink}>
             En savoir plus →
-          </a>
+          </Link>
         </div>
         <div className={styles.pillarsGrid}>
-          {PILLARS.map((pillar) => (
-            <div key={pillar.label} className={styles.pillarCard}>
-              <span className={styles.pillarIcon}>{pillar.icon}</span>
-              <p className={styles.pillarLabel}>{pillar.label}</p>
-              <p className={styles.pillarDesc}>{pillar.desc}</p>
-            </div>
-          ))}
+          {pillars(settings).map((pillar) => {
+            const Icon = pillar.icon;
+            return (
+              <button
+                key={pillar.key}
+                type="button"
+                className={styles.pillarCard}
+                onClick={() => navigate("qui-sommes-nous")}
+              >
+                <span className={styles.pillarIcon} aria-hidden>
+                  <Icon />
+                </span>
+                <p className={styles.pillarLabel}>{pillar.label}</p>
+                <p className={styles.pillarDesc}>{pillar.desc}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -385,7 +358,6 @@ export function HomePage() {
       <SiteHeader activePage="home" />
       <main>
         <Hero />
-        <StatsBar />
         <AboutSection />
         <SermonsSection />
         <EventsSection />

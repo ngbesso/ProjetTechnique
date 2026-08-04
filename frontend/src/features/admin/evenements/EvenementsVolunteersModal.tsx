@@ -73,7 +73,7 @@ export function EvenementsVolunteersModal({ event, onClose }: EvenementsVoluntee
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.participantsCard} onClick={(e) => e.stopPropagation()}>
         <div className={styles.formHeader}>
-          <div className={styles.formHeaderIcon}>🤝</div>
+          <div className={styles.formHeaderIcon} aria-hidden>🤝</div>
           <div>
             <p className={styles.formHeaderTitle}>Bénévoles</p>
             <p className={styles.formHeaderSub}>
@@ -112,7 +112,7 @@ export function EvenementsVolunteersModal({ event, onClose }: EvenementsVoluntee
             <p className={adminStyles.stateMsg}>Chargement…</p>
           ) : requests.length === 0 ? (
             <div className={styles.emptyState}>
-              <p className={styles.emptyIcon}>🤝</p>
+              <p className={styles.emptyIcon} aria-hidden>🤝</p>
               <p className={styles.emptyText}>Aucune demande de bénévolat.</p>
             </div>
           ) : (

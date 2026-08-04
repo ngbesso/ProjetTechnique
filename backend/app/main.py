@@ -28,7 +28,6 @@ from app.api.routes import (
     prayer_requests,
     reports,
     sermons,
-    stats,
     volunteer_requests,
 )
 from app.api.routes import (
@@ -145,7 +144,6 @@ app.include_router(prayer_requests.router)
 app.include_router(member_requests.router)
 app.include_router(volunteer_requests.router)
 app.include_router(reports.router)
-app.include_router(stats.router)
 
 
 @app.get("/")
