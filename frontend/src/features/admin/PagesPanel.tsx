@@ -97,6 +97,94 @@ function SettingTextField({ settingKey, title, description, placeholder }: Setti
   );
 }
 
+// ── Champ multiligne (textes longs et listes) ────────────────────────────────
+
+interface SettingTextAreaFieldProps {
+  settingKey: string;
+  title: string;
+  description: string;
+  placeholder?: string;
+  rows?: number;
+}
+
+/** Variante multiligne de SettingTextField. À la différence du
+ *  TemplateSettingField des messages, la valeur vide est acceptée : une
+ *  section non renseignée n'est simplement pas affichée sur le site. */
+function SettingTextAreaField({
+  settingKey,
+  title,
+  description,
+  placeholder,
+  rows = 5,
+}: SettingTextAreaFieldProps) {
+  const [value, setValue] = useState("");
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchSettings()
+      .then((list) => {
+        const val = list.find((s) => s.key === settingKey)?.value ?? "";
+        setValue(val);
+        setDraft(val);
+      })
+      .catch(() => {});
+  }, [settingKey]);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    // Seuls les blancs de bord sont retirés : les sauts de ligne internes
+    // portent le découpage en éléments de liste.
+    const trimmed = draft.trim();
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      await updateSetting(settingKey, trimmed);
+      setValue(trimmed);
+      setDraft(trimmed);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.card}>
+      <h3 className={styles.cardTitle}>{title}</h3>
+      <p style={{ fontSize: ".875rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+        {description}
+      </p>
+      <form onSubmit={handleSave}>
+        <textarea
+          className={styles.input}
+          style={{ width: "100%", resize: "vertical" }}
+          rows={rows}
+          placeholder={placeholder}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <div className={styles.formActions} style={{ marginTop: ".75rem" }}>
+          <button
+            type="submit"
+            className={styles.btnPrimary}
+            disabled={saving || draft.trim() === value}
+          >
+            {saving ? "…" : "Enregistrer"}
+          </button>
+        </div>
+      </form>
+      {saved && <p style={{ color: "var(--vivid-violet)", fontSize: ".875rem", marginTop: ".5rem" }}>Enregistré ✓</p>}
+      {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+    </section>
+  );
+}
+
 // ── Nous joindre (coordonnées du pied de page) ───────────────────────────────
 
 /** Les coordonnées affichées dans le pied de page sont celles de l'église mère
@@ -526,8 +614,15 @@ function LogoUploader() {
 
 // ── Panel principal ───────────────────────────────────────────────────────────
 
-// Les 4 statistiques du hero de la page d'accueil (valeur + libellé chacune).
-const HERO_STATS = [1, 2, 3, 4] as const;
+// Les 5 piliers : une carte résumée sur l'accueil, une section détaillée sur
+// la page « Qui sommes-nous ».
+const PILLARS = [
+  { key: "vision", label: "Vision" },
+  { key: "mission", label: "Mission" },
+  { key: "valeurs", label: "Valeurs" },
+  { key: "credo", label: "Crédo" },
+  { key: "principes", label: "Principes" },
+] as const;
 
 export function PagesPanel() {
   return (
@@ -541,33 +636,77 @@ export function PagesPanel() {
       <SettingTextField settingKey="hero_title" title="Accueil — titre principal" description="Grand titre de la page d'accueil." />
       <TemplateSettingField settingKey="hero_subtitle" title="Accueil — sous-titre" description="Texte sous le grand titre de la page d'accueil." />
 
-      <p className={styles.sectionLabel}>Accueil — statistiques</p>
+      <SettingTextField settingKey="about_eyebrow" title="Qui sommes-nous — petit texte" description="Court texte au-dessus du titre de la section « Qui sommes-nous »." />
+      <SettingTextField settingKey="about_title" title="Qui sommes-nous — titre" description="Titre de la section « Qui sommes-nous »." />
+      <TemplateSettingField settingKey="about_description" title="Qui sommes-nous — description" description="Paragraphe de présentation de la mission." />
+
+      <p className={styles.sectionLabel}>Accueil — les 5 cartes</p>
       <p className={styles.helpNote}>
-        Dans le champ <em>valeur</em>, {"{eglises}"} et {"{membres}"} sont remplacés à
-        l'affichage par les comptages réels de la base (églises affiliées, membres actifs).
-        Toute autre saisie est affichée telle quelle, par exemple «&nbsp;40 ans&nbsp;».
-        Laisser la valeur vide masque la statistique.
+        Résumé affiché sur la page d'accueil. Chaque carte mène à la page
+        «&nbsp;Qui sommes-nous&nbsp;», dont le contenu détaillé se règle plus bas.
+        Vider le libellé masque la carte.
       </p>
-      {HERO_STATS.map((n) => (
-        <div key={n}>
+      {PILLARS.map((p) => (
+        <div key={p.key}>
           <SettingTextField
-            settingKey={`hero_stat${n}_value`}
-            title={`Statistique ${n} — valeur`}
-            description="Chiffre mis en avant dans la bande du hero. Laisser vide pour masquer cette statistique."
-            placeholder="120+"
+            settingKey={`pillar_${p.key}_label`}
+            title={`Carte ${p.label} — libellé`}
+            description="Titre de la carte. Laisser vide pour masquer la carte."
+            placeholder={p.label}
           />
           <SettingTextField
-            settingKey={`hero_stat${n}_label`}
-            title={`Statistique ${n} — libellé`}
-            description="Texte affiché sous le chiffre."
-            placeholder="Églises affiliées"
+            settingKey={`pillar_${p.key}_desc`}
+            title={`Carte ${p.label} — résumé`}
+            description="Une phrase courte affichée sous le libellé."
           />
         </div>
       ))}
 
-      <SettingTextField settingKey="about_eyebrow" title="Qui sommes-nous — petit texte" description="Court texte au-dessus du titre de la section « Qui sommes-nous »." />
-      <SettingTextField settingKey="about_title" title="Qui sommes-nous — titre" description="Titre de la section « Qui sommes-nous »." />
-      <TemplateSettingField settingKey="about_description" title="Qui sommes-nous — description" description="Paragraphe de présentation de la mission." />
+      <p className={styles.sectionLabel}>Page « Qui sommes-nous »</p>
+      <p className={styles.helpNote}>
+        Contenu intégral de la page&nbsp;/qui-sommes-nous. Pour les trois listes
+        (valeurs, principes, crédo), <strong>chaque ligne devient un élément</strong> —
+        appuyez sur Entrée pour passer au suivant. Une section laissée vide n'est pas
+        affichée sur le site.
+      </p>
+      <SettingTextField settingKey="about_page_eyebrow" title="Bandeau — petit texte" description="Court texte au-dessus du titre du bandeau." />
+      <SettingTextField settingKey="about_page_title" title="Bandeau — titre" description="Grand titre du bandeau de la page." />
+      <SettingTextAreaField
+        settingKey="about_welcome"
+        title="Texte de bienvenue"
+        description="Introduction en tête de page. Une ligne vide sépare deux paragraphes."
+        rows={6}
+      />
+      <SettingTextAreaField
+        settingKey="about_vision_text"
+        title="Vision — texte complet"
+        description="Si ce champ est vide, le résumé de la carte Vision est utilisé."
+        rows={4}
+      />
+      <SettingTextAreaField
+        settingKey="about_mission_text"
+        title="Mission — texte complet"
+        description="Si ce champ est vide, le résumé de la carte Mission est utilisé."
+        rows={4}
+      />
+      <SettingTextAreaField
+        settingKey="about_valeurs_list"
+        title="Valeurs — une par ligne"
+        description="Chaque ligne devient une valeur numérotée sur la page."
+        rows={7}
+      />
+      <SettingTextAreaField
+        settingKey="about_principes_list"
+        title="Principes de fonctionnement — un par ligne"
+        description="Chaque ligne devient un principe numéroté sur la page."
+        rows={4}
+      />
+      <SettingTextAreaField
+        settingKey="about_credo_list"
+        title="Crédo — un point par ligne"
+        description="Chaque ligne devient un point numéroté du crédo."
+        rows={12}
+      />
 
       <SettingTextField settingKey="social_youtube_url" title="Lien YouTube" description="Laisser vide pour masquer l'icône dans le pied de page." placeholder="https://youtube.com/@..." />
       <SettingTextField settingKey="social_facebook_url" title="Lien Facebook" description="Laisser vide pour masquer l'icône dans le pied de page." placeholder="https://facebook.com/..." />

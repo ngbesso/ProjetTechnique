@@ -300,7 +300,7 @@ export function LeadershipPanel() {
         <div className={styles.modalOverlay} onClick={cancelEdit}>
           <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.formHeader}>
-              <div className={styles.formHeaderIcon}>{isEditing ? "✏️" : "🧑‍💼"}</div>
+              <div className={styles.formHeaderIcon} aria-hidden>{isEditing ? "✏️" : "🧑‍💼"}</div>
               <div>
                 <p className={styles.formHeaderTitle}>
                   {isEditing ? "Modifier le membre" : "Ajouter un membre du leadership"}
@@ -460,7 +460,7 @@ export function LeadershipPanel() {
 
               {formError && (
                 <div className={styles.errorBanner} role="alert">
-                  <span className={styles.errorBannerIcon}>⚠</span>
+                  <span className={styles.errorBannerIcon} aria-hidden>⚠</span>
                   <span>{formError}</span>
                 </div>
               )}

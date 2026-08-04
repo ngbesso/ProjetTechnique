@@ -217,7 +217,7 @@ export function BlogPage() {
         {/* Search + category chips */}
         <div className={styles.filterBar}>
           <div className={styles.filterSearch}>
-            <span className={styles.filterSearchIcon}>🔍</span>
+            <span className={styles.filterSearchIcon} aria-hidden>🔍</span>
             <input
               className={styles.filterInput}
               placeholder="Rechercher…"
@@ -256,7 +256,7 @@ export function BlogPage() {
         {error && <p className={styles.errorMsg}>{error}</p>}
         {!loading && posts.length === 0 && (
           <div className={styles.emptyState}>
-            <p className={styles.emptyIcon}>📝</p>
+            <p className={styles.emptyIcon} aria-hidden>📝</p>
             <p className={styles.emptyText}>Aucun article trouvé.</p>
           </div>
         )}

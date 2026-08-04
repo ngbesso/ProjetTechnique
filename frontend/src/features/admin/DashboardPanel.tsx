@@ -43,7 +43,7 @@ interface QuickAction {
 function QuickActionCard({ action }: { action: QuickAction }) {
   return (
     <button className={styles.quickActionCard} onClick={action.onClick}>
-      <span className={styles.quickActionIcon}>{action.icon}</span>
+      <span className={styles.quickActionIcon} aria-hidden>{action.icon}</span>
       <span className={styles.quickActionBody}>
         <span className={styles.quickActionTitle}>{action.title}</span>
         <br />
@@ -198,7 +198,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                     className={styles.activityRow}
                     onClick={() => onNavigate(ACTIVITY_SECTION[a.type])}
                   >
-                    <span className={styles.activityIcon}>{ACTIVITY_ICON[a.type] ?? "•"}</span>
+                    <span className={styles.activityIcon} aria-hidden>{ACTIVITY_ICON[a.type] ?? "•"}</span>
                     <span className={styles.activityLabel}>{a.label}</span>
                     <span className={styles.activityDate}>{formatDateTime(a.date)}</span>
                   </button>

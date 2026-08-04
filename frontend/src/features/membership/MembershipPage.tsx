@@ -145,7 +145,7 @@ export function MembershipPage() {
             <div className={styles.formInner}>
               <div className={styles.card}>
                 <div className={styles.brandBar}>
-                  <div className={styles.brandIcon}>+</div>
+                  <div className={styles.brandIcon} aria-hidden>+</div>
                   <div>
                     <p className={styles.brandName}>Mission Évangélique</p>
                     <p className={styles.brandSub}>Devenir membre</p>
@@ -153,7 +153,7 @@ export function MembershipPage() {
                 </div>
                 <div className={styles.body}>
                   <div className={styles.successBox}>
-                    <p className={styles.successIcon}>✓</p>
+                    <p className={styles.successIcon} aria-hidden>✓</p>
                     <h2 className={styles.successTitle}>Vous êtes déjà membre ✓</h2>
                     <p className={styles.successText}>
                       Votre compte est déjà actif. Retrouvez vos informations
@@ -202,7 +202,7 @@ export function MembershipPage() {
             {WHY_ITEMS.map((item) => (
               <div key={item.title} className={styles.whyCard}>
                 <div className={styles.whyCardImg}>
-                  <span className={styles.whyCardIcon}>{item.icon}</span>
+                  <span className={styles.whyCardIcon} aria-hidden>{item.icon}</span>
                 </div>
                 <h3 className={styles.whyCardTitle}>{item.title}</h3>
                 <p className={styles.whyCardText}>{item.text}</p>
@@ -240,7 +240,7 @@ export function MembershipPage() {
 
             <div className={styles.card}>
               <div className={styles.brandBar}>
-                <div className={styles.brandIcon}>+</div>
+                <div className={styles.brandIcon} aria-hidden>+</div>
                 <div>
                   <p className={styles.brandName}>Mission Évangélique</p>
                   <p className={styles.brandSub}>Devenir membre</p>
@@ -250,7 +250,7 @@ export function MembershipPage() {
               {done ? (
                 <div className={styles.body}>
                   <div className={styles.successBox}>
-                    <p className={styles.successIcon}>✓</p>
+                    <p className={styles.successIcon} aria-hidden>✓</p>
                     <h2 className={styles.successTitle}>
                       {done.approved ? "Adhésion approuvée !" : "Demande envoyée"}
                     </h2>

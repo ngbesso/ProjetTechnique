@@ -105,7 +105,7 @@ export function SiteFooter() {
           <div className={styles.col}>
             <p className={styles.colTitle}>Découvrir</p>
             <ul className={styles.links}>
-              <li><button onClick={() => goToSection("qui-sommes-nous")}>Qui sommes-nous</button></li>
+              <li><Link page="qui-sommes-nous">Qui sommes-nous</Link></li>
               <li><Link page="sermons">Sermons</Link></li>
               <li><Link page="blog">Blog</Link></li>
               <li><button onClick={() => goToSection("evenements")}>Événements</button></li>

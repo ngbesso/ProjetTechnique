@@ -244,7 +244,7 @@ export function DemandesMembresPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditing(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>📋</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>📋</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>{editing.request_type}</h2>
                 <span className={styles.modalSubtitle}>

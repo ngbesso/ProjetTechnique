@@ -347,7 +347,7 @@ function Step2({ data, onBack, onConfirm, submitting }: Step2Props) {
 function Step3({ prenom }: { prenom: string }) {
   return (
     <div className={styles.successBox}>
-      <div className={styles.successIcon}>✅</div>
+      <div className={styles.successIcon} aria-hidden>✅</div>
       <h2 className={styles.successTitle}>Demande envoyée, {prenom} !</h2>
       <p className={styles.successText}>
         Votre demande d'adhésion a bien été transmise.
@@ -393,7 +393,7 @@ export function RegisterPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <div className={styles.logoIcon}>+</div>
+          <div className={styles.logoIcon} aria-hidden>+</div>
           <h1 className={styles.cardTitle}>Devenir membre</h1>
         </div>
 

@@ -390,7 +390,7 @@ export function BlogPanel() {
         <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>📝</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>📝</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Nouvel article</h2>
                 <span className={styles.modalSubtitle}>Remplissez les informations du nouvel article.</span>
@@ -449,7 +449,7 @@ export function BlogPanel() {
         <div className={styles.modalOverlay} onClick={() => setEditingPost(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "780px" }}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderIcon}>✏️</div>
+              <div className={styles.modalHeaderIcon} aria-hidden>✏️</div>
               <div className={styles.modalHeaderText}>
                 <h2 className={styles.modalName}>Modifier l'article</h2>
                 <span className={styles.modalSubtitle}>{editingPost.title}</span>
