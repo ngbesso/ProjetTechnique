@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permissions
 from app.db.session import get_db
 from app.models.rbac import Permission, Role
-from app.models.user import User
 
 router = APIRouter(prefix="/admin", tags=["administration"])
 admin_only = Depends(require_permissions("rbac:manage"))
@@ -21,10 +20,6 @@ class RoleIn(BaseModel):
 
 class SetPermissions(BaseModel):
     codes: list[str]
-
-
-class SetUserRoles(BaseModel):
-    roles: list[str]
 
 
 def role_out(r: Role) -> dict:
@@ -71,16 +66,3 @@ def set_role_permissions(
     role.permissions = list(perms)
     db.commit()
     return role_out(role)
-
-
-@router.put("/users/{user_id}/roles", dependencies=[admin_only])
-def set_user_roles(
-    user_id: int, data: SetUserRoles, db: Annotated[Session, Depends(get_db)]
-):
-    user = db.get(User, user_id)
-    if not user:
-        raise HTTPException(404, "Utilisateur introuvable")
-    roles = db.scalars(select(Role).where(Role.name.in_(data.roles))).all()
-    user.roles = list(roles)
-    db.commit()
-    return {"user_id": user.id, "roles": [r.name for r in user.roles]}

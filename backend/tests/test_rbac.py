@@ -68,11 +68,11 @@ def test_admin_can_recompose_role(client, make_user, auth_header, db_session):
     membre = db_session.scalar(select(Role).where(Role.name == "membre"))
     r = client.put(
         f"/admin/roles/{membre.id}/permissions",
-        json={"codes": ["sermon:read"]},
+        json={"codes": ["sermon:manage"]},
         headers=auth_header("admin@b.com"),
     )
     assert r.status_code == 200
-    assert r.json()["permissions"] == ["sermon:read"]
+    assert r.json()["permissions"] == ["sermon:manage"]
 
 
 def test_set_permissions_unknown_role(client, make_user, auth_header):
@@ -93,7 +93,7 @@ def test_set_permissions_ignores_unknown_codes(
     membre = db_session.scalar(select(Role).where(Role.name == "membre"))
     r = client.put(
         f"/admin/roles/{membre.id}/permissions",
-        json={"codes": ["sermon:read", "fake:perm"]},
+        json={"codes": ["sermon:manage", "fake:perm"]},
         headers=auth_header("admin@b.com"),
     )
     assert r.status_code == 200
