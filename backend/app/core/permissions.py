@@ -8,11 +8,7 @@ PERMISSIONS: dict[str, str] = {
     "member:update": "Modifier un membre",
     "member:approve": "Approuver une demande d'adhésion",
     "church:manage": "Gérer les Églises affiliées",
-    "donation:read": "Consulter les dons",
-    "donation:create": "Faire un don",
-    "event:read": "Consulter les événements",
     "event:manage": "Gérer les événements",
-    "sermon:read": "Consulter les sermons",
     "sermon:manage": "Gérer les sermons",
     "post:manage": "Gérer les articles de blog",
     "news:manage": "Gérer les actualités",
@@ -30,8 +26,11 @@ PERMISSIONS: dict[str, str] = {
 DEFAULT_ROLES: dict[str, dict] = {
     "admin": {"description": "Administrateur", "permissions": ["*"]},
     "membre": {
+        # Aucune permission dédiée : dons, événements et sermons sont déjà
+        # accessibles sans permission (création de don ouverte, lecture
+        # publique). Ce rôle sert de statut de base pour un compte connecté.
         "description": "Membre",
-        "permissions": ["donation:create", "event:read", "sermon:read"],
+        "permissions": [],
     },
     "organisateur": {
         "description": "Organisateur d'événements",
