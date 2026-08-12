@@ -21,7 +21,6 @@ const RouterContext = createContext<RouterContextValue | null>(null);
 const PAGE_PATHS: Record<Page, string> = {
   home: "/",
   login: "/connexion",
-  register: "/inscription",
   admin: "/admin",
   "organiser-evenements": "/organiser-evenements",
   adhesion: "/adhesion",
