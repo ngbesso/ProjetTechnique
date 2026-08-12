@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL_NAV_ITEMS, toNavSections, visibleNavItems } from "./AdminPage";
+import { ALL_NAV_ITEMS, toNavSections, visibleNavItems } from "./AdminNav";
 
 const GLOBAL_ADMIN = { isGlobalAdmin: true, isOrganisateurOnly: false };
 const SIMPLE_ADMIN = { isGlobalAdmin: false, isOrganisateurOnly: false };

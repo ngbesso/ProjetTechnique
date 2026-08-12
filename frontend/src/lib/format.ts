@@ -73,6 +73,20 @@ export function formatDateRange(startIso: string, endIso: string | null): string
     return `${formatDate(startIso)} – ${formatDate(endIso)}`;
 }
 
+/** Convertit une valeur `<input type="datetime-local">` (heure locale) en ISO UTC. */
+export function toIso(localValue: string): string | undefined {
+    if (!localValue) return undefined;
+    return new Date(localValue).toISOString();
+}
+
+/** Convertit une date ISO en valeur affichable dans un `<input type="datetime-local">`. */
+export function toLocalInput(iso: string | null): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function formatCurrency(amount: number, currency = "CAD"): string {
     return amount.toLocaleString("fr-CA", {
         style: "currency",
