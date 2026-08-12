@@ -6,434 +6,138 @@ import { useChurches } from "../../hooks/useChurches";
 import { useParameters } from "../../hooks/useParameters";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
-import { validatePhone, validateEmailOptional, validateAddress } from "../../lib/validation";
-import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
+import { DataTable } from "../../components/ui/DataTable";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { IconCheckCircle, IconXCircle } from "../../components/ui/icons";
-import type { Church, ChurchInput, District } from "../../types";
-
-const EMPTY: ChurchInput = {
-    name: "", district: null, pastor_name: "", address: "", phone: "", email: "",
-};
-
-type FieldErrors = { phone?: string; email?: string; address?: string };
-
-const col = createColumnHelper<Church>();
-
-function churchToForm(c: Church): ChurchInput {
-    return {
-        name: c.name,
-        district: c.district,
-        pastor_name: c.pastor_name ?? "",
-        address: c.address ?? "",
-        phone: c.phone ?? "",
-        email: c.email ?? "",
-    };
-}
+import { ChurchFilters } from "./eglises/ChurchFilters";
+import { ChurchFormModal } from "./eglises/ChurchFormModal";
+import { NO_CRITERIA, filterChurches } from "./eglises/churchFilter";
+import { churchColumns } from "./eglises/churchColumns";
+import { useChurchEditor } from "./eglises/useChurchEditor";
+import type { ChurchCriteria } from "./eglises/churchFilter";
+import type { Church } from "../../types";
 
 export function EglisesPanel() {
-    const { user } = useAuth();
-    const { churches, loading, error, load, add, edit, remove } = useChurches();
-    const { values: districtValues, load: loadDistricts } = useParameters("district");
-    const { confirm, dialog } = useConfirm();
-    const { toast, toasts } = useToast();
-    const [form, setForm] = useState<ChurchInput>(EMPTY);
-    const [editingId, setEditingId] = useState<number | null>(null);
-    const [showModal, setShowModal] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [formError, setFormError] = useState("");
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const { user } = useAuth();
+  const { churches, loading, error, load, add, edit, remove } = useChurches();
+  const { values: districtValues, load: loadDistricts } = useParameters("district");
+  const { confirm, dialog } = useConfirm();
+  const { toast, toasts } = useToast();
 
-    const canManage = hasPermission(user, "church:manage");
-    const isEditing = editingId !== null;
+  const [criteria, setCriteria] = useState<ChurchCriteria>(NO_CRITERIA);
 
-    const [filterQ, setFilterQ] = useState("");
-    const [filterDistrict, setFilterDistrict] = useState("");
-    const [filterType, setFilterType] = useState("");
+  const canManage = hasPermission(user, "church:manage");
 
-    useEffect(() => {
-        load();
-        loadDistricts();
-    }, [load, loadDistricts]);
+  const editor = useChurchEditor({
+    add,
+    edit,
+    onSaved: (name, wasEditing) =>
+      toast.success(
+        wasEditing ? `Église « ${name} » modifiée.` : `Église « ${name} » créée.`,
+      ),
+  });
 
-    const filteredChurches = churches.filter((c) => {
-        if (filterQ) {
-            const term = filterQ.toLowerCase();
-            if (!c.name.toLowerCase().includes(term) &&
-                !(c.pastor_name ?? "").toLowerCase().includes(term) &&
-                !(c.address ?? "").toLowerCase().includes(term)) return false;
-        }
-        if (filterDistrict && c.district !== filterDistrict) return false;
-        if (filterType === "mere" && !c.is_mother) return false;
-        if (filterType === "affiliee" && c.is_mother) return false;
-        return true;
+  useEffect(() => {
+    load();
+    loadDistricts();
+  }, [load, loadDistricts]);
+
+  const filteredChurches = filterChurches(churches, criteria);
+  const activeCount = churches.filter((c) => c.is_active).length;
+  const inactiveCount = churches.filter((c) => !c.is_active).length;
+
+  async function handleDelete(id: number, name: string) {
+    const ok = await confirm({
+      title: `Supprimer l'église « ${name} » ?`,
+      description: "Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
     });
-
-    const activeCount = churches.filter((c) => c.is_active).length;
-    const inactiveCount = churches.filter((c) => !c.is_active).length;
-
-    function openCreate() {
-        setEditingId(null);
-        setForm(EMPTY);
-        setFormError("");
-        setFieldErrors({});
-        setShowModal(true);
+    if (!ok) return;
+    try {
+      await remove(id);
+      toast.success(`Église « ${name} » supprimée.`);
+    } catch (err) {
+      toast.error(err, "Suppression impossible.");
     }
+  }
 
-    function startEdit(c: Church) {
-        setEditingId(c.id);
-        setForm(churchToForm(c));
-        setFormError("");
-        setFieldErrors({});
-        setShowModal(true);
+  async function handleToggleActive(c: Church) {
+    const action = c.is_active ? "Désactiver" : "Réactiver";
+    const ok = await confirm({
+      title: `${action} l'église « ${c.name} » ?`,
+      variant: c.is_active ? "danger" : "default",
+      confirmLabel: action,
+    });
+    if (!ok) return;
+    try {
+      await edit(c.id, { is_active: !c.is_active });
+      // Une église désactivée ne s'édite plus : on ferme sa fiche ouverte.
+      if (c.is_active && editor.editingId === c.id) editor.close();
+      toast.success(
+        c.is_active ? `Église « ${c.name} » désactivée.` : `Église « ${c.name} » réactivée.`,
+      );
+    } catch (err) {
+      toast.error(err, "Opération impossible.");
     }
+  }
 
-    function cancelEdit() {
-        setEditingId(null);
-        setForm(EMPTY);
-        setFormError("");
-        setFieldErrors({});
-        setShowModal(false);
-    }
+  if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
 
-    function clearFieldError(key: keyof FieldErrors) {
-        setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
-    }
+  return (
+    <div className={adminStyles.rbacWrapper}>
+      {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!form.name.trim()) return;
+      <div className={adminStyles.kpiGrid}>
+        <KpiCard color="emerald" icon={<IconCheckCircle />} value={activeCount} label="Actives" />
+        <KpiCard color="rose" icon={<IconXCircle />} value={inactiveCount} label="Inactives" />
+      </div>
 
-        const errs: FieldErrors = {
-            phone:   validatePhone(form.phone ?? "") ?? undefined,
-            email:   validateEmailOptional(form.email ?? "") ?? undefined,
-            address: validateAddress(form.address ?? "") ?? undefined,
-        };
-        const hasErrors = Object.values(errs).some(Boolean);
-        setFieldErrors(errs);
-        if (hasErrors) return;
+      {canManage && editor.open && (
+        <ChurchFormModal
+          value={editor.form}
+          onChange={editor.update}
+          isEditing={editor.isEditing}
+          districtValues={districtValues}
+          fieldErrors={editor.fieldErrors}
+          onClearFieldError={editor.clearFieldError}
+          error={editor.error}
+          saving={editor.saving}
+          onClose={editor.close}
+          onSubmit={editor.submit}
+        />
+      )}
 
-        setSaving(true);
-        setFormError("");
-        try {
-            const payload = { ...form, name: form.name.trim() };
-            if (editingId !== null) {
-                await edit(editingId, payload);
-            } else {
-                await add(payload);
-            }
-            const wasEditing = editingId !== null;
-            cancelEdit();
-            toast.success(
-                wasEditing
-                    ? `Église « ${payload.name} » modifiée.`
-                    : `Église « ${payload.name} » créée.`,
-            );
-        } catch (err) {
-            setFormError(err instanceof Error ? err.message : "Erreur");
-        } finally {
-            setSaving(false);
-        }
-    }
-
-    async function handleDelete(id: number, name: string) {
-        const ok = await confirm({
-            title: `Supprimer l'église « ${name} » ?`,
-            description: "Cette action est irréversible.",
-            confirmLabel: "Supprimer",
-            variant: "danger",
-        });
-        if (!ok) return;
-        try {
-            await remove(id);
-            toast.success(`Église « ${name} » supprimée.`);
-        } catch (err) {
-            toast.error(err, "Suppression impossible.");
-        }
-    }
-
-    async function handleToggleActive(c: Church) {
-        const action = c.is_active ? "Désactiver" : "Réactiver";
-        const ok = await confirm({
-            title: `${action} l'église « ${c.name} » ?`,
-            variant: c.is_active ? "danger" : "default",
-            confirmLabel: action,
-        });
-        if (!ok) return;
-        try {
-            await edit(c.id, { is_active: !c.is_active });
-            if (c.is_active && editingId === c.id) cancelEdit();
-            toast.success(
-                c.is_active
-                    ? `Église « ${c.name} » désactivée.`
-                    : `Église « ${c.name} » réactivée.`,
-            );
-        } catch (err) {
-            toast.error(err, "Opération impossible.");
-        }
-    }
-
-    const columns = [
-        col.accessor("name", {
-            header: "Église",
-            cell: (info) => {
-                const c = info.row.original;
-                return (
-                    <div className={adminStyles.actions} style={{ alignItems: "center" }}>
-                        <strong>{c.name}</strong>
-                        {c.is_mother
-                            ? <span className={styles.badgeMother}>Mère</span>
-                            : <span className={styles.badgeAffiliated}>Affiliée</span>}
-                        {!c.is_active && <span className={styles.badgeInactive}>Désactivée</span>}
-                    </div>
-                );
-            },
-        }),
-        col.accessor("district", { header: "District", cell: (info) => info.getValue() ?? "—" }),
-        col.accessor("pastor_name", { header: "Pasteur / représentant", cell: (info) => info.getValue() ?? "—" }),
-        col.accessor("address", { header: "Adresse", cell: (info) => info.getValue() ?? "—" }),
-        col.accessor("phone", { header: "Téléphone", cell: (info) => info.getValue() ?? "—" }),
-        col.accessor("email", { header: "Courriel", cell: (info) => info.getValue() ?? "—" }),
-        ...(canManage
-            ? [
-                col.display({
-                    id: "actions",
-                    header: "Actions",
-                    cell: (info) => {
-                        const c = info.row.original;
-                        return (
-                            <div className={adminStyles.actions}>
-                                {c.is_active && (
-                                    <button className={adminStyles.btnOutlineSm} onClick={() => startEdit(c)}>
-                                        Modifier
-                                    </button>
-                                )}
-                                {!c.is_mother && (
-                                    <>
-                                        <button
-                                            className={c.is_active ? styles.btnCardDeactivate : styles.btnCardActivate}
-                                            onClick={() => handleToggleActive(c)}
-                                        >
-                                            {c.is_active ? "Désactiver" : "Réactiver"}
-                                        </button>
-                                        <button className={adminStyles.btnDanger} onClick={() => handleDelete(c.id, c.name)}>
-                                            Supprimer
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        );
-                    },
-                }),
-            ]
-            : []),
-    ];
-
-    if (loading) return <p className={adminStyles.stateMsg}>Chargement…</p>;
-
-    return (
-        <div className={adminStyles.rbacWrapper}>
-            {error && <p className={adminStyles.errorMsg} role="alert">{error}</p>}
-
-            <div className={adminStyles.kpiGrid}>
-                <KpiCard color="emerald" icon={<IconCheckCircle />} value={activeCount} label="Actives" />
-                <KpiCard color="rose" icon={<IconXCircle />} value={inactiveCount} label="Inactives" />
-            </div>
-
-            {canManage && showModal && (
-            <div className={styles.modalOverlay} onClick={cancelEdit}>
-                <div className={styles.formCard} onClick={(e) => e.stopPropagation()}>
-                    {/* En-tête coloré */}
-                    <div className={styles.formHeader}>
-                        <div className={styles.formHeaderIcon} aria-hidden>
-                            {isEditing ? "✏️" : "🏛"}
-                        </div>
-                        <div>
-                            <p className={styles.formHeaderTitle}>
-                                {isEditing ? "Modifier l'église" : "Ajouter une église affiliée"}
-                            </p>
-                            <p className={styles.formHeaderSub}>
-                                {isEditing
-                                    ? "Modifiez les informations ci-dessous puis enregistrez."
-                                    : "Remplissez les informations de la nouvelle église affiliée."}
-                            </p>
-                        </div>
-                        <button type="button" className={styles.formHeaderClose} onClick={cancelEdit} aria-label="Fermer">
-                            ✕
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className={styles.formBody}>
-                        <div className={styles.grid2}>
-
-                            {/* ── Identification ── */}
-                            <div className={styles.sectionDivider}>
-                                <p className={styles.sectionLabel}>Identification</p>
-                            </div>
-
-                            <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>
-                                    Nom officiel <span className={styles.required}>*</span>
-                                </label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="ex. : Église Évangile Vivant"
-                                    required
-                                    value={form.name}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div className={styles.fieldGroup}>
-                                <label className={styles.label}>District</label>
-                                <select
-                                    className={styles.select}
-                                    value={form.district ?? ""}
-                                    onChange={(e) => setForm({ ...form, district: (e.target.value || null) as District | null })}
-                                >
-                                    <option value="">Sélectionner un district…</option>
-                                    {districtValues.map((d) => (
-                                        <option key={d.id} value={d.label}>{d.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className={styles.fieldGroup}>
-                                <label className={styles.label}>Pasteur / représentant</label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="ex. : Pasteur Jean Dupont"
-                                    value={form.pastor_name ?? ""}
-                                    onChange={(e) => setForm({ ...form, pastor_name: e.target.value })}
-                                />
-                            </div>
-
-                            {/* ── Coordonnées ── */}
-                            <div className={styles.sectionDivider}>
-                                <p className={styles.sectionLabel}>Coordonnées</p>
-                            </div>
-
-                            <div className={`${styles.fieldGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Adresse</label>
-                                <input
-                                    className={`${styles.input} ${fieldErrors.address ? styles.inputError : ""}`}
-                                    placeholder="ex. : 123 Rue principale, Montréal, QC"
-                                    value={form.address ?? ""}
-                                    onChange={(e) => { setForm({ ...form, address: e.target.value }); clearFieldError("address"); }}
-                                />
-                                {fieldErrors.address && (
-                                    <p className={styles.fieldError} role="alert">
-                                        <span>⚠</span> {fieldErrors.address}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className={styles.fieldGroup}>
-                                <label className={styles.label}>Téléphone</label>
-                                <input
-                                    className={`${styles.input} ${fieldErrors.phone ? styles.inputError : ""}`}
-                                    placeholder="ex. : 514-123-4567"
-                                    type="tel"
-                                    value={form.phone ?? ""}
-                                    onChange={(e) => { setForm({ ...form, phone: e.target.value }); clearFieldError("phone"); }}
-                                />
-                                {fieldErrors.phone && (
-                                    <p className={styles.fieldError} role="alert">
-                                        <span>⚠</span> {fieldErrors.phone}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className={styles.fieldGroup}>
-                                <label className={styles.label}>Courriel</label>
-                                <input
-                                    className={`${styles.input} ${fieldErrors.email ? styles.inputError : ""}`}
-                                    type="email"
-                                    placeholder="ex. : eglise@exemple.com"
-                                    value={form.email ?? ""}
-                                    onChange={(e) => { setForm({ ...form, email: e.target.value }); clearFieldError("email"); }}
-                                />
-                                {fieldErrors.email && (
-                                    <p className={styles.fieldError} role="alert">
-                                        <span>⚠</span> {fieldErrors.email}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {formError && (
-                            <div className={styles.errorBanner} role="alert">
-                                <span className={styles.errorBannerIcon} aria-hidden>⚠</span>
-                                <span>{formError}</span>
-                            </div>
-                        )}
-
-                        <div className={styles.formActions}>
-                            <button
-                                type="button"
-                                className={styles.btnGhost}
-                                onClick={cancelEdit}
-                                disabled={saving}
-                            >
-                                Annuler
-                            </button>
-                            <button type="submit" className={styles.btnPrimary} disabled={saving}>
-                                {saving
-                                    ? "Enregistrement…"
-                                    : isEditing
-                                    ? "✓ Enregistrer les modifications"
-                                    : "+ Ajouter l'église"}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            )}
-
-            {/* ── Liste ── */}
-            <div className={styles.listCard}>
-                <div className={styles.listHeader}>
-                    {canManage && (
-                        <button type="button" className={styles.btnPrimary} onClick={openCreate}>
-                            + Ajouter une église
-                        </button>
-                    )}
-                    <p className={styles.listTitle}>
-                        Églises
-                        <span className={styles.listCount}>{filteredChurches.length}</span>
-                    </p>
-                </div>
-
-                <div className={styles.filterRow}>
-                    <input
-                        className={styles.filterInput}
-                        placeholder="Rechercher (nom, pasteur, adresse)…"
-                        value={filterQ}
-                        onChange={(e) => setFilterQ(e.target.value)}
-                    />
-                    <select className={styles.filterSelect} value={filterDistrict}
-                        onChange={(e) => setFilterDistrict(e.target.value)}>
-                        <option value="">Tous les districts</option>
-                        {districtValues.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
-                    </select>
-                    <select className={styles.filterSelect} value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}>
-                        <option value="">Tous les types</option>
-                        <option value="mere">Mère</option>
-                        <option value="affiliee">Affiliée</option>
-                    </select>
-                </div>
-
-                <DataTable
-                    columns={columns}
-                    data={filteredChurches}
-                    getRowId={(c) => c.id}
-                    emptyMessage="Aucune église trouvée."
-                />
-            </div>
-
-            {dialog}
-            {toasts}
+      <div className={styles.listCard}>
+        <div className={styles.listHeader}>
+          {canManage && (
+            <button type="button" className={styles.btnPrimary} onClick={editor.openCreate}>
+              + Ajouter une église
+            </button>
+          )}
+          <p className={styles.listTitle}>
+            Églises
+            <span className={styles.listCount}>{filteredChurches.length}</span>
+          </p>
         </div>
-    );
+
+        <ChurchFilters districtValues={districtValues} onChange={setCriteria} />
+
+        <DataTable
+          columns={churchColumns({
+            canManage,
+            onEdit: editor.openEdit,
+            onToggleActive: handleToggleActive,
+            onDelete: handleDelete,
+          })}
+          data={filteredChurches}
+          getRowId={(c) => c.id}
+          emptyMessage="Aucune église trouvée."
+        />
+      </div>
+
+      {dialog}
+      {toasts}
+    </div>
+  );
 }

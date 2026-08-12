@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EvenementsForm } from "./EvenementsForm";
-import { EMPTY } from "./shared";
+import { EMPTY } from "./eventDefaults";
 import type { Church, EventInput, ParameterValue } from "../../../types";
 
 const onSubmit = vi.fn();
