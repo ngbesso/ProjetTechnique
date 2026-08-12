@@ -2,7 +2,6 @@ import { usePage, useRouteParams } from "./context/RouterContext";
 import { useAuth } from "./context/AuthContext";
 import { HomePage } from "./features/home/HomePage";
 import { LoginPage } from "./features/auth/LoginPage";
-/*import { RegisterPage } from "./features/auth/RegisterPage";*/
 import { AdminPage } from "./features/admin/AdminPage";
 import {MembershipPage} from "./features/membership/MembershipPage";
 import { DonationPage } from "./features/donation/DonationPage";
@@ -36,8 +35,6 @@ export default function App() {
   if (inviteToken) return <SetPasswordPage token={inviteToken} />;
 
   if (loading) return <div className="loading">Chargement…</div>;
-
-  /*if (page === "register") return <RegisterPage />;*/
   if (page === "evenements") {
     const eventId = routeParams.event;
     return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
