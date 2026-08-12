@@ -173,6 +173,34 @@ describe("EvenementsForm — validation par étape", () => {
   });
 });
 
+describe("EvenementsForm — bornes des champs de date", () => {
+  /** Passe à l'étape « Date & Lieu » et retourne ses deux champs datetime. */
+  function dateFields() {
+    submitStep();
+    const inputs = Array.from(
+      document.querySelectorAll('input[type="datetime-local"]'),
+    ) as HTMLInputElement[];
+    return { start: inputs[0], end: inputs[1] };
+  }
+
+  it("interdit une date de fin antérieure au début", () => {
+    renderForm({ title: "Retraite", category: "Retraite", date_start: "2099-05-03T10:00" });
+    expect(dateFields().end).toHaveAttribute("min", "2099-05-03T10:00");
+  });
+
+  it("suit la date de début quand elle change", () => {
+    renderForm({ title: "Retraite", category: "Retraite", date_start: "2099-05-03T10:00" });
+    const { start, end } = dateFields();
+    fireEvent.change(start, { target: { value: "2099-06-01T08:00" } });
+    expect(end).toHaveAttribute("min", "2099-06-01T08:00");
+  });
+
+  it("ne pose aucune borne tant que le début n'est pas saisi", () => {
+    renderForm({ title: "Retraite", category: "Retraite" });
+    expect(dateFields().end).not.toHaveAttribute("min");
+  });
+});
+
 describe("EvenementsForm — enregistrement", () => {
   const VALID: Partial<EventInput> = {
     title: "Retraite",

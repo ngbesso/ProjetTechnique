@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "./LoginPage.module.css";
 import { login } from "../../lib/api/auth";
+import { fetchMyProfile } from "../../lib/api/members";
 import { hasPermission, useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "../../context/RouterContext";
 import { SiteFooter } from "../../components/layout/SiteFooter";
@@ -9,7 +10,7 @@ import { useSiteContent } from "../../hooks/useSiteContent";
 import { siteLogoUrl } from "../../lib/api/content";
 
 export function LoginPage() {
-  const { setUser } = useAuth();
+  const { setUser, setMember } = useAuth();
   const navigate = useNavigate();
   const { settings } = useSiteContent();
 
@@ -25,8 +26,17 @@ export function LoginPage() {
     try {
       const user = await login(email, password);
       setUser(user);
-      const isAdmin = hasPermission(user, "rbac:manage");
-      navigate(isAdmin ? "admin" : "home");
+      if (hasPermission(user, "rbac:manage")) {
+        navigate("admin");
+        return;
+      }
+      // Un compte doté d'une fiche membre arrive dans son espace. Sans fiche
+      // — organisateur, compte de service — on reste sur l'accueil public.
+      // Le profil est poussé dans le contexte au passage : l'en-tête affiche
+      // ainsi le nom du membre sans attendre son propre chargement.
+      const member = await fetchMyProfile().catch(() => null);
+      setMember(member);
+      navigate(member ? "espace" : "home");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de connexion");
     } finally {
