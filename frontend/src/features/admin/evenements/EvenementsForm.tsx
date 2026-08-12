@@ -273,6 +273,11 @@ export function EvenementsForm({
                 <input
                   className={styles.input}
                   type="datetime-local"
+                  // Le sélecteur n'autorise pas de date antérieure au début.
+                  // Le backend applique déjà la règle (end_after_start), mais
+                  // l'erreur n'apparaîtrait qu'à la soumission, six étapes plus
+                  // loin. Sans date de début saisie, aucune borne à poser.
+                  min={form.date_start || undefined}
                   value={form.date_end ?? ""}
                   onChange={(e) => setForm({ ...form, date_end: e.target.value })}
                 />

@@ -79,7 +79,10 @@ export function EventsPage() {
           )}
           {event.format === "hybride" && <p className={styles.cardMeta}>🌐 Aussi disponible en ligne</p>}
           {event.instructor && <p className={styles.cardMeta}>👤 {event.instructor}</p>}
-          {!isPast && (
+          {/* Le compteur d'inscrits est masqué quand l'organisateur a désactivé
+              show_registration_count — y compris le badge « Complet », qui
+              révélerait indirectement le remplissage. */}
+          {!isPast && event.show_registration_count && (
             <div className={styles.cardBadges}>
               {event.capacity !== null ? (
                 <span className={isFull ? styles.spotsFull : styles.spotsLeft}>
