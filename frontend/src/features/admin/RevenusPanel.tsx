@@ -6,7 +6,7 @@ import { useToast } from "../../hooks/useToast";
 import { RevenuCreateModal } from "./revenus/RevenuCreateModal";
 import { RevenusList } from "./revenus/RevenusList";
 import { RevenusStats } from "./revenus/RevenusStats";
-import type { DonationFilters } from "./revenus/shared";
+import type { DonationFilters } from "./revenus/donationFilters";
 import type { Donation, DonationAdminStats } from "../../types";
 
 /** Orchestrateur de l'onglet Revenus : charge dons et statistiques, puis

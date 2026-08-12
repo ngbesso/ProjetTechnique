@@ -7,7 +7,7 @@ import {
 } from "../../../components/ui/icons";
 import { KpiCard } from "../../../components/ui/KpiCard";
 import { formatCurrency } from "../../../lib/format";
-import { CATEGORY_LABELS } from "./shared";
+import { CATEGORY_LABELS } from "./donationLabels";
 import type { DonationAdminStats } from "../../../types";
 
 interface RevenusStatsProps {

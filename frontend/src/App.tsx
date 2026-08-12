@@ -1,24 +1,8 @@
 import { usePage, useRouteParams } from "./context/RouterContext";
 import { useAuth } from "./context/AuthContext";
-import { HomePage } from "./features/home/HomePage";
-import { LoginPage } from "./features/auth/LoginPage";
-import { AdminPage } from "./features/admin/AdminPage";
-import {MembershipPage} from "./features/membership/MembershipPage";
-import { DonationPage } from "./features/donation/DonationPage";
-import { SermonsPage } from "./features/sermons/SermonsPage";
-import { EventsPage } from "./features/events/EventsPage";
-import { EventDetailPage } from "./features/events/EventDetailPage";
-import { LeadershipPage } from "./features/leadership/LeadershipPage";
-import { LeaderDetailPage } from "./features/leadership/LeaderDetailPage";
-import { BlogPage } from "./features/blog/BlogPage";
-import { NewsPage } from "./features/news/NewsPage";
-import {SetPasswordPage} from "./features/auth/SetPasswordPage";
-import {ResetPasswordPage} from "./features/auth/ResetPasswordPage";
-import {ForgotPasswordPage} from "./features/auth/ForgotPasswordPage";
-import {EspacePage} from "./features/espace/EspacePage";
-import { OrganiserEvenementsPage } from "./features/organisateur/OrganiserEvenementsPage";
-import {PrivacyPage} from "./features/legal/PrivacyPage";
-import { AboutPage } from "./features/about/AboutPage";
+import { resolveRoute } from "./appRoutes";
+import { SetPasswordPage } from "./features/auth/SetPasswordPage";
+import { ResetPasswordPage } from "./features/auth/ResetPasswordPage";
 import { ChatWidget } from "./components/chat/ChatWidget";
 
 export default function App() {
@@ -26,6 +10,8 @@ export default function App() {
   const routeParams = useRouteParams();
   const { user, loading } = useAuth();
 
+  // Les jetons reçus par courriel court-circuitent la navigation : la page
+  // s'affiche quel que soit l'état de session.
   const params = new URLSearchParams(window.location.search);
 
   const resetToken = params.get("reset");
@@ -35,43 +21,13 @@ export default function App() {
   if (inviteToken) return <SetPasswordPage token={inviteToken} />;
 
   if (loading) return <div className="loading">Chargement…</div>;
-  if (page === "evenements") {
-    const eventId = routeParams.event;
-    return eventId ? <EventDetailPage eventId={Number(eventId)} /> : <EventsPage />;
-  }
-  if (page === "leadership") {
-    const leaderId = routeParams.leader;
-    return leaderId ? <LeaderDetailPage leaderId={Number(leaderId)} /> : <LeadershipPage />;
-  }
-  if (page === "confidentialite") return <PrivacyPage />;
-  if (page === "qui-sommes-nous") return <AboutPage />;
 
-  // "mon-profil" est conservé comme alias (anciens liens/signets) de "espace"
-  if (page === "mon-profil" || page === "espace") {
-    return user ? <EspacePage /> : <LoginPage />;
-  }
-  if (page === "admin") {
-    if (!user) return <LoginPage />;
-    return <AdminPage />;
-  }
-  if (page === "organiser-evenements") {
-    if (!user) return <LoginPage />;
-    return <OrganiserEvenementsPage />;
-  }
-
-  let content: React.ReactNode;
-  if (page === "login") content = <LoginPage />;
-  else if (page === "mot-de-passe-oublie") content = <ForgotPasswordPage />;
-  else if (page === "adhesion") content = <MembershipPage />;
-  else if (page === "donation") content = <DonationPage />;
-  else if (page === "sermons") content = <SermonsPage />;
-  else if (page === "blog") content = <BlogPage />;
-  else if (page === "actualites") content = <NewsPage />;
-  else content = <HomePage />;
+  const { element, withChat } = resolveRoute({ page, routeParams, user });
+  if (!withChat) return <>{element}</>;
 
   return (
     <>
-      {content}
+      {element}
       <ChatWidget />
     </>
   );

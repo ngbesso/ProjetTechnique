@@ -6,15 +6,10 @@ import { useNavigate } from "../../context/RouterContext";
 import { useParameters } from "../../hooks/useParameters";
 import { fetchChurches } from "../../lib/api/churches";
 import { getEvents } from "../../lib/api/events";
-import { formatDateRange } from "../../lib/format";
+import { EventCard } from "./EventCard";
 import type { Church, District, EventItem } from "../../types";
 
 const DISTRICTS: District[] = ["Ouest", "Est", "Centre", "Sud", "Outremer"];
-
-function formatPrice(price: number | null): string {
-  if (!price) return "Gratuit";
-  return `${price.toFixed(2)} $`;
-}
 
 export function EventsPage() {
   const navigate = useNavigate();
@@ -55,55 +50,8 @@ export function EventsPage() {
     .filter((e) => new Date(e.date_start).getTime() < now)
     .sort((a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime());
 
-  function renderCard(event: EventItem, isPast = false) {
-    const isFull = event.capacity !== null && (event.spots_left ?? 0) <= 0;
-    return (
-      <article key={event.id} className={isPast ? `${styles.card} ${styles.cardPast}` : styles.card}>
-        {event.image_url && (
-          <div className={styles.cardImage}>
-            <img src={event.image_url} alt="" />
-          </div>
-        )}
-        <div className={styles.cardDate}>{formatDateRange(event.date_start, event.date_end)}</div>
-        <div className={styles.cardBody}>
-          <div className={styles.cardBadges}>
-            <span className={styles.badge}>{event.category}</span>
-            {event.format === "en_ligne" && <span className={styles.badge}>🌐 En ligne</span>}
-            {event.format === "hybride" && <span className={styles.badge}>🌐 Hybride</span>}
-            {event.district && <span className={styles.badge}>{event.district}</span>}
-            {event.price ? <span className={styles.badge}>{formatPrice(event.price)}</span> : null}
-          </div>
-          <h2 className={styles.cardTitle}>{event.title}</h2>
-          {event.format !== "en_ligne" && event.location && (
-            <p className={styles.cardMeta}>📍 {event.location}</p>
-          )}
-          {event.format === "hybride" && <p className={styles.cardMeta}>🌐 Aussi disponible en ligne</p>}
-          {event.instructor && <p className={styles.cardMeta}>👤 {event.instructor}</p>}
-          {/* Le compteur d'inscrits est masqué quand l'organisateur a désactivé
-              show_registration_count — y compris le badge « Complet », qui
-              révélerait indirectement le remplissage. */}
-          {!isPast && event.show_registration_count && (
-            <div className={styles.cardBadges}>
-              {event.capacity !== null ? (
-                <span className={isFull ? styles.spotsFull : styles.spotsLeft}>
-                  {isFull
-                    ? "Complet"
-                    : `${event.spots_left} place${event.spots_left! > 1 ? "s" : ""} restante${event.spots_left! > 1 ? "s" : ""}`}
-                </span>
-              ) : (
-                <span className={styles.badge}>Places illimitées</span>
-              )}
-            </div>
-          )}
-          <button
-            className={styles.btnDetail}
-            onClick={() => navigate("evenements", { event: String(event.id) })}
-          >
-            Voir détail
-          </button>
-        </div>
-      </article>
-    );
+  function openEvent(id: number) {
+    navigate("evenements", { event: String(id) });
   }
 
   return (
@@ -194,14 +142,22 @@ export function EventsPage() {
               {upcoming.length === 0 ? (
                 <p className={styles.stateMsg}>Aucun événement à venir.</p>
               ) : (
-                <div className={styles.grid}>{upcoming.map((e) => renderCard(e))}</div>
+                <div className={styles.grid}>
+                  {upcoming.map((e) => (
+                    <EventCard key={e.id} event={e} onOpen={openEvent} />
+                  ))}
+                </div>
               )}
             </section>
 
             {past.length > 0 && (
               <section className={styles.group}>
                 <h2 className={styles.groupTitle}>Passés</h2>
-                <div className={styles.grid}>{past.map((e) => renderCard(e, true))}</div>
+                <div className={styles.grid}>
+                  {past.map((e) => (
+                    <EventCard key={e.id} event={e} isPast onOpen={openEvent} />
+                  ))}
+                </div>
               </section>
             )}
           </>
