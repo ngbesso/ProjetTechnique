@@ -12,7 +12,9 @@ import { EvenementsForm } from "./evenements/EvenementsForm";
 import { EvenementsList } from "./evenements/EvenementsList";
 import { EvenementsParticipantsModal } from "./evenements/EvenementsParticipantsModal";
 import { EvenementsVolunteersModal } from "./evenements/EvenementsVolunteersModal";
-import { EMPTY, STATUS_LABELS, eventToForm } from "./evenements/shared";
+import { EMPTY } from "./evenements/eventDefaults";
+import { STATUS_LABELS } from "./evenements/eventLabels";
+import { eventToForm } from "./evenements/eventMapper";
 import { EvenementsStatsPanel } from "./EvenementsStatsPanel";
 import type { EventInput, EventItem, EventStatus } from "../../types";
 

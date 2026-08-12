@@ -1,13 +1,9 @@
 import { useMemo, useState } from "react";
 import styles from "../AdminPage.module.css";
 import { DataTable, createColumnHelper } from "../../../components/ui/DataTable";
-import {
-  CATEGORY_LABELS,
-  CONTRIBUTION_LABELS,
-  STATUS_LABELS,
-  downloadAttachment,
-} from "./shared";
-import type { DonationFilters } from "./shared";
+import { CATEGORY_LABELS, CONTRIBUTION_LABELS, STATUS_LABELS } from "./donationLabels";
+import { downloadAttachment } from "./donationAttachment";
+import type { DonationFilters } from "./donationFilters";
 import type { Donation } from "../../../types";
 
 const col = createColumnHelper<Donation>();

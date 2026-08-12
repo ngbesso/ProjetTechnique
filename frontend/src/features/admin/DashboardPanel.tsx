@@ -4,7 +4,7 @@ import { IconClock } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
 import { fetchDashboardStats, ActivityType, DashboardStats } from "../../lib/api/dashboard";
 import { formatDateTime } from "../../lib/format";
-import type { Section } from "./AdminPage";
+import type { Section } from "./AdminNav";
 
 interface DashboardPanelProps {
   onNavigate: (section: Section) => void;
