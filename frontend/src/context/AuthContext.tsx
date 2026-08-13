@@ -8,7 +8,7 @@ import {
 import type { Member, Page, UserInfo } from "../types";
 import { fetchMe, logout as apiLogout } from "../lib/api/auth";
 import { fetchMyProfile } from "../lib/api/members";
-import { getToken } from "../lib/api/client";
+import { getToken, setUnauthorizedHandler } from "../lib/api/client";
 
 interface AuthContextValue {
   user: UserInfo | null;
@@ -100,6 +100,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setMember(null);
   }
+
+  // Un appel API ailleurs dans l'app peut recevoir un 401 (jeton expiré après
+  // 30 min, ou invalidé) bien après ce montage initial : on branche le même
+  // nettoyage de session pour que l'UI ne reste pas dans un état incohérent
+  // (en-tête "connecté" + panneau affichant une erreur d'identifiants).
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      apiLogout();
+      setUser(null);
+      setMember(null);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   return (
     <AuthContext.Provider
