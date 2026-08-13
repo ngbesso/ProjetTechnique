@@ -3,12 +3,21 @@
 // Caractères autorisés : chiffres, espaces, tirets, parenthèses, point, +
 // Le nombre de chiffres (sans ponctuation) doit être compris entre 7 et 15.
 
-export function validatePhone(value: string): string | null {
+/** Vérifie uniquement le jeu de caractères, pour un retour immédiat pendant
+ * la saisie (avant même que le nombre de chiffres soit connu). */
+export function validatePhoneFormat(value: string): string | null {
   if (!value.trim()) return null; // champ optionnel
-  const digits = value.replace(/\D/g, "");
   if (!/^[+\d\s\-.()[\]]+$/.test(value)) {
     return "Le téléphone ne peut contenir que des chiffres, espaces, tirets, parenthèses ou le signe +.";
   }
+  return null;
+}
+
+export function validatePhone(value: string): string | null {
+  const formatError = validatePhoneFormat(value);
+  if (formatError) return formatError;
+  if (!value.trim()) return null; // champ optionnel
+  const digits = value.replace(/\D/g, "");
   if (digits.length < 7) {
     return "Le numéro doit contenir au moins 7 chiffres (ex. : 514-123-4567).";
   }
