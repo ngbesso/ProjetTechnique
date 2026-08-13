@@ -6,7 +6,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.email import EmailSender, membership_approved, membership_approved_invite
+from app.core.email import (
+    EmailSender,
+    membership_approved,
+    membership_approved_invite,
+    render_template,
+)
 from app.core.security import create_setup_token, hash_password
 from app.models.member import Member, MemberStatus
 from app.models.rbac import Role, UserRole
@@ -14,6 +19,23 @@ from app.models.setting import AppSetting
 from app.models.user import User
 
 _EMAIL_TAKEN = "Cette adresse courriel ne peut pas être utilisée. Veuillez en choisir une autre ou contacter l'administrateur si vous pensez qu'il s'agit d'une erreur."
+
+DEFAULT_MEMBERSHIP_RECEIVED_TEMPLATE = (
+    "Bonjour {prenom}, nous avons bien reçu votre demande. "
+    "Elle sera examinée par un administrateur."
+)
+DEFAULT_MEMBERSHIP_APPROVED_TEMPLATE = (
+    "Bonjour {prenom}, votre adhésion a été approuvée. Bienvenue !"
+)
+DEFAULT_MEMBERSHIP_APPROVED_INVITE_TEMPLATE = (
+    "Bonjour {prenom}, votre adhésion a été approuvée. Définissez votre mot de "
+    "passe pour accéder à votre espace (lien valable 48 h) :\n{lien}"
+)
+
+
+def get_template(db: Session, key: str, default: str) -> str:
+    row = db.get(AppSetting, key)
+    return row.value if row and row.value else default
 
 
 def check_email_unique(db: Session, email: str, exclude_id: int | None = None) -> None:
@@ -88,14 +110,16 @@ def approve(
             )
 
     if invite_link:
-        background.add_task(
-            membership_approved_invite,
-            sender,
-            member.email,
-            member.first_name,
-            invite_link,
+        template = get_template(
+            db, "membership_approved_invite_template", DEFAULT_MEMBERSHIP_APPROVED_INVITE_TEMPLATE
         )
+        message = render_template(
+            template, prenom=member.first_name, nom=member.last_name, lien=invite_link
+        )
+        background.add_task(membership_approved_invite, sender, member.email, message)
     else:
-        background.add_task(
-            membership_approved, sender, member.email, member.first_name
+        template = get_template(
+            db, "membership_approved_template", DEFAULT_MEMBERSHIP_APPROVED_TEMPLATE
         )
+        message = render_template(template, prenom=member.first_name, nom=member.last_name)
+        background.add_task(membership_approved, sender, member.email, message)

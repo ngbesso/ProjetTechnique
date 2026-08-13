@@ -29,6 +29,11 @@ from app.services.birthday_service import (
     DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
     DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
 )
+from app.services.member_service import (
+    DEFAULT_MEMBERSHIP_APPROVED_INVITE_TEMPLATE,
+    DEFAULT_MEMBERSHIP_APPROVED_TEMPLATE,
+    DEFAULT_MEMBERSHIP_RECEIVED_TEMPLATE,
+)
 
 DEFAULT_PARAMETERS: dict[str, list[str]] = {
     "sexe": ["Masculin", "Féminin", "Autre"],
@@ -540,6 +545,9 @@ def seed_settings(db: Session) -> None:
         "event_reminder_hours_before": "24",
         "birthday_message_template": DEFAULT_BIRTHDAY_MESSAGE_TEMPLATE,
         "birthday_monthly_message_template": DEFAULT_BIRTHDAY_MONTHLY_MESSAGE_TEMPLATE,
+        "membership_received_template": DEFAULT_MEMBERSHIP_RECEIVED_TEMPLATE,
+        "membership_approved_template": DEFAULT_MEMBERSHIP_APPROVED_TEMPLATE,
+        "membership_approved_invite_template": DEFAULT_MEMBERSHIP_APPROVED_INVITE_TEMPLATE,
         "site_name": MOTHER_NAME,
         "site_tagline": "EENOJEC — Montréal, Québec",
         "site_logo_url": "",
