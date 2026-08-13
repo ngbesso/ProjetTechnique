@@ -53,10 +53,7 @@ export function ProfileContactForm({
               type="tel"
               value={values.telephone ?? ""}
               placeholder="ex. : 514-123-4567"
-              onChange={(e) => {
-                onChange({ telephone: e.target.value || null });
-                onClearError("telephone");
-              }}
+              onChange={(e) => onChange({ telephone: e.target.value || null })}
             />
             {errors.telephone && <p className={admin.fieldError}>{errors.telephone}</p>}
           </div>
