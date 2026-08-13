@@ -38,7 +38,8 @@ interface MembresPanelProps {
 
 export function MembresPanel({ initialStatus }: MembresPanelProps) {
     const { user } = useAuth();
-    const { members, total, loading, error, load, approve, reject, deactivate, activate, edit } = useMembers();
+    const { members, total, loading, error, load, approve, approveAll, reject, deactivate, activate, edit } = useMembers();
+    const [approvingAll, setApprovingAll] = useState(false);
     const { churches, load: loadChurches } = useChurches();
     const [q, setQ] = useState("");
     const [status, setStatus] = useState<MemberStatus | "">(initialStatus ?? "");
@@ -94,6 +95,26 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
         variant: "danger",
     });
     const handleActivate = statusAction(activate, "Membre réactivé.");
+
+    async function handleApproveAll() {
+        const ok = await confirm({
+            title: "Approuver tous les membres en attente ?",
+            description: `${stats?.pending ?? 0} membre${(stats?.pending ?? 0) > 1 ? "s" : ""} en attente ${(stats?.pending ?? 0) > 1 ? "seront approuvés" : "sera approuvé"} et recevr${(stats?.pending ?? 0) > 1 ? "ont" : "a"} un courriel d'activation.`,
+            confirmLabel: "Tout approuver",
+        });
+        if (!ok) return;
+        setApprovingAll(true);
+        try {
+            const { approved } = await approveAll();
+            applyFilters();
+            fetchMembersStats().then(setStats).catch(() => {});
+            toast.success(`${approved} membre${approved > 1 ? "s" : ""} approuvé${approved > 1 ? "s" : ""}.`);
+        } catch (err) {
+            toast.error(err, "Approbation groupée impossible.");
+        } finally {
+            setApprovingAll(false);
+        }
+    }
 
     async function handleEditSave(id: number, payload: MemberUpdateInput) {
         const updated = await edit(id, payload);
@@ -192,7 +213,18 @@ export function MembresPanel({ initialStatus }: MembresPanelProps) {
             )}
 
             <section className={styles.card}>
-                <h3 className={styles.cardTitle}>Membres ({total})</h3>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: ".5rem" }}>
+                    <h3 className={styles.cardTitle}>Membres ({total})</h3>
+                    {canApprove && !!stats?.pending && (
+                        <button
+                            className={styles.btnPrimarySm}
+                            onClick={handleApproveAll}
+                            disabled={approvingAll}
+                        >
+                            {approvingAll ? "Approbation…" : `Tout approuver (${stats.pending})`}
+                        </button>
+                    )}
+                </div>
 
                 <form onSubmit={(e) => { e.preventDefault(); applyFilters(); }} className={styles.toolbar}>
                     <input className={styles.input} placeholder="Rechercher (nom, courriel)…"

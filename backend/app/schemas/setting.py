@@ -13,6 +13,18 @@ SETTING_META: dict[str, str] = {
     "birthday_monthly_message_template": (
         "Message groupé mensuel d'anniversaire (variables : {prenom}, {nom})"
     ),
+    "membership_received_template": (
+        "Message de bienvenue envoyé à la réception d'une demande d'adhésion "
+        "(variables : {prenom}, {nom})"
+    ),
+    "membership_approved_template": (
+        "Message envoyé lorsqu'une adhésion est approuvée, compte déjà existant "
+        "(variables : {prenom}, {nom})"
+    ),
+    "membership_approved_invite_template": (
+        "Message envoyé lorsqu'une adhésion est approuvée avec création de "
+        "compte (variables : {prenom}, {nom}, {lien})"
+    ),
     "site_name": "Nom du site (logo, copyright du pied de page)",
     "site_tagline": "Slogan affiché sous le nom du site",
     "site_logo_url": "Chemin du logo du site (géré via le téléversement, ne pas modifier à la main)",

@@ -70,30 +70,16 @@ def get_email_sender() -> EmailSender:
     return ConsoleEmailSender()
 
 
-def membership_received(sender: EmailSender, to: str, name: str) -> None:
-    sender.send(
-        to,
-        "Demande d'adhésion reçue",
-        f"Bonjour {name}, nous avons bien reçu votre demande. "
-        "Elle sera examinée par un administrateur.",
-    )
+def membership_received(sender: EmailSender, to: str, message: str) -> None:
+    sender.send(to, "Demande d'adhésion reçue", message)
 
 
-def membership_approved(sender: EmailSender, to: str, name: str) -> None:
-    sender.send(
-        to,
-        "Adhésion approuvée",
-        f"Bonjour {name}, votre adhésion a été approuvée. Bienvenue !",
-    )
+def membership_approved(sender: EmailSender, to: str, message: str) -> None:
+    sender.send(to, "Adhésion approuvée", message)
 
 
-def membership_approved_invite(sender, to: str, name: str, link: str) -> None:
-    sender.send(
-        to,
-        "Adhésion approuvée — activez votre compte",
-        f"Bonjour {name}, votre adhésion a été approuvée. "
-        f"Définissez votre mot de passe pour accéder à votre espace (lien valable 48 h) :\n{link}",
-    )
+def membership_approved_invite(sender, to: str, message: str) -> None:
+    sender.send(to, "Adhésion approuvée — activez votre compte", message)
 
 
 def admin_account_created_invite(sender: EmailSender, to: str, link: str) -> None:
