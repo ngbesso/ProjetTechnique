@@ -12,18 +12,23 @@ interface RevenusListProps {
   donations: Donation[];
   /** Id du don dont la pièce jointe est en cours de téléversement, s'il y en a un. */
   uploadingId: number | null;
+  /** Id du don dont la catégorie est en cours de mise à jour, s'il y en a un. */
+  updatingCategoryId: number | null;
   onFiltersChange: (filters: DonationFilters) => void;
   onCreate: () => void;
   onAttach: (donationId: number, file: File) => void;
+  onUpdateCategory: (donationId: number, category: string) => void;
 }
 
 /** Carte « Revenus reçus » : recherche, filtres et tableau des dons. */
 export function RevenusList({
   donations,
   uploadingId,
+  updatingCategoryId,
   onFiltersChange,
   onCreate,
   onAttach,
+  onUpdateCategory,
 }: RevenusListProps) {
   const [filters, setFilters] = useState<DonationFilters>({});
 
@@ -71,8 +76,21 @@ export function RevenusList({
       col.accessor("category", {
         header: "Catégorie",
         cell: (info) => {
-          const value = info.getValue();
-          return value ? CATEGORY_LABELS[value] ?? value : <em style={{ color: "var(--text-muted)" }}>—</em>;
+          const d = info.row.original;
+          return (
+            <select
+              className={styles.select}
+              style={{ fontSize: "0.8rem", padding: "0.25rem 0.4rem" }}
+              value={d.category ?? ""}
+              disabled={updatingCategoryId === d.id}
+              onChange={(e) => onUpdateCategory(d.id, e.target.value)}
+            >
+              <option value="" disabled>— À compléter —</option>
+              {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          );
         },
       }),
       col.accessor("payment_status", {
@@ -130,7 +148,7 @@ export function RevenusList({
         },
       }),
     ],
-    [uploadingId, onAttach],
+    [uploadingId, onAttach, updatingCategoryId, onUpdateCategory],
   );
 
   return (

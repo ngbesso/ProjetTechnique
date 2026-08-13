@@ -383,6 +383,94 @@ def test_manual_donation_unknown_church(client, make_user, auth_header):
     assert r.status_code == 404
 
 
+# ── PATCH /api/donations/{id}/category ────────────────────────────────────────
+
+
+def test_update_category_requires_finance_permission(client, make_user, auth_header):
+    make_user("regular_doncat@test.com")
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 40.0, "contribution_type": "don"},
+        headers=_admin_header(make_user, auth_header),
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "soutien_spirituel"},
+        headers=auth_header("regular_doncat@test.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_update_category_completes_uncategorized_donation(
+    client, make_user, auth_header
+):
+    """Cas typique : un don reçu via le webhook Zeffy, sans catégorie, que
+    l'admin complète après coup pour affiner le rapport financier."""
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 80.0, "contribution_type": "don"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+    assert r.json()["category"] is None
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "developpement"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    assert r.json()["category"] == "developpement"
+
+
+def test_update_category_corrects_existing_category(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 30.0, "contribution_type": "don", "category": "soutien_spirituel"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "action_communautaire"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    assert r.json()["category"] == "action_communautaire"
+
+
+def test_update_category_unknown_donation(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.patch(
+        f"{BASE}/999999/category",
+        json={"category": "soutien_spirituel"},
+        headers=h,
+    )
+    assert r.status_code == 404
+
+
+def test_update_category_invalid_value_rejected(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 20.0, "contribution_type": "don"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "pas_une_vraie_categorie"},
+        headers=h,
+    )
+    assert r.status_code == 422
+
+
 # ── Pièce jointe justificative ─────────────────────────────────────────────────
 
 

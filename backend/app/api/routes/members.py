@@ -21,7 +21,12 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_global_permission
-from app.core.email import EmailSender, get_email_sender, membership_received
+from app.core.email import (
+    EmailSender,
+    get_email_sender,
+    membership_received,
+    render_template,
+)
 from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.church import Church
@@ -31,6 +36,7 @@ from app.schemas.common import Page
 from app.schemas.member import (
     BirthdayGreetingsSendResult,
     BirthdaysOverview,
+    MemberApproveAllResult,
     MemberBirthday,
     MemberCreate,
     MemberImportResult,
@@ -163,9 +169,13 @@ def request_membership(
     if member_service.auto_approve_enabled(db):
         member_service.approve(member, db, background, sender)
     else:
-        background.add_task(
-            membership_received, sender, member.email, member.first_name
+        template = member_service.get_template(
+            db,
+            "membership_received_template",
+            member_service.DEFAULT_MEMBERSHIP_RECEIVED_TEMPLATE,
         )
+        message = render_template(template, prenom=member.first_name, nom=member.last_name)
+        background.add_task(membership_received, sender, member.email, message)
 
     db.commit()
     db.refresh(member)
@@ -305,6 +315,24 @@ def send_birthday_greetings(
     deux modes peuvent envoyer pour le même mois sans se bloquer."""
     sent = send_monthly_birthday_greetings(db, sender, month)
     return BirthdayGreetingsSendResult(sent=sent)
+
+
+@router.post("/admin/approve-all", response_model=MemberApproveAllResult)
+def approve_all_pending_route(
+    background: BackgroundTasks,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+):
+    """Approuve en une seule fois tous les membres en attente dans le périmètre
+    de l'administrateur — mêmes effets (compte, courriel) que l'approbation
+    individuelle, appliqués à chaque membre."""
+    scope = current_user.accessible_church_ids("member:approve")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Aucun périmètre accessible")
+    approved = member_service.approve_all_pending(db, background, sender, church_ids=scope)
+    db.commit()
+    return MemberApproveAllResult(approved=approved)
 
 
 @router.post("", response_model=MemberRead, status_code=201)

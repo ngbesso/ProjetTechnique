@@ -162,9 +162,13 @@ interface TemplateSettingFieldProps {
     settingKey: string;
     title: string;
     description: string;
+    // Ex. "{lien}" pour le message d'invitation : sans cette variable, le
+    // nouveau compte n'a aucun moyen d'activer son accès. Bloque
+    // l'enregistrement plutôt que de laisser une variable essentielle disparaître.
+    requiredVariable?: string;
 }
 
-export function TemplateSettingField({ settingKey, title, description }: TemplateSettingFieldProps) {
+export function TemplateSettingField({ settingKey, title, description, requiredVariable }: TemplateSettingFieldProps) {
     const [value, setValue] = useState("");
     const [draft, setDraft] = useState("");
     const [saving, setSaving] = useState(false);
@@ -186,6 +190,10 @@ export function TemplateSettingField({ settingKey, title, description }: Templat
         const trimmed = draft.trim();
         if (!trimmed) {
             setError("Le message ne peut pas être vide.");
+            return;
+        }
+        if (requiredVariable && !trimmed.includes(requiredVariable)) {
+            setError(`Le message doit contenir la variable ${requiredVariable}.`);
             return;
         }
         setSaving(true);
@@ -524,6 +532,22 @@ export function ParametresPanel() {
                 settingKey="event_reminder_hours_before"
                 title="Rappel avant un événement"
                 description="Nombre d'heures avant le début d'un événement pour l'envoi automatique d'un courriel de rappel aux inscrits."
+            />
+            <TemplateSettingField
+                settingKey="membership_received_template"
+                title="Message de bienvenue (demande d'adhésion reçue)"
+                description="Envoyé immédiatement quand une demande d'adhésion est soumise et nécessite une validation par un administrateur. Variables disponibles : {prenom}, {nom}."
+            />
+            <TemplateSettingField
+                settingKey="membership_approved_template"
+                title="Message de validation (compte déjà existant)"
+                description="Envoyé quand un administrateur approuve une adhésion et que la personne a déjà un compte. Variables disponibles : {prenom}, {nom}."
+            />
+            <TemplateSettingField
+                settingKey="membership_approved_invite_template"
+                title="Message de validation (nouveau compte)"
+                description="Envoyé quand un administrateur approuve une adhésion et qu'un nouveau compte est créé. Le lien d'activation est obligatoire : la variable {lien} doit figurer dans le message. Variables disponibles : {prenom}, {nom}, {lien}."
+                requiredVariable="{lien}"
             />
             <p style={{ color: "var(--text-muted)", fontSize: ".875rem", margin: "0 0 1rem" }}>
                 Ces valeurs alimentent les menus déroulants des formulaires (adhésion, profil, églises).

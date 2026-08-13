@@ -30,16 +30,23 @@ DOMAIN_LABELS = {
 
 def flatten_stats(
     stats: BaseModel,
+    field_labels: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, str]], dict[str, list[dict]]]:
     """Aplatit un objet de statistiques Pydantic en un résumé clé/valeur (champs
-    scalaires) et des tables nommées (champs liste), quel que soit le domaine."""
+    scalaires) et des tables nommées (champs liste), quel que soit le domaine.
+
+    `field_labels` (facultatif) substitue un libellé lisible au nom brut du
+    champ Pydantic (ex. "income_cad" -> "Revenus (CAD)") dans le résumé —
+    un champ absent du dict garde son nom brut, pour ne pas casser les
+    domaines qui n'en fournissent pas."""
+    labels = field_labels or {}
     summary: list[tuple[str, str]] = []
     tables: dict[str, list[dict]] = {}
     for name, value in stats.model_dump().items():
         if isinstance(value, list):
             tables[name] = value
         else:
-            summary.append((name, str(value)))
+            summary.append((labels.get(name, name), str(value)))
     return summary, tables
 
 

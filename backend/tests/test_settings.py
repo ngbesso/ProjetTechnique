@@ -21,6 +21,7 @@ def _request_membership(client, church_id, email, first="Test", last="User"):
             "first_name": first,
             "last_name": last,
             "email": email,
+            "sexe": "Masculin",
         },
     )
 
@@ -204,6 +205,69 @@ def test_auto_approve_disabled_sends_received_email(
     _request_membership(client, _mother_id(db_session), "rcv@s.com", "Rcv", "Test")
     assert fake_email.sent
     assert fake_email.sent[0][0] == "rcv@s.com"
+
+
+def test_enabling_auto_approve_activates_existing_pending_members(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@s.com", roles=["admin"])
+    h = auth_header("admin@s.com")
+    client.put("/settings/auto_approve_members", json={"value": "false"}, headers=h)
+    r1 = _request_membership(client, _mother_id(db_session), "stock1@s.com", "Stock", "Un")
+    r2 = _request_membership(client, _mother_id(db_session), "stock2@s.com", "Stock", "Deux")
+    assert r1.json()["status"] == "pending"
+    assert r2.json()["status"] == "pending"
+
+    r = client.put("/settings/auto_approve_members", json={"value": "true"}, headers=h)
+    assert r.status_code == 200
+
+    m1 = client.get(f"/members/{r1.json()['id']}", headers=h).json()
+    m2 = client.get(f"/members/{r2.json()['id']}", headers=h).json()
+    assert m1["status"] == "active"
+    assert m1["member_code"] is not None
+    assert m2["status"] == "active"
+    assert m2["member_code"] is not None
+
+
+def test_enabling_auto_approve_does_not_touch_rejected_members(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@s.com", roles=["admin"])
+    h = auth_header("admin@s.com")
+    client.put("/settings/auto_approve_members", json={"value": "false"}, headers=h)
+    rejected = _request_membership(client, _mother_id(db_session), "rej2@s.com", "Re", "Jete")
+    mid = rejected.json()["id"]
+    client.post(f"/members/{mid}/reject", headers=h)
+
+    client.put("/settings/auto_approve_members", json={"value": "true"}, headers=h)
+
+    m = client.get(f"/members/{mid}", headers=h).json()
+    assert m["status"] == "rejected"
+    assert m["member_code"] is None
+
+
+def test_enabling_auto_approve_when_already_true_is_a_noop(
+    client, fake_email, make_user, auth_header
+):
+    make_user("admin@s.com", roles=["admin"])
+    h = auth_header("admin@s.com")
+    client.put("/settings/auto_approve_members", json={"value": "true"}, headers=h)
+    r = client.put("/settings/auto_approve_members", json={"value": "true"}, headers=h)
+    assert r.status_code == 200
+
+
+def test_disabling_auto_approve_does_not_activate_pending_members(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@s.com", roles=["admin"])
+    h = auth_header("admin@s.com")
+    client.put("/settings/auto_approve_members", json={"value": "false"}, headers=h)
+    r1 = _request_membership(client, _mother_id(db_session), "stay@s.com", "Stay", "Pending")
+
+    client.put("/settings/auto_approve_members", json={"value": "false"}, headers=h)
+
+    m = client.get(f"/members/{r1.json()['id']}", headers=h).json()
+    assert m["status"] == "pending"
 
 
 def test_auto_approve_multiple_requests_get_sequential_codes(
