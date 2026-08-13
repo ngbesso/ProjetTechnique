@@ -2,7 +2,12 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy import select
 
-from app.models.donation import ContributionType, Donation, DonationCurrency
+from app.models.donation import (
+    ContributionType,
+    Donation,
+    DonationCategory,
+    DonationCurrency,
+)
 from app.models.expense import Expense
 from app.models.user import User
 
@@ -28,6 +33,7 @@ def _donation(
     amount,
     currency=DonationCurrency.CAD,
     contribution_type=ContributionType.DON,
+    category=None,
     donor_name="Testeur",
     created_at=PAST_DATETIME,
 ):
@@ -35,6 +41,7 @@ def _donation(
         amount=amount,
         currency=currency,
         contribution_type=contribution_type,
+        category=category,
         donor_name=donor_name,
         created_at=created_at,
     )
@@ -115,7 +122,7 @@ def test_report_excludes_usd_income_from_balance(
     assert body["balance"] == 100.0
 
 
-def test_report_transaction_shows_contribution_type_and_comment(
+def test_report_transaction_shows_donation_category_and_comment(
     client, make_user, auth_header, db_session
 ):
     h = _admin_header(make_user, auth_header)
@@ -125,7 +132,7 @@ def test_report_transaction_shows_contribution_type_and_comment(
     _donation(
         db_session,
         75.0,
-        contribution_type=ContributionType.DIME,
+        category=DonationCategory.SOUTIEN_SPIRITUEL,
         donor_name="Dîme Fidèle",
     )
     _expense(db_session, admin_id, 20.0, comment="Achat de chaises pour la salle.")
@@ -134,11 +141,25 @@ def test_report_transaction_shows_contribution_type_and_comment(
     transactions = r.json()["transactions"]
 
     income_tx = next(t for t in transactions if t["type"] == "revenu")
-    assert income_tx["category"] == "dime"
+    assert income_tx["category"] == "soutien_spirituel"
     assert income_tx["party"] == "Dîme Fidèle"
 
     expense_tx = next(t for t in transactions if t["type"] == "dépense")
     assert expense_tx["note"] == "Achat de chaises pour la salle."
+
+
+def test_report_transaction_uncategorized_donation_shows_dons_label(
+    client, make_user, auth_header, db_session
+):
+    """Un don sans catégorie (ex. reçu via le webhook Zeffy, qui n'en transmet
+    pas) doit s'afficher sous un libellé neutre plutôt que le nom brut du
+    champ interne (contribution_type) ou un vide déroutant."""
+    h = _admin_header(make_user, auth_header)
+    _donation(db_session, 50.0)  # pas de category assignée
+
+    r = client.get(f"{BASE}/report?start={PAST_START}&end={PAST_END}", headers=h)
+    income_tx = next(t for t in r.json()["transactions"] if t["type"] == "revenu")
+    assert income_tx["category"] == "Dons"
 
 
 def test_report_transaction_includes_attachment_url(
@@ -209,6 +230,24 @@ def test_export_csv(client, make_user, auth_header):
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")
     assert len(r.content) > 0
+
+
+def test_export_csv_uses_readable_french_labels(client, make_user, auth_header):
+    """Le résumé exporté doit afficher des libellés lisibles plutôt que les
+    noms bruts des champs Pydantic (period_start, income_cad...)."""
+    h = _admin_header(make_user, auth_header)
+    r = client.get(f"{BASE}/report/export?format=csv", headers=h)
+    text = r.content.decode("utf-8")
+
+    assert "Période du" in text
+    assert "Revenus (CAD)" in text
+    assert "Dépenses totales" in text
+    assert "Solde" in text
+    assert "Nombre de revenus" in text
+    assert "Nombre de dépenses" in text
+    assert "period_start" not in text
+    assert "income_cad" not in text
+    assert "expenses_total" not in text
 
 
 def test_export_excel(client, make_user, auth_header):

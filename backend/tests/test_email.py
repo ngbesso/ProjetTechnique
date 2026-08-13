@@ -146,32 +146,33 @@ def test_get_email_sender_smtp_backend():
 
 def test_membership_received_sends_correct_subject():
     fake = MagicMock()
-    membership_received(fake, "user@b.com", "Marie")
+    membership_received(fake, "user@b.com", "Bonjour Marie, message personnalisé.")
     fake.send.assert_called_once()
     _, subject, _ = fake.send.call_args.args
     assert "adhésion" in subject.lower() or "reçue" in subject.lower()
 
 
-def test_membership_received_addresses_recipient():
+def test_membership_received_addresses_recipient_and_forwards_message():
     fake = MagicMock()
-    membership_received(fake, "user@b.com", "Marie")
+    membership_received(fake, "user@b.com", "Bonjour Marie, message personnalisé.")
     to, _, body = fake.send.call_args.args
     assert to == "user@b.com"
-    assert "Marie" in body
+    assert body == "Bonjour Marie, message personnalisé."
 
 
 def test_membership_approved_sends_correct_subject():
     fake = MagicMock()
-    membership_approved(fake, "user@b.com", "Pierre")
+    membership_approved(fake, "user@b.com", "Bonjour Pierre, bienvenue !")
     _, subject, _ = fake.send.call_args.args
     assert "approuvée" in subject.lower() or "adhésion" in subject.lower()
 
 
-def test_membership_approved_invite_contains_link():
+def test_membership_approved_invite_forwards_message():
     fake = MagicMock()
     membership_approved_invite(
-        fake, "user@b.com", "Paul", "https://example.com/set-pwd?token=xyz"
+        fake, "user@b.com", "Bonjour Paul, voici votre lien : https://example.com/set-pwd?token=xyz"
     )
-    _, _, body = fake.send.call_args.args
+    to, _, body = fake.send.call_args.args
+    assert to == "user@b.com"
     assert "https://example.com/set-pwd?token=xyz" in body
     assert "Paul" in body
