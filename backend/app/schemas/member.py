@@ -25,6 +25,15 @@ def _validate_telephone(v: str | None) -> str | None:
     return v
 
 
+def _validate_human_name(v: str, field_label: str) -> str:
+    """Rejette un nom composé uniquement de chiffres/symboles (ex. "12345") :
+    au moins une lettre est requise, sans interdire tirets, apostrophes ou
+    espaces (ex. "Jean-Pierre", "O'Brien")."""
+    if not any(c.isalpha() for c in v):
+        raise ValueError(f"Le {field_label} doit contenir au moins une lettre.")
+    return v
+
+
 def _no_future_date(v: date | None, field_name: str) -> date | None:
     """Rejette une date postérieure à aujourd'hui. Le jour même reste accepté :
     une conversion peut légitimement être enregistrée le jour où elle a lieu."""
@@ -49,10 +58,20 @@ class MembershipRequest(BaseModel):
     email: EmailStr
     address: str | None = None
     birth_date: date | None = None
-    sexe: str | None = None
+    sexe: str
     telephone: str | None = None
     family_status: str | None = None
     is_baptized: bool = False
+
+    @field_validator("first_name")
+    @classmethod
+    def first_name_has_letter(cls, v: str) -> str:
+        return _validate_human_name(v, "prénom")
+
+    @field_validator("last_name")
+    @classmethod
+    def last_name_has_letter(cls, v: str) -> str:
+        return _validate_human_name(v, "nom")
 
     @field_validator("birth_date")
     @classmethod
@@ -84,6 +103,16 @@ class MemberUpdate(BaseModel):
     family_status: str | None = None
     conversion_date: date | None = None
     is_baptized: bool | None = None
+
+    @field_validator("first_name")
+    @classmethod
+    def first_name_has_letter(cls, v: str | None) -> str | None:
+        return _validate_human_name(v, "prénom") if v is not None else v
+
+    @field_validator("last_name")
+    @classmethod
+    def last_name_has_letter(cls, v: str | None) -> str | None:
+        return _validate_human_name(v, "nom") if v is not None else v
 
     @field_validator("birth_date")
     @classmethod
@@ -153,6 +182,10 @@ class BirthdaysOverview(BaseModel):
 
 class BirthdayGreetingsSendResult(BaseModel):
     sent: int
+
+
+class MemberApproveAllResult(BaseModel):
+    approved: int
 
 
 class MemberSelfUpdate(BaseModel):

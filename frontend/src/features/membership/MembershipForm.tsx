@@ -53,13 +53,17 @@ export function MembershipForm({
       <div className={styles.row}>
         <div className={styles.col}>
           <label className={styles.label}>Prénom *</label>
-          <input className={styles.input} required value={values.first_name}
-            onChange={(e) => onChange({ first_name: e.target.value })} />
+          <input className={`${styles.input} ${fieldErrors.first_name ? styles.inputError : ""}`}
+            required value={values.first_name}
+            onChange={(e) => { onChange({ first_name: e.target.value }); onClearFieldError("first_name"); }} />
+          {fieldErrors.first_name && <p className={styles.fieldError} role="alert">{fieldErrors.first_name}</p>}
         </div>
         <div className={styles.col}>
           <label className={styles.label}>Nom *</label>
-          <input className={styles.input} required value={values.last_name}
-            onChange={(e) => onChange({ last_name: e.target.value })} />
+          <input className={`${styles.input} ${fieldErrors.last_name ? styles.inputError : ""}`}
+            required value={values.last_name}
+            onChange={(e) => { onChange({ last_name: e.target.value }); onClearFieldError("last_name"); }} />
+          {fieldErrors.last_name && <p className={styles.fieldError} role="alert">{fieldErrors.last_name}</p>}
         </div>
       </div>
 
@@ -77,8 +81,8 @@ export function MembershipForm({
 
       <div className={styles.row}>
         <div className={styles.col}>
-          <label className={styles.label}>Sexe</label>
-          <select className={styles.select} value={values.sexe}
+          <label className={styles.label}>Sexe *</label>
+          <select className={styles.select} value={values.sexe} required
             onChange={(e) => onChange({ sexe: e.target.value })}>
             <option value="">—</option>
             {sexeOptions.map((s) => <option key={s.id} value={s.label}>{s.label}</option>)}

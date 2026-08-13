@@ -12,6 +12,15 @@ export function getToken(): string | null {
   return _token;
 }
 
+// Permet à AuthContext de réagir globalement à un jeton expiré/invalide
+// (ex. après 30 min d'inactivité) sans que chaque écran doive gérer un 401
+// individuellement — voir l'appel dans request() ci-dessous.
+let _onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  _onUnauthorized = fn;
+}
+
 export class ApiError extends Error {
   constructor(
       public status: number,
@@ -49,6 +58,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
           })
           .join(" ; ");
       }
+    }
+    // Un 401 alors qu'on avait un jeton signifie qu'il a expiré ou est devenu
+    // invalide (pas un simple appel anonyme) : on met fin à la session côté
+    // app plutôt que de laisser un panneau afficher ce message brut alors que
+    // le reste de l'UI se croit toujours connecté.
+    if (res.status === 401 && _token) {
+      _onUnauthorized?.();
     }
     throw new ApiError(res.status, message);
   }

@@ -33,6 +33,10 @@ export function approveMember(id: number): Promise<Member> {
     return http.post<Member>(`/members/${id}/approve`, {});
 }
 
+export function approveAllPendingMembers(): Promise<{ approved: number }> {
+    return http.post<{ approved: number }>("/members/admin/approve-all", {});
+}
+
 export function rejectMember(id: number): Promise<Member> {
     return http.post<Member>(`/members/${id}/reject`, {});
 }

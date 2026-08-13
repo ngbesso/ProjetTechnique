@@ -25,6 +25,7 @@ def _base(**kwargs):
         "first_name": "X",
         "last_name": "Y",
         "email": "x@b.com",
+        "sexe": "Masculin",
         **kwargs,
     }
 
@@ -201,7 +202,7 @@ class TestConversionDate:
         assert obj.conversion_date is None
 
 
-# ── sexe — champ libre ────────────────────────────────────────────────────────
+# ── sexe — champ libre, obligatoire ───────────────────────────────────────────
 
 
 class TestSexeField:
@@ -209,8 +210,74 @@ class TestSexeField:
         obj = MembershipRequest(**_base(sexe="Masculin"))
         assert obj.sexe == "Masculin"
 
-    def test_sexe_none_accepted(self):
-        assert MembershipRequest(**_base(sexe=None)).sexe is None
+    def test_sexe_none_rejected(self):
+        with pytest.raises(ValidationError):
+            MembershipRequest(**_base(sexe=None))
 
-    def test_sexe_omitted_is_none(self):
-        assert MembershipRequest(**_base()).sexe is None
+    def test_sexe_omitted_rejected(self):
+        base = _base()
+        del base["sexe"]
+        with pytest.raises(ValidationError):
+            MembershipRequest(**base)
+
+
+# ── first_name / last_name — au moins une lettre ──────────────────────────────
+
+
+class TestNameFields:
+    def test_letters_only_accepted(self):
+        obj = MembershipRequest(**_base(first_name="Marie", last_name="Curie"))
+        assert obj.first_name == "Marie"
+        assert obj.last_name == "Curie"
+
+    def test_hyphenated_name_accepted(self):
+        obj = MembershipRequest(**_base(first_name="Jean-Pierre"))
+        assert obj.first_name == "Jean-Pierre"
+
+    def test_apostrophe_name_accepted(self):
+        obj = MembershipRequest(**_base(last_name="O'Brien"))
+        assert obj.last_name == "O'Brien"
+
+    def test_accented_letters_accepted(self):
+        obj = MembershipRequest(**_base(first_name="Éloïse"))
+        assert obj.first_name == "Éloïse"
+
+    def test_name_with_digit_and_letter_accepted(self):
+        """Une seule lettre suffit à valider : la règle rejette le tout-numérique,
+        pas un caractère numérique isolé au milieu d'un nom."""
+        obj = MembershipRequest(**_base(first_name="Jean3"))
+        assert obj.first_name == "Jean3"
+
+    def test_purely_numeric_first_name_rejected(self):
+        with pytest.raises(ValidationError, match="prénom"):
+            MembershipRequest(**_base(first_name="12345"))
+
+    def test_purely_numeric_last_name_rejected(self):
+        with pytest.raises(ValidationError, match="nom"):
+            MembershipRequest(**_base(last_name="98765"))
+
+    def test_symbols_only_name_rejected(self):
+        with pytest.raises(ValidationError):
+            MembershipRequest(**_base(first_name="---"))
+
+    def test_member_update_purely_numeric_name_rejected(self):
+        with pytest.raises(ValidationError):
+            MemberUpdate(first_name="000")
+
+    def test_member_update_none_name_accepted(self):
+        """Omis/None reste valide sur une mise à jour partielle : seul un nom
+        réellement fourni doit contenir une lettre."""
+        assert MemberUpdate(first_name=None).first_name is None
+
+
+# ── telephone — jeu de caractères ─────────────────────────────────────────────
+
+
+class TestTelephoneCharacters:
+    def test_letters_in_phone_rejected(self):
+        with pytest.raises(ValidationError):
+            MembershipRequest(**_base(telephone="514ABCDEFG"))
+
+    def test_valid_characters_accepted(self):
+        obj = MembershipRequest(**_base(telephone="+1 (514) 555-0101"))
+        assert obj.telephone == "+1 (514) 555-0101"

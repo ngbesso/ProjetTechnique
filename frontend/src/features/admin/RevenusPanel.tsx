@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
-import { fetchAllDonations, fetchDonationsStats, uploadDonationAttachment } from "../../lib/api/donations";
+import { fetchAllDonations, fetchDonationsStats, updateDonationCategory, uploadDonationAttachment } from "../../lib/api/donations";
 import { useChurches } from "../../hooks/useChurches";
 import { useToast } from "../../hooks/useToast";
 import { RevenuCreateModal } from "./revenus/RevenuCreateModal";
@@ -18,6 +18,7 @@ export function RevenusPanel() {
   const [stats, setStats] = useState<DonationAdminStats | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [updatingCategoryId, setUpdatingCategoryId] = useState<number | null>(null);
   const { churches, load: loadChurches } = useChurches();
   const { toast, toasts } = useToast();
 
@@ -64,6 +65,25 @@ export function RevenusPanel() {
     [toast],
   );
 
+  /** Complète ou corrige la catégorie d'un don après coup (ex. dons Zeffy,
+   *  reçus sans catégorie faute d'un champ dédié dans leur formulaire). */
+  const handleUpdateCategory = useCallback(
+    async (donationId: number, category: string) => {
+      setUpdatingCategoryId(donationId);
+      try {
+        const updated = await updateDonationCategory(donationId, category);
+        setDonations((prev) => prev.map((d) => (d.id === donationId ? updated : d)));
+        loadStats();
+        toast.success("Catégorie mise à jour.");
+      } catch (err) {
+        toast.error(err, "Mise à jour impossible.");
+      } finally {
+        setUpdatingCategoryId(null);
+      }
+    },
+    [toast, loadStats],
+  );
+
   if (loading) return <p className={styles.stateMsg}>Chargement…</p>;
 
   return (
@@ -79,9 +99,11 @@ export function RevenusPanel() {
       <RevenusList
         donations={donations}
         uploadingId={uploadingId}
+        updatingCategoryId={updatingCategoryId}
         onFiltersChange={loadDonations}
         onCreate={() => setShowCreateModal(true)}
         onAttach={handleAttach}
+        onUpdateCategory={handleUpdateCategory}
       />
 
       {showCreateModal && (
