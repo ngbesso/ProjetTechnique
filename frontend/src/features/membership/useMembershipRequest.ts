@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { requestMembership } from "../../lib/api/members";
 import { YESTERDAY } from "../../lib/format";
+import { validatePhoneFormat } from "../../lib/validation";
 import { EMPTY_MEMBERSHIP } from "./membershipDefaults";
 import { toMembershipInput } from "./membershipMapper";
 import { hasFieldErrors, validateMembershipFields } from "./membershipValidation";
@@ -25,6 +26,12 @@ export function useMembershipRequest(churches: Church[]) {
 
   function update(patch: Partial<MembershipFormState>) {
     setForm((prev) => ({ ...prev, ...patch }));
+    // Le téléphone est signalé dès la saisie d'un caractère interdit (ex. une
+    // lettre), plutôt que d'attendre la soumission comme les autres champs.
+    if (patch.telephone !== undefined) {
+      const formatError = validatePhoneFormat(patch.telephone);
+      setFieldErrors((fe) => ({ ...fe, telephone: formatError ?? undefined }));
+    }
   }
 
   function clearFieldError(key: keyof MembershipFieldErrors) {

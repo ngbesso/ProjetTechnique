@@ -89,7 +89,7 @@ export function MembershipForm({
           <input className={`${styles.input} ${fieldErrors.telephone ? styles.inputError : ""}`}
             type="tel" value={values.telephone}
             placeholder="ex. : 514-123-4567 ou +1 514 123 4567"
-            onChange={(e) => { onChange({ telephone: e.target.value }); onClearFieldError("telephone"); }} />
+            onChange={(e) => onChange({ telephone: e.target.value })} />
           {fieldErrors.telephone && (
             <p className={styles.fieldError} role="alert">{fieldErrors.telephone}</p>
           )}
