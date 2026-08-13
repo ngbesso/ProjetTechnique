@@ -8,6 +8,12 @@ from app.models.expense import Expense
 from app.schemas.finance import FinanceReport, FinanceTransaction
 
 _NO_BOUND = "Toutes dates"
+# Libellé neutre pour un don sans catégorie assignée — jamais écrit en base
+# (ni pour les anciens dons, ni pour les futurs dons Zeffy : le webhook ne
+# transmet pas de catégorie, et fabriquer une valeur pour un vrai don serait
+# trompeur). Purement un repli d'affichage, appliqué de façon identique quelle
+# que soit l'ancienneté du don.
+_UNCATEGORIZED_LABEL = "Dons"
 
 
 def resolve_period(
@@ -68,7 +74,7 @@ def build_report(db: Session, start: date | None, end: date | None) -> FinanceRe
             FinanceTransaction(
                 date=d.created_at.date(),
                 type="revenu",
-                category=d.contribution_type,
+                category=d.category.value if d.category else _UNCATEGORIZED_LABEL,
                 amount=float(d.amount),
                 currency=d.currency.value,
                 party=party,

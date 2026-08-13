@@ -123,3 +123,22 @@ def approve(
         )
         message = render_template(template, prenom=member.first_name, nom=member.last_name)
         background.add_task(membership_approved, sender, member.email, message)
+
+
+def approve_all_pending(
+    db: Session,
+    background: BackgroundTasks,
+    sender: EmailSender,
+    church_ids: set[int] | None = None,
+) -> int:
+    """Approuve tous les membres en attente (jamais les refusés, qui ont un
+    statut distinct et ne sont pas sélectionnés par ce filtre). church_ids=None
+    signifie « toutes les églises » (admin global) ; un ensemble restreint
+    limite l'action au périmètre d'un admin d'affiliée."""
+    query = select(Member).where(Member.status == MemberStatus.pending)
+    if church_ids is not None:
+        query = query.where(Member.church_id.in_(church_ids))
+    pending = list(db.scalars(query).all())
+    for member in pending:
+        approve(member, db, background, sender)
+    return len(pending)

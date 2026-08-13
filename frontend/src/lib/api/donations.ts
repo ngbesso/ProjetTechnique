@@ -18,6 +18,12 @@ export function createManualDonation(data: DonationManualInput): Promise<Donatio
   return http.post<Donation>("/api/donations/admin", data);
 }
 
+/** Complète ou corrige la catégorie d'un don après coup — utile pour les
+ * dons reçus via le webhook Zeffy, qui n'en transmet pas à la création. */
+export function updateDonationCategory(id: number, category: string): Promise<Donation> {
+  return http.patch<Donation>(`/api/donations/${id}/category`, { category });
+}
+
 export function uploadDonationAttachment(id: number, file: File): Promise<Donation> {
   const fd = new FormData();
   fd.append("file", file);

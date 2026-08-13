@@ -1,6 +1,37 @@
+import re
 from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+
+# Mêmes caractères autorisés que lib/validation.ts (validatePhone) côté
+# frontend — la validation de format doit être identique des deux côtés.
+_PHONE_CHARS = re.compile(r"^[+\d\s\-.()\[\]]+$")
+
+
+def _validate_telephone(v: str | None) -> str | None:
+    """Rejette tout caractère qui n'a jamais sa place dans un numéro (lettres,
+    symboles...), puis exige au moins 7 chiffres. Partagé par tous les schémas
+    qui exposent ce champ pour éviter que la règle diverge entre eux."""
+    if v is None:
+        return v
+    if not _PHONE_CHARS.match(v):
+        raise ValueError(
+            "Le téléphone ne peut contenir que des chiffres, espaces, tirets, "
+            "parenthèses ou le signe +."
+        )
+    digits = "".join(c for c in v if c.isdigit())
+    if len(digits) < 7:
+        raise ValueError("Le numéro de téléphone doit contenir au moins 7 chiffres.")
+    return v
+
+
+def _validate_human_name(v: str, field_label: str) -> str:
+    """Rejette un nom composé uniquement de chiffres/symboles (ex. "12345") :
+    au moins une lettre est requise, sans interdire tirets, apostrophes ou
+    espaces (ex. "Jean-Pierre", "O'Brien")."""
+    if not any(c.isalpha() for c in v):
+        raise ValueError(f"Le {field_label} doit contenir au moins une lettre.")
+    return v
 
 
 def _no_future_date(v: date | None, field_name: str) -> date | None:
@@ -27,10 +58,20 @@ class MembershipRequest(BaseModel):
     email: EmailStr
     address: str | None = None
     birth_date: date | None = None
-    sexe: str | None = None
+    sexe: str
     telephone: str | None = None
     family_status: str | None = None
     is_baptized: bool = False
+
+    @field_validator("first_name")
+    @classmethod
+    def first_name_has_letter(cls, v: str) -> str:
+        return _validate_human_name(v, "prénom")
+
+    @field_validator("last_name")
+    @classmethod
+    def last_name_has_letter(cls, v: str) -> str:
+        return _validate_human_name(v, "nom")
 
     @field_validator("birth_date")
     @classmethod
@@ -40,14 +81,7 @@ class MembershipRequest(BaseModel):
     @field_validator("telephone")
     @classmethod
     def telephone_format(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        digits = "".join(c for c in v if c.isdigit())
-        if len(digits) < 7:
-            raise ValueError(
-                "Le numéro de téléphone doit contenir au moins 7 chiffres."
-            )
-        return v
+        return _validate_telephone(v)
 
 
 class MemberCreate(MembershipRequest):
@@ -70,6 +104,16 @@ class MemberUpdate(BaseModel):
     conversion_date: date | None = None
     is_baptized: bool | None = None
 
+    @field_validator("first_name")
+    @classmethod
+    def first_name_has_letter(cls, v: str | None) -> str | None:
+        return _validate_human_name(v, "prénom") if v is not None else v
+
+    @field_validator("last_name")
+    @classmethod
+    def last_name_has_letter(cls, v: str | None) -> str | None:
+        return _validate_human_name(v, "nom") if v is not None else v
+
     @field_validator("birth_date")
     @classmethod
     def birth_date_is_past(cls, v: date | None) -> date | None:
@@ -83,14 +127,7 @@ class MemberUpdate(BaseModel):
     @field_validator("telephone")
     @classmethod
     def telephone_format(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        digits = "".join(c for c in v if c.isdigit())
-        if len(digits) < 7:
-            raise ValueError(
-                "Le numéro de téléphone doit contenir au moins 7 chiffres."
-            )
-        return v
+        return _validate_telephone(v)
 
 
 class MemberRead(BaseModel):
@@ -147,6 +184,10 @@ class BirthdayGreetingsSendResult(BaseModel):
     sent: int
 
 
+class MemberApproveAllResult(BaseModel):
+    approved: int
+
+
 class MemberSelfUpdate(BaseModel):
     """Auto-service : un membre ne peut modifier que ses coordonnées.
 
@@ -161,11 +202,4 @@ class MemberSelfUpdate(BaseModel):
     @field_validator("telephone")
     @classmethod
     def telephone_format(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        digits = "".join(c for c in v if c.isdigit())
-        if len(digits) < 7:
-            raise ValueError(
-                "Le numéro de téléphone doit contenir au moins 7 chiffres."
-            )
-        return v
+        return _validate_telephone(v)

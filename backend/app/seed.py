@@ -524,17 +524,22 @@ def seed_admin_user(db: Session) -> None:
 
 
 def seed_parameters(db: Session) -> None:
-    """Insère (idempotent) les valeurs de paramètres par défaut."""
+    """Insère les valeurs de paramètres par défaut, une seule fois par catégorie.
+
+    On ne vérifie plus l'existence valeur par valeur : une fois qu'une
+    catégorie a été initialisée (elle contient au moins une ligne), on ne la
+    retouche plus jamais. Sinon, la suppression volontaire d'une valeur par
+    défaut par un admin (ex. "Autre" dans "sexe") serait annulée au prochain
+    redémarrage du backend, le script la recréant en la croyant manquante.
+    """
     for category, labels in DEFAULT_PARAMETERS.items():
+        category_already_seeded = db.scalar(
+            select(ParameterValue).where(ParameterValue.category == category)
+        )
+        if category_already_seeded is not None:
+            continue
         for pos, label in enumerate(labels):
-            exists = db.scalar(
-                select(ParameterValue).where(
-                    ParameterValue.category == category,
-                    ParameterValue.label == label,
-                )
-            )
-            if exists is None:
-                db.add(ParameterValue(category=category, label=label, position=pos))
+            db.add(ParameterValue(category=category, label=label, position=pos))
 
 
 def seed_settings(db: Session) -> None:
@@ -737,6 +742,7 @@ def seed_donors_and_donations(db: Session) -> None:
         dict(
             amount=75.00,
             contribution_type="don",
+            category="soutien_spirituel",
             donor_name=members[0].full_name,
             donor_email=members[0].email,
             member_id=members[0].id,
@@ -744,6 +750,7 @@ def seed_donors_and_donations(db: Session) -> None:
         dict(
             amount=200.00,
             contribution_type="dime",
+            category="developpement",
             donor_name=members[1].full_name,
             donor_email=members[1].email,
             member_id=members[1].id,
@@ -751,6 +758,7 @@ def seed_donors_and_donations(db: Session) -> None:
         dict(
             amount=500.00,
             contribution_type="don",
+            category="action_communautaire",
             donor_name=donors[0].name,
             donor_email=donors[0].email,
             donor_id=donors[0].id,
@@ -758,6 +766,7 @@ def seed_donors_and_donations(db: Session) -> None:
         dict(
             amount=150.00,
             contribution_type="offrande",
+            category="soutien_spirituel",
             donor_name="Don anonyme",
             donor_email=None,
         ),

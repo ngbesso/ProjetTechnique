@@ -25,6 +25,20 @@ _FORMATS = {
     "csv": (report_builder.build_csv, "text/csv", "csv"),
 }
 
+# Libellés lisibles pour le résumé exporté (PDF/Excel/CSV) — sans ce mapping,
+# flatten_stats affiche les noms bruts des champs Pydantic (period_start,
+# income_cad...) directement dans le fichier téléchargé par l'admin.
+FINANCE_FIELD_LABELS = {
+    "period_start": "Période du",
+    "period_end": "Période au",
+    "income_cad": "Revenus (CAD)",
+    "income_usd": "Revenus (USD)",
+    "expenses_total": "Dépenses totales",
+    "balance": "Solde",
+    "income_count": "Nombre de revenus",
+    "expense_count": "Nombre de dépenses",
+}
+
 
 @router.get("/report", response_model=FinanceReport, dependencies=[can_manage])
 def get_finance_report(
@@ -54,7 +68,7 @@ def export_finance_report(
 
     resolved_start, resolved_end = finance_service.resolve_period(period, start, end)
     report = finance_service.build_report(db, resolved_start, resolved_end)
-    summary, tables = report_builder.flatten_stats(report)
+    summary, tables = report_builder.flatten_stats(report, FINANCE_FIELD_LABELS)
 
     build_fn, media_type, extension = _FORMATS[format]
     content = build_fn("Rapport financier", summary, tables)

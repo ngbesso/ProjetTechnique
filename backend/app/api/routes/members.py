@@ -36,6 +36,7 @@ from app.schemas.common import Page
 from app.schemas.member import (
     BirthdayGreetingsSendResult,
     BirthdaysOverview,
+    MemberApproveAllResult,
     MemberBirthday,
     MemberCreate,
     MemberImportResult,
@@ -314,6 +315,24 @@ def send_birthday_greetings(
     deux modes peuvent envoyer pour le même mois sans se bloquer."""
     sent = send_monthly_birthday_greetings(db, sender, month)
     return BirthdayGreetingsSendResult(sent=sent)
+
+
+@router.post("/admin/approve-all", response_model=MemberApproveAllResult)
+def approve_all_pending_route(
+    background: BackgroundTasks,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+):
+    """Approuve en une seule fois tous les membres en attente dans le périmètre
+    de l'administrateur — mêmes effets (compte, courriel) que l'approbation
+    individuelle, appliqués à chaque membre."""
+    scope = current_user.accessible_church_ids("member:approve")
+    if scope is not None and not scope:
+        raise HTTPException(403, "Aucun périmètre accessible")
+    approved = member_service.approve_all_pending(db, background, sender, church_ids=scope)
+    db.commit()
+    return MemberApproveAllResult(approved=approved)
 
 
 @router.post("", response_model=MemberRead, status_code=201)
