@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-# Mêmes caractères autorisés que lib/validation.ts (validatePhone) côté
+# Mêmes caractères autorisés que lib/validation.ts (validatePhoneFormat) côté
 # frontend — la validation de format doit être identique des deux côtés.
 _PHONE_CHARS = re.compile(r"^[+\d\s\-.()\[\]]+$")
 

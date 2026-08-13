@@ -1,6 +1,5 @@
 import styles from "./MembershipPage.module.css";
 import { YESTERDAY } from "../../lib/format";
-import { sanitizePhoneInput } from "../../lib/validation";
 import type { MembershipFormState } from "./membershipDefaults";
 import type { MembershipFieldErrors } from "./membershipValidation";
 import type { Church, ParameterValue } from "../../types";
@@ -94,7 +93,7 @@ export function MembershipForm({
           <input className={`${styles.input} ${fieldErrors.telephone ? styles.inputError : ""}`}
             type="tel" value={values.telephone}
             placeholder="ex. : 514-123-4567 ou +1 514 123 4567"
-            onChange={(e) => { onChange({ telephone: sanitizePhoneInput(e.target.value) }); onClearFieldError("telephone"); }} />
+            onChange={(e) => onChange({ telephone: e.target.value })} />
           {fieldErrors.telephone && (
             <p className={styles.fieldError} role="alert">{fieldErrors.telephone}</p>
           )}

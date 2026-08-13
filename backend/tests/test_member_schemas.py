@@ -129,6 +129,12 @@ class TestTelephoneRequest:
         with pytest.raises(ValidationError):
             MembershipRequest(**_base(telephone="abc-def"))
 
+    def test_letters_rejected_even_with_enough_digits(self):
+        # Des lettres ne sont jamais autorisées, même si le nombre de
+        # chiffres suffirait par ailleurs.
+        with pytest.raises(ValidationError, match="chiffres, espaces, tirets"):
+            MembershipRequest(**_base(telephone="514ABC1234"))
+
     def test_none_accepted(self):
         obj = MembershipRequest(**_base(telephone=None))
         assert obj.telephone is None

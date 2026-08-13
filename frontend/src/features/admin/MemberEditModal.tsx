@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
 import { TODAY, YESTERDAY } from "../../lib/format";
-import { validatePhone, validateAddress, validateName, sanitizePhoneInput } from "../../lib/validation";
+import { validatePhone, validatePhoneFormat, validateAddress, validateName, sanitizePhoneInput } from "../../lib/validation";
 import type { Member, MemberUpdateInput } from "../../types";
 
 type FieldErrors = { telephone?: string; address?: string; first_name?: string; last_name?: string };
@@ -92,7 +92,11 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                             </select>
                             <input className={styles.input} placeholder="Téléphone" type="tel"
                                 value={form.telephone ?? ""}
-                                onChange={(e) => { setForm({ ...form, telephone: sanitizePhoneInput(e.target.value) || null }); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }} />
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    setForm({ ...form, telephone: sanitizePhoneInput(raw) || null });
+                                    setFieldErrors((fe) => ({ ...fe, telephone: validatePhoneFormat(raw) ?? undefined }));
+                                }} />
                             <input className={styles.input} type="date" placeholder="Date de naissance" max={YESTERDAY}
                                 value={form.birth_date ?? ""}
                                 onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })} />

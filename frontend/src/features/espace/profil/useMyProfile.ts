@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { fetchMyProfile, updateMyProfile } from "../../../lib/api/members";
-import { validateAddress, validatePhone } from "../../../lib/validation";
+import { validateAddress, validatePhone, validatePhoneFormat } from "../../../lib/validation";
 import type { Member, MemberSelfInput } from "../../../types";
 
 export interface ContactErrors {
@@ -41,6 +41,12 @@ export function useMyProfile() {
 
   function update(patch: Partial<Member>) {
     setLocalMember((m) => (m ? { ...m, ...patch } : m));
+    // Le téléphone est signalé dès la saisie d'un caractère interdit (ex. une
+    // lettre), plutôt que d'attendre la soumission comme les autres champs.
+    if (patch.telephone !== undefined) {
+      const formatError = validatePhoneFormat(patch.telephone ?? "");
+      setFieldErrors((fe) => ({ ...fe, telephone: formatError ?? undefined }));
+    }
   }
 
   function clearFieldError(key: keyof ContactErrors) {
