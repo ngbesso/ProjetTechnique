@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.models.church import Church
 from app.models.rbac import Role, UserRole
+from app.models.setting import AppSetting
 from app.models.user import User
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -39,6 +40,16 @@ def test_request_creates_pending_and_emails(client, fake_email, db_session):
     assert r.status_code == 201
     assert r.json()["status"] == "pending"
     assert fake_email.sent and fake_email.sent[0][0] == "marie@b.com"
+
+
+def test_request_welcome_message_is_customizable(client, fake_email, db_session):
+    setting = db_session.get(AppSetting, "membership_received_template")
+    setting.value = "Salut {prenom} {nom}, à bientôt !"
+    db_session.commit()
+
+    _request(client, _mother_id(db_session), "custom@b.com", "Marie", "Koffi")
+
+    assert fake_email.sent[0][2] == "Salut Marie Koffi, à bientôt !"
 
 
 def test_request_unknown_church(client, fake_email):
@@ -357,6 +368,26 @@ def test_approve_creates_user_and_sends_invite(
     assert r.json()["status"] == "active"
     assert db_session.scalar(select(User).where(User.email == "new@b.com")) is not None
     assert fake_email.sent
+
+
+def test_approve_invite_message_is_customizable(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    setting = db_session.get(AppSetting, "membership_approved_invite_template")
+    setting.value = "Bienvenue {prenom}, cliquez ici : {lien}"
+    db_session.commit()
+    member_id = _request(
+        client, _mother_id(db_session), "invite@b.com", "Ivan", "Test"
+    ).json()["id"]
+
+    r = client.post(f"/members/{member_id}/approve", headers=h)
+
+    assert r.status_code == 200
+    body = fake_email.sent[-1][2]
+    assert body.startswith("Bienvenue Ivan, cliquez ici : ")
+    assert "definir-mot-de-passe" in body
 
 
 def test_request_with_existing_user_email_rejected(

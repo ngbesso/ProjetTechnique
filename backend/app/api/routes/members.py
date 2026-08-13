@@ -21,7 +21,12 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_global_permission
-from app.core.email import EmailSender, get_email_sender, membership_received
+from app.core.email import (
+    EmailSender,
+    get_email_sender,
+    membership_received,
+    render_template,
+)
 from app.db.pagination import paginate
 from app.db.session import get_db
 from app.models.church import Church
@@ -163,9 +168,13 @@ def request_membership(
     if member_service.auto_approve_enabled(db):
         member_service.approve(member, db, background, sender)
     else:
-        background.add_task(
-            membership_received, sender, member.email, member.first_name
+        template = member_service.get_template(
+            db,
+            "membership_received_template",
+            member_service.DEFAULT_MEMBERSHIP_RECEIVED_TEMPLATE,
         )
+        message = render_template(template, prenom=member.first_name, nom=member.last_name)
+        background.add_task(membership_received, sender, member.email, message)
 
     db.commit()
     db.refresh(member)
