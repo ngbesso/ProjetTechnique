@@ -23,6 +23,7 @@ from app.models.member import Member
 from app.schemas.donation import (
     CategoryCount,
     DonationAdminStats,
+    DonationCategoryUpdate,
     DonationCreate,
     DonationManualCreate,
     DonationRead,
@@ -209,6 +210,24 @@ def create_manual_donation(
     return donation_service.create_manual_donation(
         db, payload, member=member, donor=donor
     )
+
+
+@router.patch(
+    "/{donation_id}/category",
+    response_model=DonationRead,
+    dependencies=[can_manage_finance],
+)
+def update_donation_category(
+    donation_id: int, payload: DonationCategoryUpdate, db: Session = Depends(get_db)
+):
+    """Complète ou corrige la catégorie d'un don après coup — notamment les
+    dons reçus via le webhook Zeffy (catégorie inconnue à la création,
+    formulaire Zeffy générique)."""
+    donation = _load_admin(db, donation_id)
+    donation.category = payload.category
+    db.commit()
+    db.refresh(donation)
+    return donation
 
 
 @router.get("/admin/stats", response_model=DonationAdminStats)

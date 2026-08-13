@@ -27,6 +27,7 @@ def _request(client, church_id, email="a@b.com", first="Alice", last="Test", **e
         "first_name": first,
         "last_name": last,
         "email": email,
+        "sexe": "Masculin",
         **extra,
     }
     return client.post("/members/request", json=payload)
@@ -60,6 +61,7 @@ def test_request_unknown_church(client, fake_email):
             "first_name": "X",
             "last_name": "Y",
             "email": "x@b.com",
+            "sexe": "Masculin",
         },
     )
     assert r.status_code == 404
@@ -67,6 +69,34 @@ def test_request_unknown_church(client, fake_email):
 
 def test_request_invalid_email(client, db_session):
     r = _request(client, _mother_id(db_session), email="not-an-email")
+    assert r.status_code == 422
+
+
+def test_request_missing_sexe_rejected(client, db_session):
+    r = client.post(
+        "/members/request",
+        json={
+            "church_id": _mother_id(db_session),
+            "first_name": "Sans",
+            "last_name": "Sexe",
+            "email": "sanssexe@b.com",
+        },
+    )
+    assert r.status_code == 422
+
+
+def test_request_purely_numeric_first_name_rejected(client, db_session):
+    r = _request(client, _mother_id(db_session), first="12345")
+    assert r.status_code == 422
+
+
+def test_request_purely_numeric_last_name_rejected(client, db_session):
+    r = _request(client, _mother_id(db_session), last="67890")
+    assert r.status_code == 422
+
+
+def test_request_telephone_with_letters_rejected(client, db_session):
+    r = _request(client, _mother_id(db_session), telephone="514ABCDEFG")
     assert r.status_code == 422
 
 
@@ -191,8 +221,8 @@ def test_list_with_family_status_filter(
 ):
     make_user("admin@b.com", roles=["admin"])
     mother = _mother_id(db_session)
-    _request(client, mother, "fs1@b.com", "F", "1", family_status="Marié(e)")
-    _request(client, mother, "fs2@b.com", "F", "2", family_status="Célibataire")
+    _request(client, mother, "fs1@b.com", "F", "Un", family_status="Marié(e)")
+    _request(client, mother, "fs2@b.com", "F", "Deux", family_status="Célibataire")
     h = auth_header("admin@b.com")
 
     r = client.get("/members?family_status=Marié(e)", headers=h)
@@ -229,10 +259,10 @@ def test_stats_counts_by_status(client, fake_email, make_user, auth_header, db_s
     make_user("admin@b.com", roles=["admin"])
     h = auth_header("admin@b.com")
     mother = _mother_id(db_session)
-    _request(client, mother, "s1@b.com", "S", "1")
-    m2 = _request(client, mother, "s2@b.com", "S", "2").json()["id"]
-    m3 = _request(client, mother, "s3@b.com", "S", "3").json()["id"]
-    m4 = _request(client, mother, "s4@b.com", "S", "4").json()["id"]
+    _request(client, mother, "s1@b.com", "S", "Un")
+    m2 = _request(client, mother, "s2@b.com", "S", "Deux").json()["id"]
+    m3 = _request(client, mother, "s3@b.com", "S", "Trois").json()["id"]
+    m4 = _request(client, mother, "s4@b.com", "S", "Quatre").json()["id"]
     client.post(f"/members/{m2}/approve", headers=h)
     client.post(f"/members/{m3}/approve", headers=h)
     client.post(f"/members/{m3}/deactivate", headers=h)
@@ -275,10 +305,10 @@ def test_family_status_stats_counts_by_value(
 ):
     make_user("admin@b.com", roles=["admin"])
     mother = _mother_id(db_session)
-    _request(client, mother, "m1@b.com", "M", "1", family_status="Marié(e)")
-    _request(client, mother, "m2@b.com", "M", "2", family_status="Marié(e)")
-    _request(client, mother, "m3@b.com", "M", "3", family_status="Célibataire")
-    _request(client, mother, "m4@b.com", "M", "4")
+    _request(client, mother, "m1@b.com", "M", "Un", family_status="Marié(e)")
+    _request(client, mother, "m2@b.com", "M", "Deux", family_status="Marié(e)")
+    _request(client, mother, "m3@b.com", "M", "Trois", family_status="Célibataire")
+    _request(client, mother, "m4@b.com", "M", "Quatre")
     h = auth_header("admin@b.com")
 
     r = client.get("/members/admin/stats/family-status", headers=h)
@@ -442,6 +472,81 @@ def test_cannot_approve_outside_scope(
     db_session.flush()
     r = client.post(f"/members/{mid}/approve", headers=auth_header("chef@b.com"))
     assert r.status_code == 403
+
+
+# ── POST /members/admin/approve-all ─────────────────────────────────────────────
+
+
+def test_approve_all_requires_auth(client):
+    r = client.post("/members/admin/approve-all")
+    assert r.status_code == 401
+
+
+def test_approve_all_approves_every_pending_member(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    mid1 = _request(client, _mother_id(db_session), "bulk1@b.com", "Un", "T").json()["id"]
+    mid2 = _request(client, _mother_id(db_session), "bulk2@b.com", "Deux", "T").json()["id"]
+
+    r = client.post("/members/admin/approve-all", headers=h)
+
+    assert r.status_code == 200
+    assert r.json()["approved"] == 2
+    assert client.get(f"/members/{mid1}", headers=h).json()["status"] == "active"
+    assert client.get(f"/members/{mid2}", headers=h).json()["status"] == "active"
+
+
+def test_approve_all_leaves_non_pending_members_untouched(
+    client, fake_email, make_user, auth_header, db_session
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    already_active = _request(client, _mother_id(db_session), "active@b.com").json()["id"]
+    client.post(f"/members/{already_active}/approve", headers=h)
+    rejected = _request(client, _mother_id(db_session), "rej@b.com").json()["id"]
+    client.post(f"/members/{rejected}/reject", headers=h)
+
+    r = client.post("/members/admin/approve-all", headers=h)
+
+    assert r.status_code == 200
+    assert r.json()["approved"] == 0
+    assert client.get(f"/members/{rejected}", headers=h).json()["status"] == "rejected"
+
+
+def test_approve_all_returns_zero_when_nothing_pending(
+    client, fake_email, make_user, auth_header
+):
+    make_user("admin@b.com", roles=["admin"])
+    h = auth_header("admin@b.com")
+    r = client.post("/members/admin/approve-all", headers=h)
+    assert r.status_code == 200
+    assert r.json()["approved"] == 0
+
+
+def test_approve_all_scoped_to_admin_church(
+    client, fake_email, make_user, auth_header, db_session
+):
+    """Un admin d'affiliée n'approuve en masse que les membres de son périmètre,
+    jamais ceux d'une autre église affiliée."""
+    make_user("boss@b.com", roles=["admin"])
+    h = auth_header("boss@b.com")
+    a = _affiliate(client, h, "A", "Ouest")
+    b = _affiliate(client, h, "B", "Est")
+    mine = _request(client, a, "mine@b.com", "Moi", "T").json()["id"]
+    theirs = _request(client, b, "theirs@b.com", "Eux", "T").json()["id"]
+    chef = make_user("chef@b.com")
+    admin = db_session.scalar(select(Role).where(Role.name == "admin"))
+    db_session.add(UserRole(user_id=chef.id, role_id=admin.id, church_id=a))
+    db_session.flush()
+
+    r = client.post("/members/admin/approve-all", headers=auth_header("chef@b.com"))
+
+    assert r.status_code == 200
+    assert r.json()["approved"] == 1
+    assert client.get(f"/members/{mine}", headers=h).json()["status"] == "active"
+    assert client.get(f"/members/{theirs}", headers=h).json()["status"] == "pending"
 
 
 # ── POST /members/{id}/reject ─────────────────────────────────────────────────

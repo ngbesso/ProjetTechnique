@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import type { Member, MemberQuery, MemberUpdateInput } from "../types";
 import {
-    fetchMembers, approveMember, rejectMember, deactivateMember, activateMember, updateMember,
+    fetchMembers, approveMember, approveAllPendingMembers, rejectMember, deactivateMember, activateMember, updateMember,
 } from "../lib/api/members";
 import { useAsyncList } from "./useAsyncList";
 
@@ -21,6 +21,11 @@ export function useMembers() {
         const u = await approveMember(id);
         setMembers((prev) => prev.map((m) => (m.id === u.id ? u : m)));
     }, []);
+
+    // Une approbation groupée peut modifier des membres absents de la page
+    // courante (pagination) : on renvoie juste le résultat, la liste se
+    // rafraîchit ensuite via un nouvel appel à load().
+    const approveAll = useCallback(() => approveAllPendingMembers(), []);
 
     const reject = useCallback(async (id: number) => {
         const u = await rejectMember(id);
@@ -43,5 +48,5 @@ export function useMembers() {
         return u;
     }, []);
 
-    return { members, total, loading, error, load, approve, reject, deactivate, activate, edit };
+    return { members, total, loading, error, load, approve, approveAll, reject, deactivate, activate, edit };
 }

@@ -18,6 +18,15 @@ export function validatePhone(value: string): string | null {
   return null;
 }
 
+// Filtre appliqué au fil de la saisie (onChange) : retire immédiatement tout
+// caractère qui ne serait de toute façon jamais valide dans un téléphone
+// (lettres, symboles...), plutôt que d'attendre la validation au submit pour
+// signaler l'erreur. Les caractères autorisés reprennent exactement ceux de
+// validatePhone ci-dessus.
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^+\d\s\-.()[\]]/g, "");
+}
+
 // ── Courriel ──────────────────────────────────────────────────────────────────
 
 export function validateEmail(value: string): string | null {
@@ -31,6 +40,19 @@ export function validateEmail(value: string): string | null {
 export function validateEmailOptional(value: string): string | null {
   if (!value.trim()) return null;
   return validateEmail(value);
+}
+
+// ── Nom / prénom ─────────────────────────────────────────────────────────────
+// Doit contenir au moins une lettre : rejette un nom composé uniquement de
+// chiffres (ex. "12345"), sans interdire les tirets, apostrophes ou espaces
+// (ex. "Jean-Pierre", "O'Brien").
+
+export function validateName(value: string): string | null {
+  if (!value.trim()) return "Ce champ est requis.";
+  if (!/\p{L}/u.test(value)) {
+    return "Doit contenir au moins une lettre.";
+  }
+  return null;
 }
 
 // ── Adresse ───────────────────────────────────────────────────────────────────

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { useParameters } from "../../hooks/useParameters";
 import { TODAY, YESTERDAY } from "../../lib/format";
-import { validatePhone, validateAddress } from "../../lib/validation";
+import { validatePhone, validateAddress, validateName, sanitizePhoneInput } from "../../lib/validation";
 import type { Member, MemberUpdateInput } from "../../types";
 
-type FieldErrors = { telephone?: string; address?: string };
+type FieldErrors = { telephone?: string; address?: string; first_name?: string; last_name?: string };
 
 function toEditForm(m: Member): MemberUpdateInput {
     return {
@@ -42,6 +42,8 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
         const errs: FieldErrors = {
             telephone: validatePhone(form.telephone ?? "") ?? undefined,
             address: validateAddress(form.address ?? "") ?? undefined,
+            first_name: validateName(form.first_name ?? "") ?? undefined,
+            last_name: validateName(form.last_name ?? "") ?? undefined,
         };
         if (Object.values(errs).some(Boolean)) {
             setFieldErrors(errs);
@@ -76,10 +78,10 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                         <div className={styles.formGrid}>
                             <input className={styles.input} placeholder="Prénom *" required
                                 value={form.first_name ?? ""}
-                                onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+                                onChange={(e) => { setForm({ ...form, first_name: e.target.value }); setFieldErrors((fe) => ({ ...fe, first_name: undefined })); }} />
                             <input className={styles.input} placeholder="Nom *" required
                                 value={form.last_name ?? ""}
-                                onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+                                onChange={(e) => { setForm({ ...form, last_name: e.target.value }); setFieldErrors((fe) => ({ ...fe, last_name: undefined })); }} />
                             <input className={styles.input} placeholder="Adresse"
                                 value={form.address ?? ""}
                                 onChange={(e) => { setForm({ ...form, address: e.target.value || null }); setFieldErrors((fe) => ({ ...fe, address: undefined })); }} />
@@ -90,7 +92,7 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                             </select>
                             <input className={styles.input} placeholder="Téléphone" type="tel"
                                 value={form.telephone ?? ""}
-                                onChange={(e) => { setForm({ ...form, telephone: e.target.value || null }); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }} />
+                                onChange={(e) => { setForm({ ...form, telephone: sanitizePhoneInput(e.target.value) || null }); setFieldErrors((fe) => ({ ...fe, telephone: undefined })); }} />
                             <input className={styles.input} type="date" placeholder="Date de naissance" max={YESTERDAY}
                                 value={form.birth_date ?? ""}
                                 onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })} />
@@ -108,6 +110,8 @@ export function MemberEditModal({ member, onClose, onSave }: EditModalProps) {
                                 Baptisé(e)
                             </label>
                         </div>
+                        {fieldErrors.first_name && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>Prénom : {fieldErrors.first_name}</p>}
+                        {fieldErrors.last_name && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>Nom : {fieldErrors.last_name}</p>}
                         {fieldErrors.telephone && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{fieldErrors.telephone}</p>}
                         {fieldErrors.address && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{fieldErrors.address}</p>}
                         {error && <p className={styles.errorMsg} role="alert" style={{ marginTop: "0.75rem" }}>{error}</p>}

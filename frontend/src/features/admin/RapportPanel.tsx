@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./AdminPage.module.css";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import {
@@ -6,9 +6,44 @@ import {
   downloadTransactionAttachment,
   fetchFinanceReport,
 } from "../../lib/api/finances";
+import { CATEGORY_LABELS as DONATION_CATEGORY_LABELS } from "./revenus/donationLabels";
 import { IconTrendingUp } from "../../components/ui/icons";
 import { KpiCard } from "../../components/ui/KpiCard";
 import type { FinancePeriod, FinanceReport, FinanceTransaction } from "../../types";
+
+// Les dons stockent une catégorie sous forme de slug (soutien_spirituel...) ;
+// les dépenses stockent déjà un libellé français lisible — rien à traduire
+// de ce côté.
+function categoryLabel(tx: FinanceTransaction): string {
+  return tx.type === "revenu" ? (DONATION_CATEGORY_LABELS[tx.category] ?? tx.category) : tx.category;
+}
+
+interface CategoryGroup {
+  key: string;
+  category: string;
+  type: FinanceTransaction["type"];
+  currency: string;
+  total: number;
+  count: number;
+}
+
+/** Regroupe par (type, catégorie, devise) — jamais additionner CAD et USD
+ * dans un même sous-total, sous peine de montant faux et trompeur. */
+function groupByCategory(transactions: FinanceTransaction[]): CategoryGroup[] {
+  const map = new Map<string, CategoryGroup>();
+  for (const t of transactions) {
+    const category = categoryLabel(t);
+    const key = `${t.type}::${category}::${t.currency}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total += t.amount;
+      existing.count += 1;
+    } else {
+      map.set(key, { key, category, type: t.type, currency: t.currency, total: t.amount, count: 1 });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.total - a.total);
+}
 
 // ── Icônes KPI ────────────────────────────────────────────────────────────────
 
@@ -65,8 +100,18 @@ export function RapportPanel() {
   const [period, setPeriod] = useState<FinancePeriod | "">("month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [viewMode, setViewMode] = useState<"globale" | "categories">("globale");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  // Regroupement calculé à partir des transactions déjà chargées : basculer
+  // de vue est instantané, sans nouvel appel réseau ni rechargement de page.
+  const categoryGroups = useMemo(
+    () => (report ? groupByCategory(report.transactions) : []),
+    [report],
+  );
+  const revenueGroups = categoryGroups.filter((g) => g.type === "revenu");
+  const expenseGroups = categoryGroups.filter((g) => g.type === "dépense");
 
   function currentParams() {
     return period === "custom"
@@ -124,7 +169,10 @@ export function RapportPanel() {
         );
       },
     }),
-    txCol.accessor("category", { header: "Catégorie" }),
+    txCol.accessor("category", {
+      header: "Catégorie",
+      cell: (info) => categoryLabel(info.row.original),
+    }),
     txCol.accessor("amount", {
       header: "Montant",
       cell: (info) => <><strong>{info.getValue().toFixed(2)}</strong> {info.row.original.currency}</>,
@@ -170,6 +218,14 @@ export function RapportPanel() {
           </div>
         </div>
 
+        {report && (
+          <p style={{ fontSize: ".85rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
+            Période du {report.period_start} au {report.period_end}
+            {" · "}{report.income_count} revenu{report.income_count > 1 ? "s" : ""}
+            {" · "}{report.expense_count} dépense{report.expense_count > 1 ? "s" : ""}
+          </p>
+        )}
+
         <div className={styles.filterBar}>
           {(Object.keys(PERIOD_LABELS) as FinancePeriod[]).map((p) => (
             <button
@@ -192,11 +248,26 @@ export function RapportPanel() {
           </div>
         )}
 
+        <div className={styles.filterBar}>
+          <button
+            className={viewMode === "globale" ? styles.btnPrimary : styles.btnOutlineSm}
+            onClick={() => setViewMode("globale")}
+          >
+            Vue globale
+          </button>
+          <button
+            className={viewMode === "categories" ? styles.btnPrimary : styles.btnOutlineSm}
+            onClick={() => setViewMode("categories")}
+          >
+            Vue par catégories
+          </button>
+        </div>
+
         {exportError && <p className={styles.errorMsg} role="alert">{exportError}</p>}
 
         {loading ? (
           <p className={styles.stateMsg}>Chargement…</p>
-        ) : (
+        ) : viewMode === "globale" ? (
           <div className={styles.listBody}>
             <DataTable
               columns={transactionColumns}
@@ -205,8 +276,54 @@ export function RapportPanel() {
               emptyMessage="Aucune transaction sur cette période."
             />
           </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <CategoryGroupList title="Revenus" groups={revenueGroups} emptyMessage="Aucun revenu sur cette période." />
+            <CategoryGroupList title="Dépenses" groups={expenseGroups} emptyMessage="Aucune dépense sur cette période." />
+          </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function CategoryGroupList({
+  title,
+  groups,
+  emptyMessage,
+}: {
+  title: string;
+  groups: CategoryGroup[];
+  emptyMessage: string;
+}) {
+  return (
+    <div>
+      <h4 style={{ margin: "0 0 .6rem", fontSize: ".9rem", fontWeight: 700 }}>{title}</h4>
+      {groups.length === 0 ? (
+        <p className={styles.stateMsg}>{emptyMessage}</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".4rem" }}>
+          {groups.map((g) => (
+            <li
+              key={g.key}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: ".55rem .75rem",
+                background: "var(--neutral-bg)",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <span>
+                {g.category}{" "}
+                <span style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>({g.count})</span>
+              </span>
+              <strong>{g.total.toFixed(2)} $ {g.currency}</strong>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -34,6 +34,14 @@ class DonationCreate(BaseModel):
         return round(v, 2)
 
 
+class DonationCategoryUpdate(BaseModel):
+    """Complète ou corrige la catégorie d'un don après coup — notamment les
+    dons reçus via le webhook Zeffy, dont le formulaire générique ne
+    transmet pas de catégorie à la création."""
+
+    category: DonationCategory
+
+
 class DonationManualCreate(BaseModel):
     """Saisie manuelle d'un revenu (don/dîme/offrande) par un administrateur —
     église et donateur facultatifs, contrairement au formulaire membre public."""
