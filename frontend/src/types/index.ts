@@ -178,6 +178,22 @@ export interface FinanceReport {
   transactions: FinanceTransaction[];
 }
 
+export interface DonorAnnualReportEntry {
+  donor_name: string;
+  donor_email: string | null;
+  currency: string;
+  /** 12 montants, janvier (indice 0) à décembre (indice 11). */
+  monthly_totals: number[];
+  annual_total: number;
+  donation_count: number;
+}
+
+export interface DonorAnnualReport {
+  year: number;
+  generated_at: string;
+  entries: DonorAnnualReportEntry[];
+}
+
 export interface ParameterValue {
   id: number;
   category: string;

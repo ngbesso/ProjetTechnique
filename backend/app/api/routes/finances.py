@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_global_permission
 from app.db.session import get_db
-from app.schemas.finance import FinanceReport
+from app.schemas.finance import DonorAnnualReport, FinanceReport
 from app.services import finance_service, report_builder
 
 router = APIRouter(prefix="/finances", tags=["finances"])
@@ -75,6 +75,65 @@ def export_finance_report(
 
     today = datetime.now(timezone.utc).date()
     filename = f"rapport-financier-{today.isoformat()}.{extension}"
+    return StreamingResponse(
+        iter([content]),
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get(
+    "/rapport-annuel-donateurs",
+    response_model=DonorAnnualReport,
+    dependencies=[can_manage],
+)
+def get_annual_donor_report(
+    db: Annotated[Session, Depends(get_db)],
+    year: int | None = None,
+):
+    """Rapport annuel des dons par personne, réparti par mois — toutes les
+    églises confondues (année en cours si `year` est omis)."""
+    target_year = year or datetime.now(timezone.utc).year
+    return finance_service.build_annual_donor_report(db, target_year)
+
+
+@router.get("/rapport-annuel-donateurs/export", dependencies=[can_manage])
+def export_annual_donor_report(
+    db: Annotated[Session, Depends(get_db)],
+    format: str,
+    year: int | None = None,
+):
+    """Télécharge le rapport annuel des dons par personne (PDF, Excel ou CSV)."""
+    if format not in _FORMATS:
+        raise HTTPException(400, f"Format inconnu : {format}")
+
+    target_year = year or datetime.now(timezone.utc).year
+    report = finance_service.build_annual_donor_report(db, target_year)
+
+    rows = [
+        {
+            "Donateur": e.donor_name,
+            "Courriel": e.donor_email or "",
+            "Devise": e.currency,
+            **dict(zip(finance_service.MONTH_LABELS_FR, e.monthly_totals)),
+            "Total annuel": e.annual_total,
+            "Nombre de dons": e.donation_count,
+        }
+        for e in report.entries
+    ]
+    summary = [
+        ("Année", str(target_year)),
+        ("Généré le", report.generated_at.strftime("%d/%m/%Y %H:%M")),
+        ("Nombre de donateurs", str(len(report.entries))),
+    ]
+    tables = {"Dons par donateur": rows}
+
+    build_fn, media_type, extension = _FORMATS[format]
+    content = build_fn(
+        f"Rapport annuel des dons par donateur — {target_year}", summary, tables
+    )
+
+    filename = f"rapport-annuel-donateurs-{target_year}.{extension}"
     return StreamingResponse(
         iter([content]),
         media_type=media_type,
