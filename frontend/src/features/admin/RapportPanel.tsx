@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "./AdminPage.module.css";
+import { AnnualDonorReportView } from "./AnnualDonorReportView";
 import { DataTable, createColumnHelper } from "../../components/ui/DataTable";
 import {
   downloadFinanceReport,
@@ -100,7 +101,7 @@ export function RapportPanel() {
   const [period, setPeriod] = useState<FinancePeriod | "">("month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [viewMode, setViewMode] = useState<"globale" | "categories">("globale");
+  const [viewMode, setViewMode] = useState<"globale" | "categories" | "annuel-donateurs">("globale");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -211,14 +212,16 @@ export function RapportPanel() {
       <section className={styles.card}>
         <div className={styles.listHeader}>
           <h3 className={styles.cardTitle} style={{ margin: 0 }}>Rapport financier</h3>
-          <div className={styles.actions}>
-            <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("pdf")}>PDF</button>
-            <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("excel")}>Excel</button>
-            <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("csv")}>CSV</button>
-          </div>
+          {viewMode !== "annuel-donateurs" && (
+            <div className={styles.actions}>
+              <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("pdf")}>PDF</button>
+              <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("excel")}>Excel</button>
+              <button className={styles.btnOutlineSm} disabled={exporting} onClick={() => handleExport("csv")}>CSV</button>
+            </div>
+          )}
         </div>
 
-        {report && (
+        {viewMode !== "annuel-donateurs" && report && (
           <p style={{ fontSize: ".85rem", color: "var(--text-muted)", margin: "0 0 1rem" }}>
             Période du {report.period_start} au {report.period_end}
             {" · "}{report.income_count} revenu{report.income_count > 1 ? "s" : ""}
@@ -226,22 +229,24 @@ export function RapportPanel() {
           </p>
         )}
 
-        <div className={styles.filterBar}>
-          {(Object.keys(PERIOD_LABELS) as FinancePeriod[]).map((p) => (
-            <button
-              key={p}
-              className={period === p ? styles.btnPrimary : styles.btnOutlineSm}
-              onClick={() => setPeriod(p)}
-            >
-              {PERIOD_LABELS[p]}
+        {viewMode !== "annuel-donateurs" && (
+          <div className={styles.filterBar}>
+            {(Object.keys(PERIOD_LABELS) as FinancePeriod[]).map((p) => (
+              <button
+                key={p}
+                className={period === p ? styles.btnPrimary : styles.btnOutlineSm}
+                onClick={() => setPeriod(p)}
+              >
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+            <button className={period === "" ? styles.btnPrimary : styles.btnOutlineSm} onClick={() => setPeriod("")}>
+              Historique complet
             </button>
-          ))}
-          <button className={period === "" ? styles.btnPrimary : styles.btnOutlineSm} onClick={() => setPeriod("")}>
-            Historique complet
-          </button>
-        </div>
+          </div>
+        )}
 
-        {period === "custom" && (
+        {viewMode !== "annuel-donateurs" && period === "custom" && (
           <div className={styles.filterBar}>
             <input type="date" className={styles.input} value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
             <input type="date" className={styles.input} value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
@@ -261,11 +266,19 @@ export function RapportPanel() {
           >
             Vue par catégories
           </button>
+          <button
+            className={viewMode === "annuel-donateurs" ? styles.btnPrimary : styles.btnOutlineSm}
+            onClick={() => setViewMode("annuel-donateurs")}
+          >
+            Rapport annuel par donateur
+          </button>
         </div>
 
         {exportError && <p className={styles.errorMsg} role="alert">{exportError}</p>}
 
-        {loading ? (
+        {viewMode === "annuel-donateurs" ? (
+          <AnnualDonorReportView />
+        ) : loading ? (
           <p className={styles.stateMsg}>Chargement…</p>
         ) : viewMode === "globale" ? (
           <div className={styles.listBody}>
