@@ -1,5 +1,5 @@
 import { http } from "./client";
-import type { FinancePeriod, FinanceReport } from "../../types";
+import type { DonorAnnualReport, FinancePeriod, FinanceReport } from "../../types";
 
 export function fetchFinanceReport(params?: {
   period?: FinancePeriod;
@@ -29,4 +29,15 @@ export function downloadFinanceReport(
   if (params?.start) qs.set("start", params.start);
   if (params?.end) qs.set("end", params.end);
   return http.getBlob(`/finances/report/export?${qs.toString()}`);
+}
+
+export function fetchAnnualDonorReport(year: number): Promise<DonorAnnualReport> {
+  return http.get<DonorAnnualReport>(`/finances/rapport-annuel-donateurs?year=${year}`);
+}
+
+export function downloadAnnualDonorReport(
+  format: "pdf" | "excel" | "csv",
+  year: number,
+): Promise<Blob> {
+  return http.getBlob(`/finances/rapport-annuel-donateurs/export?format=${format}&year=${year}`);
 }

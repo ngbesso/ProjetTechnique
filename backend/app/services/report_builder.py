@@ -6,8 +6,10 @@ from docx import Document
 from openpyxl import Workbook
 from pydantic import BaseModel
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.config import settings
@@ -174,6 +176,10 @@ def build_word(
     return buf.getvalue()
 
 
+_CELL_FONT_SIZE = 8
+_WIDE_TABLE_COLUMN_THRESHOLD = 6
+
+
 def build_pdf(
     title: str,
     summary: list[tuple[str, str]],
@@ -181,7 +187,24 @@ def build_pdf(
     ai_summary: str | None = None,
 ) -> bytes:
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=letter)
+    # Une table à beaucoup de colonnes (ex. rapport annuel par donateur : nom,
+    # courriel, devise, 12 mois, total, nombre de dons) déborde de la marge en
+    # portrait sans qu'aucune erreur ne soit levée — le PDF est simplement
+    # tronqué au-delà de la largeur de page. Le format paysage, avec des
+    # marges resserrées, donne la largeur nécessaire.
+    wide = any(
+        rows and len(rows[0]) > _WIDE_TABLE_COLUMN_THRESHOLD for rows in tables.values()
+    )
+    pagesize = landscape(letter) if wide else letter
+    margin = 0.4 * inch if wide else inch
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=pagesize,
+        leftMargin=margin,
+        rightMargin=margin,
+        topMargin=inch,
+        bottomMargin=inch,
+    )
     styles = getSampleStyleSheet()
     story = [Paragraph(title, styles["Title"]), Spacer(1, 12)]
 
@@ -203,23 +226,67 @@ def build_pdf(
         else:
             headers = list(rows[0].keys())
             data = [headers] + [[str(row.get(h, "")) for h in headers] for row in rows]
-            story.append(_styled_table(data))
+            story.append(_styled_table(data, doc.width))
         story.append(Spacer(1, 12))
 
     doc.build(story)
     return buf.getvalue()
 
 
-def _styled_table(data: list[list[str]]) -> Table:
-    table = Table(data)
+# Doit correspondre au LEFTPADDING/RIGHTPADDING de _styled_table ci-dessous :
+# ignorer le remplissage des cellules dans le calcul de largeur fait
+# systématiquement passer à la ligne les colonnes déjà les plus étroites.
+_CELL_PADDING = 3.0
+
+
+def _column_widths(data: list[list[str]], available_width: float) -> list[float]:
+    """Répartit la largeur disponible entre les colonnes au prorata de leur
+    contenu le plus long (plancher lisible en dessous), plutôt que de laisser
+    reportlab dimensionner chaque colonne à son contenu sans limite — c'est
+    cette absence de limite qui fait déborder le tableau de la page."""
+    col_count = len(data[0])
+    padding = _CELL_PADDING * 2
+    max_lens = [
+        padding
+        + max(stringWidth(str(row[i]), "Helvetica", _CELL_FONT_SIZE) for row in data)
+        for i in range(col_count)
+    ]
+    total = sum(max_lens) or 1
+    min_width = 26.0 + padding
+    widths = [max(min_width, available_width * (length / total)) for length in max_lens]
+    scale = available_width / sum(widths)
+    return [w * scale for w in widths]
+
+
+def _styled_table(data: list[list[str]], available_width: float | None = None) -> Table:
+    base_styles = getSampleStyleSheet()
+    cell_style = ParagraphStyle(
+        "tableCell", parent=base_styles["BodyText"],
+        fontSize=_CELL_FONT_SIZE, leading=_CELL_FONT_SIZE + 2,
+    )
+    header_style = ParagraphStyle(
+        "tableHeader", parent=cell_style,
+        textColor=colors.white, fontName="Helvetica-Bold",
+    )
+    # Chaque cellule est enveloppée dans un Paragraph plutôt que passée comme
+    # texte brut : seul un flowable retourne correctement à la ligne dans une
+    # colonne étroite (ex. un long courriel) au lieu de déborder de sa cellule.
+    wrapped = [
+        [Paragraph(str(v), header_style if r == 0 else cell_style) for v in row]
+        for r, row in enumerate(data)
+    ]
+    col_widths = _column_widths(data, available_width) if available_width else None
+    table = Table(wrapped, colWidths=col_widths, repeatRows=1)
     table.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3b2f8a")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), _CELL_PADDING),
+                ("RIGHTPADDING", (0, 0), (-1, -1), _CELL_PADDING),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
             ]
         )
     )
