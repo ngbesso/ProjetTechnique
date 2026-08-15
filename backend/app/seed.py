@@ -542,6 +542,21 @@ def seed_parameters(db: Session) -> None:
             db.add(ParameterValue(category=category, label=label, position=pos))
 
 
+# Réglages d'abord semés vides, faute de connaître la valeur au moment du
+# premier amorçage. Sur une base déjà créée, `seed_settings` ne les aurait
+# jamais complétés : la clé existe, même vide. Ils sont donc rattrapés, mais
+# uniquement tant que personne ne les a renseignés à la main.
+BACKFILLED_SETTINGS = frozenset(
+    {
+        "site_tagline",
+        "social_youtube_url",
+        "social_facebook_url",
+        "social_instagram_url",
+        "social_whatsapp_url",
+    }
+)
+
+
 def seed_settings(db: Session) -> None:
     """Insère (idempotent) les paramètres système par défaut."""
     defaults = {
@@ -554,7 +569,7 @@ def seed_settings(db: Session) -> None:
         "membership_approved_template": DEFAULT_MEMBERSHIP_APPROVED_TEMPLATE,
         "membership_approved_invite_template": DEFAULT_MEMBERSHIP_APPROVED_INVITE_TEMPLATE,
         "site_name": MOTHER_NAME,
-        "site_tagline": "EENOJEC — Montréal, Québec",
+        "site_tagline": "EENOJEC",
         "site_logo_url": "",
         "hero_eyebrow": "Une famille de foi, au-delà des frontières",
         "hero_title": "Bienvenue dans notre communauté de foi",
@@ -587,16 +602,21 @@ def seed_settings(db: Session) -> None:
         "about_valeurs_list": ABOUT_VALEURS,
         "about_principes_list": ABOUT_PRINCIPES,
         "about_credo_list": ABOUT_CREDO,
-        # Réseaux sociaux : laissés vides plutôt que de pointer vers des comptes
-        # fictifs — une URL vide masque simplement l'icône du pied de page.
-        "social_youtube_url": "",
-        "social_facebook_url": "",
-        "social_instagram_url": "",
-        "social_whatsapp_url": "",
+        # Réseaux sociaux de l'organisation. Une URL vide masque simplement
+        # l'icône correspondante dans le pied de page.
+        "social_youtube_url": "https://www.youtube.com/@EENOJEC.%C3%89glise/",
+        "social_facebook_url": "https://facebook.com/mission",
+        "social_instagram_url": "https://www.instagram.com/eenojec/",
+        "social_whatsapp_url": "https://wa.me/15145550100",
     }
     for key, value in defaults.items():
-        if db.get(AppSetting, key) is None:
+        existing = db.get(AppSetting, key)
+        if existing is None:
             db.add(AppSetting(key=key, value=value))
+        elif key in BACKFILLED_SETTINGS and not existing.value.strip():
+            # Réglage resté vide depuis un amorçage antérieur : on le complète.
+            # La garde sur le vide interdit d'écraser une saisie d'administrateur.
+            existing.value = value
 
 
 def seed_menu_items(db: Session) -> None:
