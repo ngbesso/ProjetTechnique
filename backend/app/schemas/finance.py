@@ -29,6 +29,12 @@ class FinanceReport(BaseModel):
 class DonorAnnualReportEntry(BaseModel):
     donor_name: str
     donor_email: str | None
+    # Identité stable de la ligne (mutuellement exclusifs) : permet de
+    # retrouver/filtrer une ligne précise (ex. rapport individuel d'un
+    # membre) sans avoir à ré-identifier le donateur par nom/courriel, fragile
+    # pour les dons anonymes ou les homonymes.
+    member_id: int | None
+    donor_id: int | None
     # Devise de cette ligne : un même donateur ayant donné dans deux devises
     # obtient une ligne par devise, pour ne jamais mélanger les sommes.
     currency: str

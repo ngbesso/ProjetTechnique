@@ -181,6 +181,10 @@ export interface FinanceReport {
 export interface DonorAnnualReportEntry {
   donor_name: string;
   donor_email: string | null;
+  /** Identité stable de la ligne (mutuellement exclusifs), pour permettre le
+   * téléchargement du rapport individuel de ce membre/donateur précis. */
+  member_id: number | null;
+  donor_id: number | null;
   currency: string;
   /** 12 montants, janvier (indice 0) à décembre (indice 11). */
   monthly_totals: number[];
