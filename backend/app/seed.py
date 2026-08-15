@@ -542,19 +542,38 @@ def seed_parameters(db: Session) -> None:
             db.add(ParameterValue(category=category, label=label, position=pos))
 
 
-# Réglages d'abord semés vides, faute de connaître la valeur au moment du
-# premier amorçage. Sur une base déjà créée, `seed_settings` ne les aurait
-# jamais complétés : la clé existe, même vide. Ils sont donc rattrapés, mais
-# uniquement tant que personne ne les a renseignés à la main.
-BACKFILLED_SETTINGS = frozenset(
+# Réglages sociaux : les seuls que l'amorçage complète sur une base existante.
+# Ils ont d'abord été semés vides, faute de connaître les comptes ; sur une base
+# déjà créée, `seed_settings` ne les aurait jamais renseignés, puisque la clé
+# existe — même vide.
+SOCIAL_SETTINGS = frozenset(
     {
-        "site_tagline",
         "social_youtube_url",
         "social_facebook_url",
         "social_instagram_url",
         "social_whatsapp_url",
     }
 )
+
+# Liens posés à titre d'exemple avant que les comptes réels ne soient connus.
+# Ils mènent vers des pages inexistantes : les traiter comme une valeur vide,
+# donc remplaçables, plutôt que de les laisser en production.
+DEMO_SOCIAL_URLS = frozenset(
+    {
+        "https://facebook.com/mission",
+        "https://wa.me/15145550100",
+    }
+)
+
+
+def _is_admin_provided(value: str) -> bool:
+    """Vrai si la valeur en base a été saisie par un administrateur.
+
+    C'est la garde qui protège la configuration du client : hors valeur vide et
+    lien de démonstration, l'amorçage ne touche jamais à un réglage social.
+    """
+    stripped = value.strip()
+    return bool(stripped) and stripped not in DEMO_SOCIAL_URLS
 
 
 def seed_settings(db: Session) -> None:
@@ -602,20 +621,20 @@ def seed_settings(db: Session) -> None:
         "about_valeurs_list": ABOUT_VALEURS,
         "about_principes_list": ABOUT_PRINCIPES,
         "about_credo_list": ABOUT_CREDO,
-        # Réseaux sociaux de l'organisation. Une URL vide masque simplement
-        # l'icône correspondante dans le pied de page.
+        # Réseaux sociaux de l'organisation. Les comptes Facebook et WhatsApp
+        # restent vides tant qu'ils ne sont pas connus : une URL vide masque
+        # l'icône du pied de page, là où un lien inventé mènerait le visiteur
+        # vers une page inexistante.
         "social_youtube_url": "https://www.youtube.com/@EENOJEC.%C3%89glise/",
-        "social_facebook_url": "https://facebook.com/mission",
+        "social_facebook_url": "",
         "social_instagram_url": "https://www.instagram.com/eenojec/",
-        "social_whatsapp_url": "https://wa.me/15145550100",
+        "social_whatsapp_url": "",
     }
     for key, value in defaults.items():
         existing = db.get(AppSetting, key)
         if existing is None:
             db.add(AppSetting(key=key, value=value))
-        elif key in BACKFILLED_SETTINGS and not existing.value.strip():
-            # Réglage resté vide depuis un amorçage antérieur : on le complète.
-            # La garde sur le vide interdit d'écraser une saisie d'administrateur.
+        elif key in SOCIAL_SETTINGS and not _is_admin_provided(existing.value):
             existing.value = value
 
 
