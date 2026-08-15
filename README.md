@@ -39,6 +39,24 @@ Services exposés :
 - PostgreSQL : localhost:5432
 - Redis : localhost:6379
 
+### Hooks Git — obligatoire pour tous les contributeurs
+
+À lancer **une fois par poste de travail**, depuis la racine du dépôt :
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Cette commande active les hooks versionnés du dossier `.githooks/`. Git ne peut
+pas le faire automatiquement : `core.hooksPath` est un réglage local, jamais
+transporté par un clone.
+
+Le hook `commit-msg` refuse les messages de commit portant un trailer
+`Co-Authored-By:` attribué à Claude — les commits de ce dépôt ne mentionnent que
+leurs auteurs humains. La règle est également vérifiée en intégration continue
+par le job `no-ai-trailer`, qui bloque la pull request : le hook local vous
+évite d'avoir à réécrire l'historique après coup.
+
 ## Module IA (chatbot RAG)
 
 Le `ai-service` expose un assistant conversationnel (widget flottant sur le site
