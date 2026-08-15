@@ -1,0 +1,517 @@
+import pytest
+from sqlalchemy import select
+
+from app.core.config import settings
+from app.models.church import Church
+from app.models.donation import Donation
+
+BASE = "/api/donations"
+WEBHOOK_SECRET = "test-zeffy-secret"
+
+
+# ── fixtures / helpers ────────────────────────────────────────────────────────
+
+
+def _payload(church_id: int) -> dict:
+    return {
+        "amount": 50.0,
+        "currency": "CAD",
+        "category": "soutien_spirituel",
+        "church_id": church_id,
+    }
+
+
+# ── POST /api/donations/ ──────────────────────────────────────────────────────
+
+
+def test_create_donation_requires_auth(client, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    r = client.post(f"{BASE}/", json=_payload(church_id))
+    assert r.status_code == 401
+
+
+def test_create_donation_success(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donor@b.com", church_id)
+    r = client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor@b.com")
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["amount"] == 50.0
+    assert body["currency"] == "CAD"
+    assert body["receipt_number"].startswith("REC-")
+
+
+def test_create_donation_unknown_church(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donor2@b.com", church_id)
+    r = client.post(
+        f"{BASE}/",
+        json=_payload(999999),
+        headers=auth_header("donor2@b.com"),
+    )
+    assert r.status_code == 404
+
+
+def test_create_donation_zero_amount(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donor3@b.com", church_id)
+    payload = _payload(church_id)
+    payload["amount"] = 0
+    r = client.post(f"{BASE}/", json=payload, headers=auth_header("donor3@b.com"))
+    assert r.status_code == 422
+
+
+# ── GET /api/donations/me ─────────────────────────────────────────────────────
+
+
+def test_list_my_donations(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("me@b.com", church_id)
+    h = auth_header("me@b.com")
+    client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    client.post(f"{BASE}/", json=_payload(church_id), headers=h)
+    r = client.get(f"{BASE}/me", headers=h)
+    assert r.status_code == 200
+    assert len(r.json()) == 2
+
+
+def test_list_my_donations_requires_auth(client):
+    assert client.get(f"{BASE}/me").status_code == 401
+
+
+def test_list_my_donations_isolated_between_members(
+    client, make_member, auth_header, db_session
+):
+    """Un membre ne doit jamais voir les dons d'un autre membre via /me."""
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("donorA@b.com", church_id)
+    make_member("donorB@b.com", church_id)
+    client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donorA@b.com")
+    )
+
+    r_a = client.get(f"{BASE}/me", headers=auth_header("donorA@b.com"))
+    r_b = client.get(f"{BASE}/me", headers=auth_header("donorB@b.com"))
+    assert len(r_a.json()) == 1
+    assert len(r_b.json()) == 0
+
+
+# ── GET /api/donations/{id} ───────────────────────────────────────────────────
+
+
+def test_get_donation(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("getdon@b.com", church_id)
+    h = auth_header("getdon@b.com")
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
+        "id"
+    ]
+    r = client.get(f"{BASE}/{donation_id}", headers=h)
+    assert r.status_code == 200
+    assert r.json()["id"] == donation_id
+
+
+def test_get_donation_other_member_forbidden(
+    client, make_member, auth_header, db_session
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("owner@b.com", church_id)
+    make_member("intruder@b.com", church_id)
+    donation_id = client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("owner@b.com")
+    ).json()["id"]
+    r = client.get(f"{BASE}/{donation_id}", headers=auth_header("intruder@b.com"))
+    assert r.status_code == 403
+
+
+def test_get_donation_not_found(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("nfdon@b.com", church_id)
+    r = client.get(f"{BASE}/999999", headers=auth_header("nfdon@b.com"))
+    assert r.status_code == 404
+
+
+# ── GET /api/donations/{id}/recu ──────────────────────────────────────────────
+
+
+def test_get_receipt(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("recu@b.com", church_id)
+    h = auth_header("recu@b.com")
+    donation_id = client.post(f"{BASE}/", json=_payload(church_id), headers=h).json()[
+        "id"
+    ]
+    r = client.get(f"{BASE}/{donation_id}/recu", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert "receipt_number" in body
+    assert body["amount"] == 50.0
+    assert body["donor_email"] == "recu@b.com"
+
+
+# ── GET /api/donations/ (admin) ───────────────────────────────────────────────
+
+
+def test_list_all_requires_admin(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("plain2@b.com", church_id)
+    r = client.get(f"{BASE}/", headers=auth_header("plain2@b.com"))
+    assert r.status_code == 403
+
+
+def test_admin_can_list_all_donations(
+    client, make_user, make_member, auth_header, db_session
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_user("admin@b.com", roles=["admin"])
+    make_member("donor4@b.com", church_id)
+    client.post(
+        f"{BASE}/", json=_payload(church_id), headers=auth_header("donor4@b.com")
+    )
+    r = client.get(f"{BASE}/", headers=auth_header("admin@b.com"))
+    assert r.status_code == 200
+    assert len(r.json()) >= 1
+
+
+# ── GET /api/donations/admin/stats ────────────────────────────────────────────
+
+
+def test_donations_stats_requires_admin(client, make_member, auth_header, db_session):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_member("statsplain@b.com", church_id)
+    r = client.get(f"{BASE}/admin/stats", headers=auth_header("statsplain@b.com"))
+    assert r.status_code == 403
+
+
+def test_donations_stats_totals_category_and_top_lists(
+    client, make_user, make_member, auth_header, db_session
+):
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    make_user("admin@b.com", roles=["admin"])
+    donor1 = make_member("donorstat1@b.com", church_id)
+    donor2 = make_member("donorstat2@b.com", church_id)
+
+    def _give(email, amount, category="soutien_spirituel"):
+        payload = _payload(church_id)
+        payload["amount"] = amount
+        payload["category"] = category
+        client.post(f"{BASE}/", json=payload, headers=auth_header(email))
+
+    _give("donorstat1@b.com", 100, "soutien_spirituel")
+    _give("donorstat1@b.com", 50, "action_communautaire")
+    _give("donorstat2@b.com", 30, "developpement")
+
+    h = auth_header("admin@b.com")
+    r = client.get(f"{BASE}/admin/stats", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+
+    assert body["total_cad"] == 180
+    assert body["total_usd"] == 0
+
+    cat_map = {c["category"]: c["count"] for c in body["by_category"]}
+    assert cat_map["soutien_spirituel"] == 1
+    assert cat_map["action_communautaire"] == 1
+    assert cat_map["developpement"] == 1
+
+    assert len(body["top_donors"]) == 2
+    top = body["top_donors"][0]
+    assert top["name"] == donor1.full_name
+    assert top["total"] == 150
+    assert top["count"] == 2
+
+    assert len(body["top_churches"]) == 1
+    assert body["top_churches"][0]["church_id"] == church_id
+    assert body["top_churches"][0]["total"] == 180
+    _ = donor2
+
+
+# ── POST /api/donations/webhooks/zeffy ────────────────────────────────────────
+
+
+def _zeffy_payload(payment_id="zeffy-pay-1", amount=42.5, currency="CAD"):
+    return {
+        "event": "payment.completed",
+        "payment": {
+            "id": payment_id,
+            "amount": amount,
+            "currency": currency,
+            "buyer": {
+                "firstName": "Jean",
+                "lastName": "Dupont",
+                "email": "jean@ex.com",
+            },
+        },
+    }
+
+
+@pytest.fixture(autouse=True)
+def _zeffy_secret(monkeypatch):
+    monkeypatch.setattr(settings, "zeffy_webhook_secret", WEBHOOK_SECRET)
+
+
+def test_zeffy_webhook_wrong_secret(client):
+    r = client.post(f"{BASE}/webhooks/zeffy", json=_zeffy_payload())
+    assert r.status_code == 401
+
+    r = client.post(f"{BASE}/webhooks/zeffy?secret=wrong", json=_zeffy_payload())
+    assert r.status_code == 401
+
+
+def test_zeffy_webhook_creates_donation(client, db_session):
+    r = client.post(
+        f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=_zeffy_payload()
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "created"
+
+    donation = db_session.get(Donation, body["donation_id"])
+    assert donation.amount == 42.5
+    assert donation.currency == "CAD"
+    assert donation.church_id is None
+    assert donation.category is None
+    assert donation.member_id is None
+    assert donation.donor_name == "Jean Dupont"
+    assert donation.donor_email == "jean@ex.com"
+    assert donation.payment_reference == "zeffy-pay-1"
+    assert donation.payment_status == "succeeded"
+    assert donation.receipt_number.startswith("REC-")
+
+
+def test_zeffy_webhook_ignores_other_events(client, db_session):
+    payload = _zeffy_payload()
+    payload["event"] = "payment.refunded"
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 200
+    assert r.json()["status"] == "ignored"
+
+
+def test_zeffy_webhook_is_idempotent(client, db_session):
+    payload = _zeffy_payload(payment_id="zeffy-pay-dup")
+    r1 = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    r2 = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r1.json()["status"] == "created"
+    assert r2.json()["status"] == "duplicate"
+    assert r1.json()["donation_id"] == r2.json()["donation_id"]
+
+    count = (
+        db_session.query(Donation)
+        .filter(Donation.payment_reference == "zeffy-pay-dup")
+        .count()
+    )
+    assert count == 1
+
+
+def test_zeffy_webhook_missing_payment_id(client):
+    payload = _zeffy_payload()
+    payload["payment"].pop("id")
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 400
+
+
+def test_zeffy_webhook_invalid_amount(client):
+    payload = _zeffy_payload(payment_id="zeffy-pay-bad-amount")
+    payload["payment"]["amount"] = -5
+    r = client.post(f"{BASE}/webhooks/zeffy?secret={WEBHOOK_SECRET}", json=payload)
+    assert r.status_code == 400
+
+
+# ── POST /api/donations/admin (saisie manuelle) ───────────────────────────────
+
+
+def _admin_header(make_user, auth_header):
+    make_user("admin_donmanual@test.com", roles=["admin"])
+    return auth_header("admin_donmanual@test.com")
+
+
+def test_manual_donation_requires_finance_permission(client, make_user, auth_header):
+    make_user("regular_donmanual@test.com")
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 50.0, "contribution_type": "don"},
+        headers=auth_header("regular_donmanual@test.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_manual_donation_church_and_donor_optional(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 60.0, "contribution_type": "dime"},
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["contribution_type"] == "dime"
+    assert body["church_id"] is None
+    assert body["donor_name"] is None
+    assert body["payment_status"] == "manual"
+
+
+def test_manual_donation_with_donor_and_date(
+    client, make_user, auth_header, db_session
+):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={
+            "amount": 25.0,
+            "contribution_type": "offrande",
+            "donor_name": "Fidèle Anonyme",
+            "donor_email": "fidele@test.com",
+            "received_on": "2026-01-15",
+        },
+        headers=h,
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["donor_name"] == "Fidèle Anonyme"
+    assert body["created_at"].startswith("2026-01-15")
+
+
+def test_manual_donation_unknown_church(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 10.0, "contribution_type": "don", "church_id": 999999},
+        headers=h,
+    )
+    assert r.status_code == 404
+
+
+# ── PATCH /api/donations/{id}/category ────────────────────────────────────────
+
+
+def test_update_category_requires_finance_permission(client, make_user, auth_header):
+    make_user("regular_doncat@test.com")
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 40.0, "contribution_type": "don"},
+        headers=_admin_header(make_user, auth_header),
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "soutien_spirituel"},
+        headers=auth_header("regular_doncat@test.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_update_category_completes_uncategorized_donation(
+    client, make_user, auth_header
+):
+    """Cas typique : un don reçu via le webhook Zeffy, sans catégorie, que
+    l'admin complète après coup pour affiner le rapport financier."""
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 80.0, "contribution_type": "don"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+    assert r.json()["category"] is None
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "developpement"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    assert r.json()["category"] == "developpement"
+
+
+def test_update_category_corrects_existing_category(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 30.0, "contribution_type": "don", "category": "soutien_spirituel"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "action_communautaire"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    assert r.json()["category"] == "action_communautaire"
+
+
+def test_update_category_unknown_donation(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.patch(
+        f"{BASE}/999999/category",
+        json={"category": "soutien_spirituel"},
+        headers=h,
+    )
+    assert r.status_code == 404
+
+
+def test_update_category_invalid_value_rejected(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    r = client.post(
+        f"{BASE}/admin",
+        json={"amount": 20.0, "contribution_type": "don"},
+        headers=h,
+    )
+    donation_id = r.json()["id"]
+
+    r = client.patch(
+        f"{BASE}/{donation_id}/category",
+        json={"category": "pas_une_vraie_categorie"},
+        headers=h,
+    )
+    assert r.status_code == 422
+
+
+# ── Pièce jointe justificative ─────────────────────────────────────────────────
+
+
+def test_attachment_upload_download_delete(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 404
+
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=h,
+        files={"file": ("recu.txt", b"contenu du recu", "text/plain")},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["attachment_url"] == f"/api/donations/{donation_id}/attachment"
+    assert body["attachment_name"] == "recu.txt"
+
+    r = client.get(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 200
+    assert r.content == b"contenu du recu"
+
+    r = client.delete(f"{BASE}/{donation_id}/attachment", headers=h)
+    assert r.status_code == 204
+    assert client.get(f"{BASE}/{donation_id}/attachment", headers=h).status_code == 404
+
+
+def test_attachment_requires_finance_permission(client, make_user, auth_header):
+    h = _admin_header(make_user, auth_header)
+    donation_id = client.post(
+        f"{BASE}/admin", json={"amount": 15.0, "contribution_type": "don"}, headers=h
+    ).json()["id"]
+
+    make_user("regular_attach@test.com")
+    r = client.post(
+        f"{BASE}/{donation_id}/attachment",
+        headers=auth_header("regular_attach@test.com"),
+        files={"file": ("recu.txt", b"x", "text/plain")},
+    )
+    assert r.status_code == 403

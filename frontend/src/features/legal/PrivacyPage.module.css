@@ -1,0 +1,138 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--text-main);
+  background: #fff;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, #1e1458 0%, #3b2f8a 50%, #5b21b6 100%);
+  color: #fff;
+  padding: 3rem 2rem 3.5rem;
+  overflow: hidden;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.3rem 0.9rem;
+  border-radius: 99px;
+  margin-bottom: 1.25rem;
+}
+
+.heroTitle {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  margin: 0 0 1rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.heroSubtitle {
+  font-size: 1.05rem;
+  opacity: 0.8;
+  max-width: 520px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.heroDecor {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(139,92,246,0.35) 0%, transparent 40%),
+    radial-gradient(circle at 15% 80%, rgba(99,102,241,0.25) 0%, transparent 35%);
+}
+
+/* ── Contenu ──────────────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  padding: 3rem 1.5rem 4rem;
+  background: var(--neutral-bg);
+}
+
+.card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 6px 24px rgba(83, 74, 183, 0.08);
+  padding: 2rem 2.25rem 2.5rem;
+}
+
+.notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+  margin: 2rem 0 0.75rem;
+}
+
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+.card p {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  margin: 0 0 0.75rem;
+}
+
+.card ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card li {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 3rem 1.25rem 3.5rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.5rem 2rem;
+  }
+}

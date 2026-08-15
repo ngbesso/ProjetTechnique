@@ -1,0 +1,135 @@
+/* Le carrousel remplit entièrement l'espace que lui alloue son conteneur : pas
+   de marge, de coins arrondis ni d'ombre — il affleure les bords, au même
+   niveau que la section voisine. `flex: 1` lui fait prendre toute la hauteur
+   disponible lorsque le conteneur est une colonne flex (colonne droite du hero). */
+.wrap {
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.slide {
+  position: relative;
+  flex: 1;
+  /* Plancher volontairement sous le min-height du hero (440px) : `flex: 1`
+     suffit à remplir la colonne, et un plancher plus haut imposerait au hero
+     une épaisseur supérieure à celle voulue. */
+  min-height: 420px;
+  display: flex;
+  align-items: flex-end;
+  padding: 2.5rem;
+  color: #fff;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+}
+
+.slideOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0.05) 100%);
+}
+
+.slideBody {
+  position: relative;
+  max-width: 640px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  line-height: 1.25;
+}
+
+.excerpt {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  margin: 0 0 1rem;
+  max-width: 520px;
+}
+
+.readMore {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.arrows {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 3;
+}
+
+.arrowBtn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+}
+
+.arrowBtn:hover { background: rgba(255, 255, 255, 0.35); }
+
+.dots {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 2.5rem;
+  display: flex;
+  gap: 0.4rem;
+  z-index: 3;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, width 0.15s;
+}
+
+.dotActive {
+  background: #fff;
+  width: 1.5rem;
+}
+
+/* Empilé sous le bloc de bienvenue : le plancher de 560px n'a plus lieu d'être,
+   la diapositive reprend une hauteur de bandeau. */
+@media (max-width: 768px) {
+  .slide { min-height: 300px; padding: 1.75rem; }
+  .title { font-size: 1.25rem; }
+  .dots { left: 1.75rem; }
+}
+
+@media (max-width: 420px) {
+  .slide { min-height: 260px; padding: 1.25rem 1.25rem 3.5rem; }
+  .dots { left: 1.25rem; bottom: 1.25rem; }
+  .arrows { right: 1.25rem; bottom: 1.25rem; }
+}

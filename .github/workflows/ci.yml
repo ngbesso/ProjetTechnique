@@ -6,21 +6,60 @@ on:
   pull_request:
 
 jobs:
+  # Barrière qui fait foi contre les trailers d'IA : le hook .githooks/commit-msg
+  # dépend d'un réglage local (core.hooksPath) et se contourne avec --no-verify.
+  no-ai-trailer:
+    runs-on: ubuntu-latest
+    # Une pull request seule offre une plage de commits à inspecter ; sur un
+    # push direct, il n'y a pas de base de comparaison.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historique complet : sans lui, la base de la PR est hors du clone
+          # superficiel et la plage base..HEAD ne peut pas être résolue.
+          fetch-depth: 0
+      - name: Aucun trailer Co-Authored-By attribué à une IA
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          offenders=""
+          for sha in $(git rev-list "$BASE..$HEAD"); do
+            if git show -s --format=%B "$sha" \
+              | grep -iEq '^[[:space:]]*Co-Authored-By:.*claude'; then
+              offenders="$offenders $sha"
+            fi
+          done
+          if [ -n "$offenders" ]; then
+            echo "Trailer « Co-Authored-By: Claude » détecté sur ces commits :" >&2
+            for sha in $offenders; do
+              git show -s --format='  %h %s' "$sha" >&2
+            done
+            echo "" >&2
+            echo "Les commits de ce dépôt ne mentionnent que leurs auteurs humains." >&2
+            echo "Retirez ces lignes (git rebase -i $BASE) puis forcez la branche." >&2
+            exit 1
+          fi
+          echo "Aucun trailer Co-Authored-By attribué à une IA."
+
   backend:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16
         env:
           POSTGRES_USER: obnl
           POSTGRES_PASSWORD: changeme
           POSTGRES_DB: obnl_test
-        ports: ["5432:5432"]
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd pg_isready --health-interval 5s
-          --health-timeout 5s --health-retries 5
-    env:
-      TEST_DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+          --health-cmd "pg_isready -U obnl"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,11 +68,46 @@ jobs:
       - name: Install deps
         working-directory: backend
         run: pip install -r requirements.txt
+      - name: Start MinIO
+        # Pas de `services:` ici : l'image minio/minio exige un argument de
+        # commande (`server /data`), que `services:` ne permet pas de fournir
+        # (pas d'équivalent au `command:` de docker-compose). On la lance donc
+        # directement via `docker run`, avec un contrôle total sur la commande.
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:9000/minio/health/live && exit 0
+            sleep 2
+          done
+          echo "MinIO n'a pas démarré à temps" && exit 1
+      - name: Create MinIO bucket
+        run: |
+          docker run --rm --network host \
+            -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
+            minio/mc mb -p local/sermons
       - name: Lint (ruff)
         working-directory: backend
         run: ruff check .
       - name: Tests (pytest)
         working-directory: backend
+        env:
+          # L'app (seed au démarrage) et les tests pointent tous deux sur la base du service CI
+          DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+          TEST_DATABASE_URL: postgresql+psycopg://obnl:changeme@localhost:5432/obnl_test
+          # jwt_secret_key/admin_password n'ont plus de valeur par défaut en code
+          # (secrets codés en dur) — la CI doit les fournir explicitement.
+          JWT_SECRET_KEY: ci-test-secret-key-not-for-production
+          ADMIN_PASSWORD: CiTestAdmin1234!
+          # Pièces jointes (dons/dépenses) : le bucket "sermons" est créé par
+          # l'étape "Create MinIO bucket" ci-dessus.
+          S3_ENDPOINT_URL: http://localhost:9000
+          S3_PUBLIC_URL: http://localhost:9000
+          S3_BUCKET: sermons
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
         run: pytest -q
 
   ai-service:
@@ -60,9 +134,15 @@ jobs:
       - name: Install deps
         working-directory: frontend
         run: npm install
+      - name: Lint (eslint)
+        working-directory: frontend
+        run: npm run lint
       - name: Typecheck
         working-directory: frontend
         run: npm run typecheck
+      - name: Tests (vitest)
+        working-directory: frontend
+        run: npm run test
       - name: Build
         working-directory: frontend
         run: npm run build

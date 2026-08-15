@@ -1,0 +1,116 @@
+import asyncio
+import logging
+
+import httpx
+
+from app.core.config import settings
+from app.services.content_sync import fetch_documents
+from app.services.embeddings import embed
+from app.services.vector_store import ScoredDocument, vector_store
+
+logger = logging.getLogger(__name__)
+
+SYSTEM_PROMPT = (
+    "Tu es l'assistant virtuel de la Mission Évangélique, une plateforme pour une "
+    "communauté d'Églises affiliées. Réponds aux questions des visiteurs UNIQUEMENT à "
+    "partir des extraits de contenu fournis ci-dessous (articles de blog, sermons, "
+    "événements et formations, Églises affiliées, et informations générales sur la "
+    "mission, l'adhésion et les dons). Si l'information demandée ne s'y trouve pas, dis "
+    "clairement que tu ne sais pas et invite la personne à consulter la page "
+    "correspondante du site. N'invente jamais d'information. Réponds en français, de "
+    "façon concise et chaleureuse."
+)
+
+DOC_TYPES = ["post", "sermon", "event", "church", "info"]
+
+KIND_LABELS = {
+    "post": "Article de blog",
+    "sermon": "Sermon",
+    "event": "Événement",
+    "church": "Église affiliée",
+    "info": "Information générale",
+}
+
+
+async def warm_up_llm() -> None:
+    """Déclenche le chargement du modèle Ollama en mémoire pour éviter le
+    cold-start (~1 min) sur la première question d'un visiteur."""
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_url, timeout=120.0
+        ) as client:
+            await client.post(
+                "/api/chat",
+                json={
+                    "model": settings.ollama_model,
+                    "stream": False,
+                    "messages": [{"role": "user", "content": "Bonjour"}],
+                },
+            )
+    except httpx.HTTPError:
+        logger.exception("Échec du préchauffage du modèle Ollama")
+
+
+async def refresh_index() -> int:
+    """Recharge l'index vectoriel depuis le contenu publié du backend."""
+    documents = await fetch_documents()
+    embeddings = await asyncio.to_thread(embed, [d.text for d in documents])
+    vector_store.load(documents, embeddings)
+    logger.info("Index RAG reconstruit : %d documents", len(documents))
+    return len(documents)
+
+
+def _build_context(scored_docs: list[ScoredDocument]) -> str:
+    blocks = []
+    for sd in scored_docs:
+        kind = KIND_LABELS.get(sd.document.type, sd.document.type)
+        blocks.append(f"[{kind}] {sd.document.title}\n{sd.document.text}")
+    return "\n\n---\n\n".join(blocks)
+
+
+async def answer(question: str) -> dict:
+    if vector_store.size == 0:
+        return {
+            "answer": "Je n'ai pas encore de contenu indexé pour répondre à cette question.",
+            "sources": [],
+        }
+
+    query_embedding = (await asyncio.to_thread(embed, [question]))[0]
+    scored_docs = vector_store.search_balanced(
+        query_embedding, doc_types=DOC_TYPES, top_k_per_type=2, max_total=6
+    )
+    context = _build_context(scored_docs)
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_url, timeout=120.0
+        ) as client:
+            response = await client.post(
+                "/api/chat",
+                json={
+                    "model": settings.ollama_model,
+                    "stream": False,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": f"Contexte :\n\n{context}\n\n---\n\nQuestion : {question}",
+                        },
+                    ],
+                },
+            )
+            response.raise_for_status()
+        answer_text = response.json()["message"]["content"]
+    except (httpx.HTTPError, KeyError, ValueError):
+        logger.exception("Échec de l'appel au service Ollama")
+        return {
+            "answer": "Le service IA est temporairement indisponible. Réessaie plus tard.",
+            "sources": [],
+        }
+
+    return {
+        "answer": answer_text,
+        "sources": [
+            {"title": sd.document.title, "type": sd.document.type} for sd in scored_docs
+        ],
+    }

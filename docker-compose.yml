@@ -40,10 +40,19 @@ services:
     volumes:
       - ./backend:/app
     depends_on:
+      "mailpit":
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
 
   ai-service:
     build: ./ai-service
@@ -53,11 +62,18 @@ services:
     volumes:
       - ./ai-service:/app
     depends_on:
+      backend:
+        condition: service_started
       redis:
+        condition: service_started
+      ollama:
         condition: service_started
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: dev
+    env_file: .env
     ports:
       - "5173:5173"
     volumes:
@@ -65,3 +81,9 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # interface web (boîte de réception)
+      - "1025:1025"   # serveur SMTP
+    restart: unless-stopped

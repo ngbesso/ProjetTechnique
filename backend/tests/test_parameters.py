@@ -1,0 +1,476 @@
+"""Tests pour GET/POST /parameters/{category} et PATCH/DELETE /parameters/{id}."""
+
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select
+
+from app.models.church import Church
+from app.models.event import Event, EventStatus
+from app.models.leader import Leader
+from app.models.rbac import Role
+
+
+def _mother_id(db) -> int:
+    return db.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+
+
+# ── GET /parameters/{category} — public ──────────────────────────────────────
+
+
+def test_list_sexe_is_public(client):
+    r = client.get("/parameters/sexe")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+def test_list_family_status_is_public(client):
+    r = client.get("/parameters/family_status")
+    assert r.status_code == 200
+
+
+def test_list_district_is_public(client):
+    r = client.get("/parameters/district")
+    assert r.status_code == 200
+
+
+def test_list_sexe_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/sexe").json()]
+    assert "Masculin" in labels
+    assert "Féminin" in labels
+    assert "Autre" in labels
+
+
+def test_list_family_status_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/family_status").json()]
+    assert "Célibataire" in labels
+    assert "Marié(e)" in labels
+    assert "Séparé(e)" in labels
+
+
+def test_list_district_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/district").json()]
+    assert "Ouest" in labels
+    assert "Est" in labels
+
+
+def test_list_ministry_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/ministry").json()]
+    assert "Jeunesse" in labels
+    assert "Chorale" in labels
+    assert "École du dimanche" in labels
+
+
+def test_list_intervenant_category_is_public(client):
+    r = client.get("/parameters/intervenant_category")
+    assert r.status_code == 200
+
+
+def test_list_intervenant_category_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/intervenant_category").json()]
+    assert "Pasteur" in labels
+    assert "Conférencier" in labels
+    assert "Diacre" in labels
+
+
+def test_list_leader_role_is_public(client):
+    r = client.get("/parameters/leader_role")
+    assert r.status_code == 200
+
+
+def test_list_leader_role_contains_seeded_values(client):
+    labels = [v["label"] for v in client.get("/parameters/leader_role").json()]
+    assert "Pasteur" in labels
+    assert "Ancien" in labels
+    assert "Diacre" in labels
+    assert "Responsable de département" in labels
+
+
+def test_list_unknown_category_rejected(client):
+    r = client.get("/parameters/foo")
+    assert r.status_code == 400
+
+
+def test_list_response_shape(client):
+    items = client.get("/parameters/sexe").json()
+    assert len(items) > 0
+    first = items[0]
+    assert {"id", "category", "label", "position"} <= first.keys()
+    assert first["category"] == "sexe"
+
+
+# ── POST /parameters/{category} — admin requis ────────────────────────────────
+
+
+def test_create_requires_auth(client):
+    r = client.post("/parameters/sexe", json={"label": "Non-binaire"})
+    assert r.status_code == 401
+
+
+def test_create_requires_global_admin(client, make_user, auth_header):
+    make_user("membre@p.com", roles=["membre"])
+    r = client.post(
+        "/parameters/sexe",
+        json={"label": "Non-binaire"},
+        headers=auth_header("membre@p.com"),
+    )
+    assert r.status_code == 403
+
+
+def test_admin_creates_sexe_value(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.post(
+        "/parameters/sexe",
+        json={"label": "Non-binaire", "position": 10},
+        headers=auth_header("admin@p.com"),
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["label"] == "Non-binaire"
+    assert body["category"] == "sexe"
+    assert body["position"] == 10
+
+
+def test_parameter_manage_permission_is_enough(
+    client, make_user, auth_header, db_session
+):
+    """La permission dédiée parameter:manage donne accès aux listes de valeurs,
+    sans ouvrir le reste de l'administration."""
+    make_user("admin@p.com", roles=["admin"])
+    h_admin = auth_header("admin@p.com")
+    client.post("/admin/roles", json={"name": "gestionnaire_listes"}, headers=h_admin)
+    role = db_session.scalar(select(Role).where(Role.name == "gestionnaire_listes"))
+    client.put(
+        f"/admin/roles/{role.id}/permissions",
+        json={"codes": ["parameter:manage"]},
+        headers=h_admin,
+    )
+    make_user("listes@p.com", roles=["gestionnaire_listes"])
+    h = auth_header("listes@p.com")
+
+    r = client.post("/parameters/sexe", json={"label": "Valeur RBAC test"}, headers=h)
+    assert r.status_code == 201
+    assert client.delete(f"/parameters/{r.json()['id']}", headers=h).status_code == 204
+    assert client.get("/admin/roles", headers=h).status_code == 403
+
+
+def test_admin_creates_district_value(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.post(
+        "/parameters/district",
+        json={"label": "Nord"},
+        headers=auth_header("admin@p.com"),
+    )
+    assert r.status_code == 201
+    assert r.json()["label"] == "Nord"
+
+
+def test_create_default_position_is_zero(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.post(
+        "/parameters/sexe",
+        json={"label": "AutreVal"},
+        headers=auth_header("admin@p.com"),
+    )
+    assert r.status_code == 201
+    assert r.json()["position"] == 0
+
+
+def test_create_duplicate_rejected(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    client.post("/parameters/sexe", json={"label": "UniqVal"}, headers=h)
+    r = client.post("/parameters/sexe", json={"label": "UniqVal"}, headers=h)
+    assert r.status_code == 409
+
+
+def test_create_unknown_category_rejected(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.post(
+        "/parameters/foo",
+        json={"label": "Test"},
+        headers=auth_header("admin@p.com"),
+    )
+    assert r.status_code == 400
+
+
+def test_created_value_appears_in_list(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    client.post("/parameters/sexe", json={"label": "Nouveau"}, headers=h)
+    labels = [v["label"] for v in client.get("/parameters/sexe").json()]
+    assert "Nouveau" in labels
+
+
+# ── PATCH /parameters/{id} ────────────────────────────────────────────────────
+
+
+def test_rename_parameter_value(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/district", json={"label": "TempDist"}, headers=h
+    ).json()["id"]
+    r = client.patch(f"/parameters/{pv_id}", json={"label": "Renamed"}, headers=h)
+    assert r.status_code == 200
+    assert r.json()["label"] == "Renamed"
+
+
+def test_reorder_parameter_value(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/district", json={"label": "DistA", "position": 99}, headers=h
+    ).json()["id"]
+    r = client.patch(f"/parameters/{pv_id}", json={"position": 1}, headers=h)
+    assert r.status_code == 200
+    assert r.json()["position"] == 1
+
+
+def test_patch_nonexistent_returns_404(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.patch(
+        "/parameters/999999",
+        json={"label": "X"},
+        headers=auth_header("admin@p.com"),
+    )
+    assert r.status_code == 404
+
+
+def test_rename_requires_global_admin(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    make_user("membre@p.com", roles=["membre"])
+    h_admin = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "TmpForPatch"}, headers=h_admin
+    ).json()["id"]
+    r = client.patch(
+        f"/parameters/{pv_id}",
+        json={"label": "ShouldFail"},
+        headers=auth_header("membre@p.com"),
+    )
+    assert r.status_code == 403
+
+
+# ── DELETE /parameters/{id} ───────────────────────────────────────────────────
+
+
+def test_delete_parameter_value(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "ToDelete"}, headers=h
+    ).json()["id"]
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 204
+
+
+def test_deleted_value_absent_from_list(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "WillDisappear"}, headers=h
+    ).json()["id"]
+    client.delete(f"/parameters/{pv_id}", headers=h)
+    labels = [v["label"] for v in client.get("/parameters/sexe").json()]
+    assert "WillDisappear" not in labels
+
+
+def test_delete_nonexistent_returns_404(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    r = client.delete("/parameters/999999", headers=auth_header("admin@p.com"))
+    assert r.status_code == 404
+
+
+def test_delete_requires_global_admin(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    make_user("membre@p.com", roles=["membre"])
+    h_admin = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "ForDelTest"}, headers=h_admin
+    ).json()["id"]
+    r = client.delete(f"/parameters/{pv_id}", headers=auth_header("membre@p.com"))
+    assert r.status_code == 403
+
+
+# ── DELETE bloqué si la valeur est utilisée ───────────────────────────────────
+
+
+def test_delete_blocked_when_used_by_member(client, make_user, make_member, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/sexe", json={"label": "SexeUtilise"}, headers=h
+    ).json()["id"]
+
+    member = make_member("used_sexe@test.com", _mother_id(db_session))
+    member.sexe = "SexeUtilise"
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "SexeUtilise" in r.json()["detail"]
+    assert "1 membre(s)" in r.json()["detail"]
+
+    # La valeur n'a pas été supprimée
+    labels = [v["label"] for v in client.get("/parameters/sexe").json()]
+    assert "SexeUtilise" in labels
+
+
+def test_delete_blocked_when_used_by_event(client, make_user, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/event_category", json={"label": "CategorieEvenementUtilisee"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Event(
+            title="Événement pour test paramètre",
+            category="CategorieEvenementUtilisee",
+            date_start=datetime.now(timezone.utc) + timedelta(days=1),
+            status=EventStatus.draft,
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 événement(s)" in r.json()["detail"]
+
+
+def test_delete_blocked_when_used_by_event_intervenant_category(
+    client, make_user, auth_header, db_session
+):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/intervenant_category", json={"label": "CategorieIntervenantUtilisee"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Event(
+            title="Événement avec intervenant",
+            intervenant_category="CategorieIntervenantUtilisee",
+            date_start=datetime.now(timezone.utc) + timedelta(days=1),
+            status=EventStatus.draft,
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 événement(s)" in r.json()["detail"]
+
+
+def test_delete_blocked_when_used_by_leader(client, make_user, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/leader_role", json={"label": "RoleLeaderUtilise"}, headers=h
+    ).json()["id"]
+
+    db_session.add(
+        Leader(
+            first_name="Jean",
+            last_name="Dupont",
+            title="Titre",
+            role="RoleLeaderUtilise",
+        )
+    )
+    db_session.flush()
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 409
+    assert "1 membre du leadership(s)" in r.json()["detail"]
+
+
+def test_delete_allowed_when_unused(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/event_category", json={"label": "CategorieInutilisee"}, headers=h
+    ).json()["id"]
+
+    r = client.delete(f"/parameters/{pv_id}", headers=h)
+    assert r.status_code == 204
+
+
+# ── PATCH toujours autorisé, même si la valeur est utilisée ──────────────────
+
+
+def test_rename_allowed_even_when_used(client, make_user, make_member, auth_header, db_session):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    pv_id = client.post(
+        "/parameters/family_status", json={"label": "StatutUtilise"}, headers=h
+    ).json()["id"]
+
+    member = make_member("used_status@test.com", _mother_id(db_session))
+    member.family_status = "StatutUtilise"
+    db_session.flush()
+
+    r = client.patch(f"/parameters/{pv_id}", json={"label": "StatutRenomme"}, headers=h)
+    assert r.status_code == 200
+    assert r.json()["label"] == "StatutRenomme"
+
+
+# ── restricted_to_sexe (catégorie ministry uniquement) ────────────────────────
+
+
+def test_create_ministry_value_with_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe hommes 2026", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 201
+    assert r.json()["restricted_to_sexe"] == "Masculin"
+
+
+def test_restricted_to_sexe_rejected_for_other_categories(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+
+    r = client.post(
+        "/parameters/district",
+        json={"label": "District test restriction", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    )
+
+    assert r.status_code == 422
+
+
+def test_update_ministry_value_can_clear_restriction(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test clear", "restricted_to_sexe": "Féminin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(
+        f"/parameters/{created['id']}", json={"restricted_to_sexe": None}, headers=h
+    )
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] is None
+
+
+def test_update_without_restricted_to_sexe_leaves_it_unchanged(client, make_user, auth_header):
+    make_user("admin@p.com", roles=["admin"])
+    h = auth_header("admin@p.com")
+    created = client.post(
+        "/parameters/ministry",
+        json={"label": "Groupe test intact", "restricted_to_sexe": "Masculin"},
+        headers=h,
+    ).json()
+
+    r = client.patch(f"/parameters/{created['id']}", json={"label": "Renommé"}, headers=h)
+
+    assert r.status_code == 200
+    assert r.json()["restricted_to_sexe"] == "Masculin"

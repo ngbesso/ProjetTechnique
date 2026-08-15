@@ -1,0 +1,51 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from app.models.post import PostStatus
+
+
+class PostBase(BaseModel):
+    title: str
+    content: str
+    excerpt: str | None = None
+    author: str
+    status: PostStatus = PostStatus.draft
+    category: str | None = None
+    cover_image_url: str | None = None
+
+
+class PostCreate(PostBase):
+    pass
+
+
+class PostRead(PostBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    views: int
+    created_at: datetime
+    updated_at: datetime | None
+
+
+class PostUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    excerpt: str | None = None
+    author: str | None = None
+    status: PostStatus | None = None
+    category: str | None = None
+    cover_image_url: str | None = None
+
+
+class TopPostItem(BaseModel):
+    id: int
+    title: str
+    author: str
+    views: int
+
+
+class PostAdminStats(BaseModel):
+    published: int
+    draft: int
+    total_views: int
+    top_posts: list[TopPostItem]

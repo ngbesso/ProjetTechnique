@@ -1,0 +1,37 @@
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+from app.models.prayer_request import PrayerRequestStatus
+
+
+class PrayerRequestCreate(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+
+
+class PrayerRequestRead(BaseModel):
+    id: int
+    member_id: int
+    message: str
+    status: PrayerRequestStatus
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PrayerRequestAdminRead(PrayerRequestRead):
+    member_name: str
+    member_email: str
+    handled_by: int | None = None
+    handled_by_email: str | None = None
+    handled_at: datetime | None = None
+
+
+class PrayerRequestUpdate(BaseModel):
+    status: PrayerRequestStatus
+
+
+class PrayerRequestAdminStats(BaseModel):
+    new: int
+    handled: int
+    total: int

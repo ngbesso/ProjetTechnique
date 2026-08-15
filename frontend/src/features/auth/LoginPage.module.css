@@ -1,0 +1,208 @@
+/* ── Layout ─────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text-main);
+  background: var(--neutral-bg);
+}
+
+/* ── En-tête minimal (logo seul) ──────────────────────── */
+
+.minimalHeader {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Logo repris à l'identique de SiteHeader, pour rester cohérent visuellement. */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoIcon {
+  width: 34px;
+  height: 34px;
+  background: var(--vivid-violet);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 6px rgba(83, 74, 183, 0.35);
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.logoTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--deep-violet);
+}
+
+.logoSubtitle {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ── Message de bienvenue ─────────────────────────────── */
+
+.welcome {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.welcomeTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--deep-violet);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.welcomeSub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+.formCard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(42, 38, 96, 0.1);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* ── Form fields ────────────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.input {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input::placeholder { color: #bbb; }
+
+.input:focus {
+  outline: none;
+  border-color: var(--vivid-violet);
+  box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+.forgotRow {
+  text-align: right;
+  margin-top: -0.4rem;
+}
+
+.link {
+  font-size: 0.8rem;
+  color: var(--vivid-violet);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.link:hover { text-decoration: underline; }
+
+.errorMsg {
+  font-size: 0.82rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btnPrimary {
+  background: var(--vivid-violet);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.btnPrimary:hover { background: var(--vivid-violet-hover); }
+.btnPrimary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Register link ──────────────────────────────────────── */
+.registerPrompt {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 1.5rem 0 0;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--vivid-violet);
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.linkBtn:hover { color: var(--vivid-violet-hover); }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .hero { padding: 3rem 1.25rem 3.5rem; }
+  .main { padding: 2rem 1rem; }
+  .formCard { padding: 2rem 1.25rem; }
+}

@@ -1,0 +1,369 @@
+import { useEffect, useState } from "react";
+import styles from "./HomePage.module.css";
+import {
+  adminActionLabel,
+  adminActionTarget,
+  hasAdminAccess,
+  useAuth,
+} from "../../context/AuthContext";
+import { Link, useNavigate } from "../../context/RouterContext";
+import { useSermons } from "../../hooks/useSermons";
+import { usePosts } from "../../hooks/usePosts";
+import { useSiteContent, type SiteSettings } from "../../hooks/useSiteContent";
+import { getEvents } from "../../lib/api/events";
+import {
+  IconBook,
+  IconEye,
+  IconGem,
+  IconScale,
+  IconTarget,
+} from "../../components/ui/icons";
+import { NewsCarousel } from "./NewsCarousel";
+import { SiteHeader } from "../../components/layout/SiteHeader";
+import { SiteFooter } from "../../components/layout/SiteFooter";
+import type { EventItem } from "../../types";
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+/** Les 5 piliers résumés sur l'accueil. Libellé et description viennent des
+ *  réglages ; l'icône reste en dur, c'est un choix de gabarit, pas du contenu.
+ *  Le détail complet vit sur la page « Qui sommes-nous ». */
+function pillars(settings: SiteSettings) {
+  return [
+    { key: "vision", label: settings.pillar_vision_label, icon: IconEye, desc: settings.pillar_vision_desc },
+    { key: "mission", label: settings.pillar_mission_label, icon: IconTarget, desc: settings.pillar_mission_desc },
+    { key: "valeurs", label: settings.pillar_valeurs_label, icon: IconGem, desc: settings.pillar_valeurs_desc },
+    { key: "credo", label: settings.pillar_credo_label, icon: IconBook, desc: settings.pillar_credo_desc },
+    { key: "principes", label: settings.pillar_principes_label, icon: IconScale, desc: settings.pillar_principes_desc },
+  ].filter((p) => p.label.trim() !== "");
+}
+
+function formatSermonDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
+}
+
+function formatPostDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+}
+
+const CATEGORY_GRADIENT: Record<string, string> = {
+  "Vie spirituelle": "linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%)",
+  "Témoignage":      "linear-gradient(135deg, #d97706 0%, #92400e 100%)",
+  "Méditation":      "linear-gradient(135deg, #0891b2 0%, #164e63 100%)",
+  "Actualité":       "linear-gradient(135deg, #059669 0%, #064e3b 100%)",
+  "Réflexion":       "linear-gradient(135deg, #db2777 0%, #831843 100%)",
+};
+
+function formatEventDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric" });
+}
+
+function formatEventMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { month: "short" }).replace(".", "");
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+
+
+function Hero() {
+  const navigate = useNavigate();
+  const { user, member } = useAuth();
+  const isAdmin = hasAdminAccess(user);
+  const { settings } = useSiteContent();
+  return (
+    <section className={styles.hero}>
+      {/* Colonne gauche : bloc de bienvenue */}
+      <div className={styles.heroContent}>
+        <p className={styles.heroEyebrow}>{settings.hero_eyebrow}</p>
+        <h1 className={styles.heroTitle}>{settings.hero_title}</h1>
+        <p className={styles.heroSubtitle}>{settings.hero_subtitle}</p>
+        <div className={styles.heroActions}>
+          {user ? (
+            <>
+              {member && (
+                <button className={styles.btnHeroPrimary} onClick={() => navigate("espace")}>
+                  Accéder à mon espace
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  className={member ? styles.btnOutlineWhite : styles.btnHeroPrimary}
+                  onClick={() => navigate(adminActionTarget(user))}
+                >
+                  {adminActionLabel(user)}
+                </button>
+              )}
+            </>
+          ) : (
+            <button className={styles.btnHeroPrimary} onClick={() => navigate("adhesion")}>
+              Devenir membre
+            </button>
+          )}
+          <button className={styles.btnOutlineWhite} onClick={() => navigate("donation")}>
+            <span>♥</span> Faire un don
+          </button>
+        </div>
+      </div>
+
+      {/* Colonne droite : carrousel d'actualités. Le dégradé du panneau est
+          conservé en fond, de sorte que la colonne reste habitée même lorsque
+          aucune actualité n'est mise en avant (NewsCarousel ne rend rien). */}
+      <div className={styles.heroCarousel}>
+        <NewsCarousel />
+      </div>
+    </section>
+  );
+}
+
+
+
+function AboutSection() {
+  const navigate = useNavigate();
+  const { settings } = useSiteContent();
+  return (
+    <section id="qui-sommes-nous" className={styles.aboutSection}>
+      <div className={styles.aboutInner}>
+        <div className={styles.aboutLeft}>
+          <p className={styles.aboutEyebrow}>{settings.about_eyebrow}</p>
+          <h2 className={styles.aboutTitle}>{settings.about_title}</h2>
+          <p className={styles.aboutDesc}>{settings.about_description}</p>
+          <Link page="qui-sommes-nous" className={styles.textLink}>
+            En savoir plus →
+          </Link>
+        </div>
+        <div className={styles.pillarsGrid}>
+          {pillars(settings).map((pillar) => {
+            const Icon = pillar.icon;
+            return (
+              <button
+                key={pillar.key}
+                type="button"
+                className={styles.pillarCard}
+                onClick={() => navigate("qui-sommes-nous")}
+              >
+                <span className={styles.pillarIcon} aria-hidden>
+                  <Icon />
+                </span>
+                <p className={styles.pillarLabel}>{pillar.label}</p>
+                <p className={styles.pillarDesc}>{pillar.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SermonsSection() {
+  const navigate = useNavigate();
+  const { sermons, loading, load } = useSermons();
+
+  useEffect(() => {
+    load({ limit: 3 });
+  }, [load]);
+
+  return (
+    <section id="sermons" className={`${styles.section} ${styles.sectionAlt}`}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <p className={styles.sectionEyebrow}>Écouter</p>
+          <h2 className={styles.sectionTitle}>Derniers sermons</h2>
+        </div>
+        <Link page="sermons" className={styles.seeAllLink}>
+          Voir tout →
+        </Link>
+      </div>
+      {loading ? (
+        <p>Chargement…</p>
+      ) : sermons.length === 0 ? (
+        <p>Aucun sermon publié pour le moment.</p>
+      ) : (
+        <div className={styles.sermonsGrid}>
+          {sermons.map((sermon) => (
+            <article key={sermon.id} className={styles.sermonCard}>
+              <div className={styles.sermonThumb}>
+                <button
+                  className={styles.playBtn}
+                  aria-label={`Écouter : ${sermon.title}`}
+                  onClick={() => navigate("sermons")}
+                >
+                  ▶
+                </button>
+              </div>
+              <div className={styles.sermonInfo}>
+                <p className={styles.sermonTitle}>{sermon.title}</p>
+                <p className={styles.sermonMeta}>
+                  {sermon.preacher} · {formatSermonDate(sermon.sermon_date)}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function EventsSection() {
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getEvents({ upcoming_only: true, limit: 5 })
+      .then((res) => {
+        const sorted = [...res.items].sort(
+          (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
+        );
+        setEvents(sorted.slice(0, 5));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (!loading && events.length === 0) return null;
+
+  return (
+    <section id="evenements" className={styles.section}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <p className={styles.sectionEyebrow}>Calendrier</p>
+          <h2 className={styles.sectionTitle}>Événements &amp; Formations</h2>
+        </div>
+        <Link page="evenements" className={styles.seeAllLink}>
+          Voir tout →
+        </Link>
+      </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : (
+        <div className={styles.eventsGrid}>
+          {events.map((evt) => (
+            <button
+              key={evt.id}
+              className={styles.eventCard}
+              onClick={() => navigate("evenements")}
+            >
+              {evt.image_url ? (
+                <div className={styles.eventTop} style={{ backgroundImage: `url(${evt.image_url})` }}>
+                  <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
+                  <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
+                </div>
+              ) : (
+                <div className={styles.eventTop}>
+                  <span className={styles.eventDateDay}>{formatEventDay(evt.date_start)}</span>
+                  <span className={styles.eventDateMonth}>{formatEventMonth(evt.date_start)}</span>
+                </div>
+              )}
+              <div className={styles.eventBody}>
+                <span className={styles.eventCategoryBadge}>{evt.category}</span>
+                {evt.format === "en_ligne" && (
+                  <span className={styles.eventCategoryBadge}>🌐 En ligne</span>
+                )}
+                {evt.format === "hybride" && (
+                  <span className={styles.eventCategoryBadge}>🌐 Hybride</span>
+                )}
+                <p className={styles.eventCardTitle}>{evt.title}</p>
+                {evt.format !== "en_ligne" && evt.location && (
+                  <p className={styles.eventCardMeta}>📍 {evt.location}</p>
+                )}
+                {evt.instructor && (
+                  <p className={styles.eventCardMeta}>👤 {evt.instructor}</p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BlogSection() {
+  const navigate = useNavigate();
+  const { posts, loading, load } = usePosts();
+
+  useEffect(() => {
+    load({ limit: 3 });
+  }, [load]);
+
+  return (
+    <section id="blog" className={styles.section}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <p className={styles.sectionEyebrow}>Lire</p>
+          <h2 className={styles.sectionTitle}>Blog &amp; Articles</h2>
+        </div>
+        <Link page="blog" className={styles.seeAllLink}>
+          Voir tout →
+        </Link>
+      </div>
+
+      {loading ? (
+        <p>Chargement…</p>
+      ) : posts.length === 0 ? (
+        <p>Aucun article publié pour le moment.</p>
+      ) : (
+        <div className={styles.blogGrid}>
+          {posts.map((post, idx) => {
+            const gradient =
+              (post.category && CATEGORY_GRADIENT[post.category]) ||
+              "linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)";
+            const isFeatured = idx === 0;
+            return (
+              <article
+                key={post.id}
+                className={`${styles.blogCard} ${isFeatured ? styles.blogCardFeatured : ""}`}
+                onClick={() => navigate("blog", { postId: post.id })}
+              >
+                <div
+                  className={`${styles.blogThumb} ${isFeatured ? styles.blogThumbFeatured : ""}`}
+                  style={{ background: gradient }}
+                >
+                  {post.category && (
+                    <span className={styles.blogTag}>{post.category}</span>
+                  )}
+                </div>
+                <div className={styles.blogInfo}>
+                  <p className={`${styles.blogTitle} ${isFeatured ? styles.blogTitleFeatured : ""}`}>
+                    {post.title}
+                  </p>
+                  {post.excerpt && (
+                    <p className={styles.blogExcerpt}>{post.excerpt}</p>
+                  )}
+                  <div className={styles.blogFooter}>
+                    <span className={styles.blogMeta}>
+                      {post.author} · {formatPostDate(post.created_at)}
+                    </span>
+                    <span className={styles.blogReadMore}>Lire →</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export function HomePage() {
+  return (
+    <div className={styles.page}>
+      <SiteHeader activePage="home" />
+      <main>
+        <Hero />
+        <AboutSection />
+        <SermonsSection />
+        <EventsSection />
+        <BlogSection />
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
