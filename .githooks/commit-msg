@@ -1,0 +1,36 @@
+#!/bin/sh
+# Refuse un message de commit portant un trailer « Co-Authored-By » attribué à
+# Claude. Les commits de ce dépôt ne mentionnent que leurs auteurs humains.
+#
+# Ce hook est versionné pour être partagé par toute l'équipe, contrairement à
+# CLAUDE.md et .claude/ qui restent locaux (voir .gitignore). Il faut l'activer
+# une fois par poste de travail :
+#
+#     git config core.hooksPath .githooks
+#
+# Un hook local se contourne (git commit --no-verify, poste non configuré) :
+# la barrière qui fait foi est le job « no-ai-trailer » de la CI.
+
+set -eu
+
+msg_file="$1"
+
+# -i : insensible à la casse.
+# L'ancrage en début de ligne évite de rejeter un commit qui se contente de
+# parler de la règle dans le corps de son message ; les espaces facultatifs
+# rattrapent un trailer indenté.
+if grep -iEq '^[[:space:]]*Co-Authored-By:.*claude' "$msg_file"; then
+	cat >&2 <<'MESSAGE'
+Commit refusé : trailer « Co-Authored-By » attribué à Claude.
+
+Les commits de ce dépôt ne mentionnent que leurs auteurs humains.
+Retirez du message la ligne commençant par :
+
+    Co-Authored-By: Claude ...
+
+puis relancez « git commit ».
+MESSAGE
+	exit 1
+fi
+
+exit 0
