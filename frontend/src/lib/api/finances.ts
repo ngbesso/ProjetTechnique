@@ -31,13 +31,18 @@ export function downloadFinanceReport(
   return http.getBlob(`/finances/report/export?${qs.toString()}`);
 }
 
-export function fetchAnnualDonorReport(year: number): Promise<DonorAnnualReport> {
-  return http.get<DonorAnnualReport>(`/finances/rapport-annuel-donateurs?year=${year}`);
+export function fetchAnnualDonorReport(year: number, memberId?: number): Promise<DonorAnnualReport> {
+  const qs = new URLSearchParams({ year: String(year) });
+  if (memberId !== undefined) qs.set("member_id", String(memberId));
+  return http.get<DonorAnnualReport>(`/finances/rapport-annuel-donateurs?${qs.toString()}`);
 }
 
 export function downloadAnnualDonorReport(
   format: "pdf" | "excel" | "csv",
   year: number,
+  memberId?: number,
 ): Promise<Blob> {
-  return http.getBlob(`/finances/rapport-annuel-donateurs/export?format=${format}&year=${year}`);
+  const qs = new URLSearchParams({ format, year: String(year) });
+  if (memberId !== undefined) qs.set("member_id", String(memberId));
+  return http.getBlob(`/finances/rapport-annuel-donateurs/export?${qs.toString()}`);
 }

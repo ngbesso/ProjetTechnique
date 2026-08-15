@@ -2,17 +2,47 @@ import csv
 import io
 
 import httpx
+from botocore.exceptions import ClientError
 from docx import Document
+from docx.shared import Inches
 from openpyxl import Workbook
+from openpyxl.drawing.image import Image as XlsxImage
 from pydantic import BaseModel
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.config import settings
+from app.db.session import SessionLocal
+from app.models.setting import AppSetting
+from app.services import storage
+
+_LOGO_STORAGE_KEY = "site/logo"
+_DEFAULT_SITE_NAME = "Rapport"
+
+
+def _fetch_branding() -> tuple[str, bytes | None]:
+    """Nom du site et logo courants, pour l'en-tête des documents générés.
+    Effort ponctuel par export (pas de cache) : ces fichiers ne sont pas
+    générés en boucle. Best-effort : un logo absent ou une erreur de stockage
+    ne doit jamais empêcher la génération du rapport lui-même."""
+    db = SessionLocal()
+    try:
+        setting = db.get(AppSetting, "site_name")
+        site_name = setting.value if setting and setting.value else _DEFAULT_SITE_NAME
+    finally:
+        db.close()
+
+    try:
+        logo_bytes = storage.get_object(_LOGO_STORAGE_KEY)["Body"].read()
+    except ClientError:
+        logo_bytes = None
+    return site_name, logo_bytes
+
 
 DOMAIN_LABELS = {
     "membres": "Membres",
@@ -79,9 +109,23 @@ def build_excel(
     tables: dict[str, list[dict]],
     ai_summary: str | None = None,
 ) -> bytes:
+    site_name, logo_bytes = _fetch_branding()
     wb = Workbook()
     ws = wb.active
     ws.title = "Résumé"
+    if logo_bytes:
+        try:
+            logo = XlsxImage(io.BytesIO(logo_bytes))
+            logo.height = 60
+            logo.width = 60
+            ws.add_image(logo, "A1")
+            # Laisse assez de lignes vides pour ne pas superposer le texte à
+            # l'image flottante (le logo ne pousse pas les lignes suivantes).
+            for _ in range(4):
+                ws.append([])
+        except Exception:
+            pass
+    ws.append([site_name])
     ws.append([title])
     ws.append([])
     if ai_summary:
@@ -109,8 +153,12 @@ def build_csv(
     tables: dict[str, list[dict]],
     ai_summary: str | None = None,
 ) -> bytes:
+    # Un logo ne peut pas s'afficher dans un CSV (texte brut) : seul le nom du
+    # site accompagne le titre, cohérent avec les autres formats exportés.
+    site_name, _ = _fetch_branding()
     buf = io.StringIO()
     writer = csv.writer(buf)
+    writer.writerow([site_name])
     writer.writerow([title])
     writer.writerow([])
     if ai_summary:
@@ -141,7 +189,14 @@ def build_word(
     tables: dict[str, list[dict]],
     ai_summary: str | None = None,
 ) -> bytes:
+    site_name, logo_bytes = _fetch_branding()
     doc = Document()
+    if logo_bytes:
+        try:
+            doc.add_picture(io.BytesIO(logo_bytes), width=Inches(0.75))
+        except Exception:
+            pass
+    doc.add_heading(site_name, level=2)
     doc.add_heading(title, level=1)
 
     if ai_summary:
@@ -180,12 +235,46 @@ _CELL_FONT_SIZE = 8
 _WIDE_TABLE_COLUMN_THRESHOLD = 6
 
 
+def _page_header(site_name: str, logo_bytes: bytes | None):
+    """Callback reportlab (`onFirstPage`/`onLaterPages`) : dessine le logo et
+    le nom du site dans la marge haute de CHAQUE page, pas seulement la
+    première — c'est le mécanisme standard de SimpleDocTemplate pour un
+    en-tête répété (`doc.build(story)` seul ne s'exécute qu'une fois)."""
+
+    def _draw(canvas, doc):
+        canvas.saveState()
+        _, page_height = doc.pagesize
+        x = doc.leftMargin
+        y = page_height - 0.6 * inch
+        if logo_bytes:
+            try:
+                canvas.drawImage(
+                    ImageReader(io.BytesIO(logo_bytes)),
+                    x,
+                    page_height - 0.85 * inch,
+                    width=0.5 * inch,
+                    height=0.5 * inch,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+                x += 0.65 * inch
+            except Exception:
+                pass
+        canvas.setFont("Helvetica-Bold", 11)
+        canvas.setFillColor(colors.HexColor("#3b2f8a"))
+        canvas.drawString(x, y, site_name)
+        canvas.restoreState()
+
+    return _draw
+
+
 def build_pdf(
     title: str,
     summary: list[tuple[str, str]],
     tables: dict[str, list[dict]],
     ai_summary: str | None = None,
 ) -> bytes:
+    site_name, logo_bytes = _fetch_branding()
     buf = io.BytesIO()
     # Une table à beaucoup de colonnes (ex. rapport annuel par donateur : nom,
     # courriel, devise, 12 mois, total, nombre de dons) déborde de la marge en
@@ -229,7 +318,8 @@ def build_pdf(
             story.append(_styled_table(data, doc.width))
         story.append(Spacer(1, 12))
 
-    doc.build(story)
+    draw_header = _page_header(site_name, logo_bytes)
+    doc.build(story, onFirstPage=draw_header, onLaterPages=draw_header)
     return buf.getvalue()
 
 
