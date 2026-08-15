@@ -104,6 +104,7 @@ export function RapportPanel() {
   const [viewMode, setViewMode] = useState<"globale" | "categories" | "annuel-donateurs">("globale");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<CategoryGroup | null>(null);
 
   // Regroupement calculé à partir des transactions déjà chargées : basculer
   // de vue est instantané, sans nouvel appel réseau ni rechargement de page.
@@ -113,6 +114,22 @@ export function RapportPanel() {
   );
   const revenueGroups = categoryGroups.filter((g) => g.type === "revenu");
   const expenseGroups = categoryGroups.filter((g) => g.type === "dépense");
+
+  // Détail d'une catégorie sélectionnée : recalculé à partir des transactions
+  // déjà chargées, sans nouvel appel réseau.
+  const selectedTransactions = useMemo(() => {
+    if (!selectedGroup || !report) return [];
+    return report.transactions.filter(
+      (t) =>
+        t.type === selectedGroup.type &&
+        t.currency === selectedGroup.currency &&
+        categoryLabel(t) === selectedGroup.category,
+    );
+  }, [selectedGroup, report]);
+
+  function selectCategory(group: CategoryGroup) {
+    setSelectedGroup((prev) => (prev?.key === group.key ? null : group));
+  }
 
   function currentParams() {
     return period === "custom"
@@ -132,6 +149,11 @@ export function RapportPanel() {
   }
 
   useEffect(loadReport, [period, customStart, customEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // La catégorie sélectionnée ne doit pas survivre à un changement de
+  // période (les transactions affichées ne correspondraient plus) ni à un
+  // changement de vue.
+  useEffect(() => setSelectedGroup(null), [report, viewMode]);
 
   async function handleExport(format: "pdf" | "excel" | "csv") {
     setExporting(true);
@@ -290,10 +312,48 @@ export function RapportPanel() {
             />
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            <CategoryGroupList title="Revenus" groups={revenueGroups} emptyMessage="Aucun revenu sur cette période." />
-            <CategoryGroupList title="Dépenses" groups={expenseGroups} emptyMessage="Aucune dépense sur cette période." />
-          </div>
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+              <CategoryGroupList
+                title="Revenus"
+                groups={revenueGroups}
+                emptyMessage="Aucun revenu sur cette période."
+                selectedKey={selectedGroup?.key}
+                onSelect={selectCategory}
+              />
+              <CategoryGroupList
+                title="Dépenses"
+                groups={expenseGroups}
+                emptyMessage="Aucune dépense sur cette période."
+                selectedKey={selectedGroup?.key}
+                onSelect={selectCategory}
+              />
+            </div>
+
+            {selectedGroup && (
+              <div style={{ marginTop: "1.5rem" }}>
+                <div className={styles.listHeader}>
+                  <h4 style={{ margin: 0 }}>
+                    Détails — {selectedGroup.category}
+                    <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                      {" "}({selectedGroup.type === "revenu" ? "Revenu" : "Dépense"}, {selectedGroup.currency})
+                    </span>
+                  </h4>
+                  <button className={styles.btnOutlineSm} onClick={() => setSelectedGroup(null)}>
+                    Fermer
+                  </button>
+                </div>
+                <div className={styles.listBody}>
+                  <DataTable
+                    columns={transactionColumns}
+                    data={selectedTransactions}
+                    pageSize={10}
+                    emptyMessage="Aucune transaction dans cette catégorie."
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>
@@ -304,10 +364,14 @@ function CategoryGroupList({
   title,
   groups,
   emptyMessage,
+  selectedKey,
+  onSelect,
 }: {
   title: string;
   groups: CategoryGroup[];
   emptyMessage: string;
+  selectedKey?: string;
+  onSelect: (group: CategoryGroup) => void;
 }) {
   return (
     <div>
@@ -316,25 +380,37 @@ function CategoryGroupList({
         <p className={styles.stateMsg}>{emptyMessage}</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: ".4rem" }}>
-          {groups.map((g) => (
-            <li
-              key={g.key}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: ".55rem .75rem",
-                background: "var(--neutral-bg)",
-                borderRadius: "var(--radius)",
-              }}
-            >
-              <span>
-                {g.category}{" "}
-                <span style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>({g.count})</span>
-              </span>
-              <strong>{g.total.toFixed(2)} $ {g.currency}</strong>
-            </li>
-          ))}
+          {groups.map((g) => {
+            const selected = g.key === selectedKey;
+            return (
+              <li key={g.key}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(g)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: ".55rem .75rem",
+                    background: selected ? "var(--primary-50, #ede9fe)" : "var(--neutral-bg)",
+                    border: selected ? "1px solid var(--primary, #6d28d9)" : "1px solid transparent",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    font: "inherit",
+                    color: "inherit",
+                    textAlign: "left",
+                  }}
+                >
+                  <span>
+                    {g.category}{" "}
+                    <span style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>({g.count})</span>
+                  </span>
+                  <strong>{g.total.toFixed(2)} $ {g.currency}</strong>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
