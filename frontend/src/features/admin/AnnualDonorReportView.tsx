@@ -10,25 +10,18 @@ function formatAmount(n: number): string {
   return n === 0 ? "—" : n.toFixed(2);
 }
 
-const col = createColumnHelper<DonorAnnualReportEntry>();
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
-const columns = [
-  col.accessor("donor_name", { header: "Donateur" }),
-  col.accessor("donor_email", { header: "Courriel", cell: (info) => info.getValue() ?? "—" }),
-  col.accessor("currency", { header: "Devise" }),
-  ...MONTH_LABELS.map((label, i) =>
-    col.display({
-      id: `month-${i}`,
-      header: label,
-      cell: (info) => formatAmount(info.row.original.monthly_totals[i]),
-    }),
-  ),
-  col.accessor("annual_total", {
-    header: "Total annuel",
-    cell: (info) => <strong>{info.getValue().toFixed(2)}</strong>,
-  }),
-  col.accessor("donation_count", { header: "Nb dons" }),
-];
+const col = createColumnHelper<DonorAnnualReportEntry>();
 
 export function AnnualDonorReportView() {
   const currentYear = new Date().getFullYear();
@@ -38,6 +31,7 @@ export function AnnualDonorReportView() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [downloadingMemberId, setDownloadingMemberId] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -53,21 +47,74 @@ export function AnnualDonorReportView() {
     setExportError("");
     try {
       const blob = await downloadAnnualDonorReport(format, year);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
       const ext = format === "excel" ? "xlsx" : format;
-      a.href = url;
-      a.download = `rapport-annuel-donateurs-${year}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `rapport-annuel-donateurs-${year}.${ext}`);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "Téléchargement impossible.");
     } finally {
       setExporting(false);
     }
   }
+
+  async function handleIndividualDownload(entry: DonorAnnualReportEntry) {
+    if (entry.member_id === null) return;
+    setDownloadingMemberId(entry.member_id);
+    setExportError("");
+    try {
+      const blob = await downloadAnnualDonorReport("pdf", year, entry.member_id);
+      const slug = entry.donor_name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-");
+      downloadBlob(blob, `rapport-annuel-${slug}-${year}.pdf`);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Téléchargement impossible.");
+    } finally {
+      setDownloadingMemberId(null);
+    }
+  }
+
+  const columns = [
+    col.accessor("donor_name", { header: "Donateur" }),
+    col.accessor("donor_email", { header: "Courriel", cell: (info) => info.getValue() ?? "—" }),
+    col.accessor("currency", { header: "Devise" }),
+    ...MONTH_LABELS.map((label, i) =>
+      col.display({
+        id: `month-${i}`,
+        header: label,
+        cell: (info) => formatAmount(info.row.original.monthly_totals[i]),
+      }),
+    ),
+    col.accessor("annual_total", {
+      header: "Total annuel",
+      cell: (info) => <strong>{info.getValue().toFixed(2)}</strong>,
+    }),
+    col.accessor("donation_count", { header: "Nb dons" }),
+    col.display({
+      id: "individual",
+      // Réservé aux membres inscrits (member_id) : un donateur externe ou
+      // anonyme n'a pas d'identité stable à filtrer côté serveur.
+      header: "Rapport individuel",
+      cell: (info) => {
+        const entry = info.row.original;
+        if (entry.member_id === null) {
+          return <span style={{ color: "var(--text-muted)" }}>—</span>;
+        }
+        const isDownloading = downloadingMemberId === entry.member_id;
+        return (
+          <button
+            type="button"
+            className={styles.btnOutlineSm}
+            disabled={isDownloading}
+            onClick={() => handleIndividualDownload(entry)}
+          >
+            {isDownloading ? "…" : "📄 PDF"}
+          </button>
+        );
+      },
+    }),
+  ];
 
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 

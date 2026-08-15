@@ -11,6 +11,7 @@ from app.models.donation import (
 )
 from app.models.donor import Donor
 from app.models.expense import Expense
+from app.models.setting import AppSetting
 from app.models.user import User
 
 BASE = "/finances"
@@ -421,3 +422,104 @@ def test_annual_donor_report_export_invalid_format(client, make_user, auth_heade
     h = _admin_header(make_user, auth_header)
     r = client.get(f"{RDA}/export?format=doc&year=2020", headers=h)
     assert r.status_code == 400
+
+
+# ── Rapport individuel d'un membre ────────────────────────────────────────────
+
+
+def test_annual_donor_report_member_filter_returns_only_that_member(
+    client, make_user, auth_header, db_session, make_member
+):
+    h = _admin_header(make_user, auth_header)
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    member_a = make_member("individuel.a@test.com", church_id)
+    member_b = make_member("individuel.b@test.com", church_id)
+    _donation(
+        db_session,
+        90.0,
+        member_id=member_a.id,
+        created_at=datetime(2020, 5, 1, tzinfo=timezone.utc),
+    )
+    _donation(
+        db_session,
+        60.0,
+        member_id=member_b.id,
+        created_at=datetime(2020, 5, 1, tzinfo=timezone.utc),
+    )
+
+    r = client.get(f"{RDA}?year=2020&member_id={member_a.id}", headers=h)
+    assert r.status_code == 200
+    entries = r.json()["entries"]
+    assert len(entries) == 1
+    assert entries[0]["donor_name"] == member_a.full_name
+    assert entries[0]["member_id"] == member_a.id
+
+
+def test_annual_donor_report_member_filter_404_without_donations(
+    client, make_user, auth_header, db_session, make_member
+):
+    h = _admin_header(make_user, auth_header)
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    member = make_member("sans.don@test.com", church_id)
+
+    r = client.get(f"{RDA}?year=2020&member_id={member.id}", headers=h)
+    assert r.status_code == 404
+
+
+def test_annual_donor_report_export_member_filter_personalizes_filename(
+    client, make_user, auth_header, db_session, make_member
+):
+    h = _admin_header(make_user, auth_header)
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    member = make_member("individuel.c@test.com", church_id)
+    _donation(
+        db_session,
+        45.0,
+        member_id=member.id,
+        created_at=datetime(2020, 3, 1, tzinfo=timezone.utc),
+    )
+
+    r = client.get(f"{RDA}/export?format=csv&year=2020&member_id={member.id}", headers=h)
+    assert r.status_code == 200
+    disposition = r.headers["content-disposition"]
+    assert "2020" in disposition
+    assert "rapport-annuel-donateurs" in disposition
+    text = r.content.decode("utf-8-sig")
+    assert member.full_name in text
+
+
+def test_annual_donor_report_export_member_filter_404_without_donations(
+    client, make_user, auth_header, db_session, make_member
+):
+    h = _admin_header(make_user, auth_header)
+    church_id = db_session.scalar(select(Church.id).where(Church.parent_id.is_(None)))
+    member = make_member("export.sans.don@test.com", church_id)
+
+    r = client.get(f"{RDA}/export?format=csv&year=2020&member_id={member.id}", headers=h)
+    assert r.status_code == 404
+
+
+# ── Nom du site dans les documents exportés ───────────────────────────────────
+
+
+def test_export_csv_includes_site_name(client, make_user, auth_header, db_session):
+    h = _admin_header(make_user, auth_header)
+    setting = db_session.scalar(select(AppSetting).where(AppSetting.key == "site_name"))
+    assert setting is not None and setting.value
+
+    r = client.get(f"{RDA}/export?format=csv&year=2020", headers=h)
+    assert r.status_code == 200
+    text = r.content.decode("utf-8-sig")
+    assert setting.value in text
+
+
+def test_export_excel_still_succeeds_without_configured_logo(
+    client, make_user, auth_header
+):
+    """Le nom du site est toujours en base (valeur par défaut de seed), mais
+    aucun logo n'est téléversé dans cet environnement de test : la génération
+    ne doit pas échouer pour autant (comportement best-effort)."""
+    h = _admin_header(make_user, auth_header)
+    r = client.get(f"{RDA}/export?format=excel&year=2020", headers=h)
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]

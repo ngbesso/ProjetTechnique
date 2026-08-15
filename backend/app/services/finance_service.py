@@ -139,14 +139,18 @@ def build_annual_donor_report(db: Session, year: int) -> DonorAnnualReport:
 
     groups: dict[tuple[str, str], dict] = {}
     for d in donations:
+        member_id = None
+        donor_id = None
         if d.member_id and d.member:
             key = f"member:{d.member_id}"
             name = d.member.full_name
             email = d.member.email
+            member_id = d.member_id
         elif d.donor_id and d.donor:
             key = f"donor:{d.donor_id}"
             name = d.donor.name
             email = d.donor.email
+            donor_id = d.donor_id
         else:
             name = d.donor_name or d.donor_email or "Anonyme"
             key = f"name:{name.lower()}"
@@ -158,6 +162,8 @@ def build_annual_donor_report(db: Session, year: int) -> DonorAnnualReport:
             {
                 "donor_name": name,
                 "donor_email": email,
+                "member_id": member_id,
+                "donor_id": donor_id,
                 "currency": currency,
                 "monthly_totals": [0.0] * 12,
                 "donation_count": 0,
@@ -170,6 +176,8 @@ def build_annual_donor_report(db: Session, year: int) -> DonorAnnualReport:
         DonorAnnualReportEntry(
             donor_name=g["donor_name"],
             donor_email=g["donor_email"],
+            member_id=g["member_id"],
+            donor_id=g["donor_id"],
             currency=g["currency"],
             monthly_totals=g["monthly_totals"],
             annual_total=sum(g["monthly_totals"]),
