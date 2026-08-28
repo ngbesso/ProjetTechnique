@@ -38,11 +38,13 @@ async def answer(question: str, authorization: str) -> dict:
             "used_stats": [],
         }
 
-    context = admin_stats.build_context(stats)
+    wanted = admin_stats.relevant_categories(question)
+    used_labels = [label for label in stats if not wanted or label in wanted]
+    context = admin_stats.build_context(stats, question)
 
     try:
         async with httpx.AsyncClient(
-            base_url=settings.ollama_url, timeout=120.0
+            base_url=settings.ollama_url, timeout=180.0
         ) as client:
             response = await client.post(
                 "/api/chat",
@@ -64,7 +66,7 @@ async def answer(question: str, authorization: str) -> dict:
         logger.exception("Échec de l'appel au service Ollama (assistant admin)")
         return {
             "answer": "Le service IA est temporairement indisponible. Réessaie plus tard.",
-            "used_stats": list(stats.keys()),
+            "used_stats": used_labels,
         }
 
-    return {"answer": answer_text, "used_stats": list(stats.keys())}
+    return {"answer": answer_text, "used_stats": used_labels}
